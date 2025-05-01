@@ -231,22 +231,29 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         <div className="p-3 border-t border-dark-surface">
           <div className="relative">
-            <Input
-              type="text"
+            <textarea
               placeholder="Type your command or question..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              className="w-full bg-dark rounded-lg pl-4 pr-10 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              className="w-full bg-dark rounded-lg pl-4 pr-10 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light resize-y min-h-[50px] max-h-[150px] text-gray-100"
+              style={{ overflow: 'auto' }}
             />
-            <Button
-              variant="ghost"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary-light hover:text-primary-lighter transition-colors"
-              onClick={handleSendMessage}
-              disabled={aiStatus === "processing"}
-            >
-              <SendIcon className="h-5 w-5" />
-            </Button>
+            <div className="absolute right-3 bottom-3">
+              <Button
+                variant="ghost"
+                className="text-primary-light hover:text-primary-lighter transition-colors"
+                onClick={handleSendMessage}
+                disabled={aiStatus === "processing"}
+              >
+                <SendIcon className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
           
           <div className="flex mt-2 space-x-2 overflow-x-auto py-1">
