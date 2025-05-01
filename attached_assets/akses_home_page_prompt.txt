@@ -1,0 +1,62 @@
+Objective:
+Build a highly interactive, AI-driven, and futuristic home page (post-login) for AKSES, a financial technology platform that manages and creates investment deals for fintechs in emerging markets.
+
+Functional Requirements:
+
+1. AI Command Center (Core Feature):
+   - Fully integrated AI agent interface (left side of the screen) for natural language interaction.
+   - Capabilities:
+     • Understand and perform CRUD operations on a Supabase-connected database.
+     • Ask follow-up questions when needed to complete tasks.
+     • Provide real-time feedback on actions.
+     • Understand deal stages: Prescreening, Indicative Proposal, Due Diligence, etc.
+     • Act as both an analyst and an executor for financial deal management.
+   - Visual Design:
+     • Minimalist AI avatar with glowing effects that reflect status (listening, thinking, responding).
+     • Smooth transitions and clean animations.
+
+2. Deals Pipeline Table (Right side of the screen):
+   - Interactive table displaying deal records from Supabase.
+   - Updates from the AI should reflect here immediately with smooth transitions.
+   - Supports:
+     • Creating new deals.
+     • Updating deal parameters.
+     • Displaying specific deal-related data.
+     • Executing other actions requested via the AI.
+
+3. Supported AI Actions (Examples):
+   - CREATE NEW DEAL:
+     • Requests all required fields.
+     • Validates inputs and creates a new record in Supabase.
+     • Confirms successful creation to the user.
+   - UPDATE DEAL INFO:
+     • Validates update feasibility.
+     • Performs backend update and notifies user.
+   - ASK INFO ABOUT DEAL:
+     • Queries Supabase for information and returns concise, clear results.
+   - Other similar AI-enabled operations.
+
+Design & UX Requirements:
+
+- Color Scheme:
+  • Dark mode theme
+  • Primary color: Deep Purple
+  • Accent color: grey smooth gradient (for typography and highlights)
+- Typography:
+  • Clean, minimalist, and highly readable
+- Aesthetic:
+  • Futuristic, corporate, and enterprise-grade
+  • Smooth gradient transitions between sections
+  • Subtle animated geometric patterns referencing finance and technology
+- Interaction Style:
+  • Inspired by fey.com’s interactivity, but more corporate and futuristic
+  • Purposeful animations that enhance UX without distraction
+
+Technical Stack:
+- Frontend: React
+- Backend: Python with connection Supabase (for database operations)
+- AI: Embedded natural language agent operating from the home page
+- All operations must be visible and actionable within this home page
+
+Note:
+This is the first page after login and will serve as the central user dashboard for AI-based deal management.
