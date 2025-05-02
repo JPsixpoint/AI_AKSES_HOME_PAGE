@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { Button } from "../ui/button";
 import { Mic, MicOff, Volume2, VolumeX } from "lucide-react";
@@ -20,6 +20,8 @@ export function VoiceControlToolbar({
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechSynthesisAvailable, setSpeechSynthesisAvailable] = useState(false);
+  const [silenceTimer, setSilenceTimer] = useState<NodeJS.Timeout | null>(null);
+  const lastTranscriptRef = useRef("");
   
   const {
     transcript,
@@ -28,15 +30,79 @@ export function VoiceControlToolbar({
     browserSupportsSpeechRecognition
   } = useSpeechRecognition();
 
-  // Check if browser supports speech synthesis
+  // Check if browser supports speech synthesis and load voices
   useEffect(() => {
-    setSpeechSynthesisAvailable(!!window.speechSynthesis);
+    if (window.speechSynthesis) {
+      setSpeechSynthesisAvailable(true);
+      
+      // Load voices - most browsers load them asynchronously
+      let voices = window.speechSynthesis.getVoices();
+      
+      if (voices.length === 0) {
+        // If no voices loaded yet, set up event listener for when they're loaded
+        const voicesChanged = () => {
+          voices = window.speechSynthesis.getVoices();
+          console.log("Voices loaded:", voices.length);
+          console.log("Available voices:", voices.map(v => `${v.name} (${v.lang})`));
+        };
+        
+        window.speechSynthesis.addEventListener('voiceschanged', voicesChanged);
+        
+        // Cleanup
+        return () => {
+          window.speechSynthesis.removeEventListener('voiceschanged', voicesChanged);
+        };
+      } else {
+        console.log("Voices already loaded:", voices.length);
+        console.log("Available voices:", voices.map(v => `${v.name} (${v.lang})`));
+      }
+    } else {
+      setSpeechSynthesisAvailable(false);
+    }
   }, []);
 
   // Speech recognition state tracking
   useEffect(() => {
     setIsListening(listening);
   }, [listening]);
+  
+  // Auto-send on silence detection
+  useEffect(() => {
+    // Only process when actively listening
+    if (!listening) return;
+    
+    // If transcript changed
+    if (transcript !== lastTranscriptRef.current) {
+      // Update last transcript
+      lastTranscriptRef.current = transcript;
+      
+      // Clear any existing silence timer
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        setSilenceTimer(null);
+      }
+      
+      // Set new silence timer - if transcript doesn't change for 1.5 seconds, send it
+      if (transcript.trim()) {
+        const timer = setTimeout(() => {
+          console.log("Silence detected, sending transcript:", transcript);
+          onVoiceInput(transcript);
+          SpeechRecognition.stopListening();
+          resetTranscript();
+          setSilenceTimer(null);
+        }, 1500); // 1.5 seconds of silence
+        
+        setSilenceTimer(timer);
+      }
+    }
+    
+    // Cleanup
+    return () => {
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+      }
+    };
+  }, [transcript, listening, silenceTimer, onVoiceInput, resetTranscript]);
 
   // Handle speech output when AI responds
   useEffect(() => {
@@ -66,14 +132,58 @@ export function VoiceControlToolbar({
     utterance.pitch = 1.0; // Normal pitch
     utterance.volume = 1.0; // Full volume
     
-    // Try to find a more natural-sounding voice
+    // Try to find a good American English voice
     const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(
-      voice => voice.name.includes("Google") || voice.name.includes("Natural") || voice.name.includes("Premium")
-    );
     
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
+    // List of preferred American voice names in order of preference
+    const americanVoiceNames = [
+      'Google US English', 'Google English US', 
+      'Microsoft David - English (United States)', 'Microsoft Guy - English (United States)',
+      'Microsoft Mark - English (United States)', 'Microsoft Zira - English (United States)',
+      'Alex', 'Samantha', 'Karen'
+    ];
+    
+    // First try: exact match from our priority list
+    let americanVoice = null;
+    for (const name of americanVoiceNames) {
+      const match = voices.find(voice => voice.name === name);
+      if (match) {
+        americanVoice = match;
+        break;
+      }
+    }
+    
+    // Second try: any en-US voice with natural/premium keywords
+    if (!americanVoice) {
+      americanVoice = voices.find(
+        voice => (voice.lang === 'en-US' || voice.lang === 'en_US') && 
+                (voice.name.includes('Google') || 
+                 voice.name.includes('Natural') || 
+                 voice.name.includes('Premium'))
+      );
+    }
+    
+    // Third try: any en-US voice
+    if (!americanVoice) {
+      americanVoice = voices.find(voice => voice.lang === 'en-US' || voice.lang === 'en_US');
+    }
+    
+    // Fourth try: any English voice
+    if (!americanVoice) {
+      americanVoice = voices.find(voice => voice.lang.startsWith('en'));
+    }
+    
+    // Last resort: any available voice
+    if (!americanVoice && voices.length > 0) {
+      americanVoice = voices[0];
+    }
+    
+    // Set the selected voice
+    if (americanVoice) {
+      console.log("Using voice:", americanVoice.name, americanVoice.lang);
+      utterance.voice = americanVoice;
+      // Explicitly set language to US English
+      utterance.lang = 'en-US';
     }
     
     // Speak the text
