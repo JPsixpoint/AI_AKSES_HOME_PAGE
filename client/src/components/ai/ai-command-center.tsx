@@ -11,6 +11,7 @@ import { AIAvatar } from "./ai-avatar";
 import { AIMessage } from "./ai-message";
 import { UserMessage } from "./user-message";
 import { ConfirmationButtons } from "./confirmation-buttons";
+import { VoiceControlToolbar } from "./voice-control-toolbar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ConcentricPattern } from "../ui/concentric-pattern";
@@ -47,6 +48,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   ]);
   const [input, setInput] = useState("");
   const [aiStatus, setAIStatus] = useState<AIStatus>("listening");
+  const [lastAIMessage, setLastAIMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -76,6 +78,19 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   // Scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    
+    // Update lastAIMessage when a new assistant message is added
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.role === "assistant") {
+      setLastAIMessage(lastMessage.content);
+      // Also set speech status
+      setAIStatus("speaking");
+      // Reset to listening after a short delay to simulate speaking
+      const timer = setTimeout(() => {
+        setAIStatus("listening");
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
   }, [messages]);
 
   const handleSendMessage = async () => {
@@ -264,6 +279,18 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     setInput(command);
   };
   
+  // Handle voice input from the toolbar
+  const handleVoiceInput = (text: string) => {
+    if (text.trim()) {
+      setInput(text);
+      // Optional: Automatically send the message after a brief delay
+      // to give user time to see what was transcribed
+      setTimeout(() => {
+        handleSendMessage();
+      }, 300);
+    }
+  };
+  
   // Handle confirmation of actions like creating or updating deals
   const handleActionConfirmation = async (actionType: string, actionData: any) => {
     setAIStatus("processing");
@@ -358,6 +385,11 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
       </div>
 
       <div className="gradient-border bg-dark-lighter flex-1 overflow-hidden flex flex-col mb-4 z-10">
+        <VoiceControlToolbar 
+          onVoiceInput={handleVoiceInput}
+          aiMessage={lastAIMessage}
+          isProcessing={aiStatus === "processing"}
+        />
         <div className="p-4 overflow-y-auto flex-1">
           <AnimatePresence>
             {messages.map((message, index) => (
