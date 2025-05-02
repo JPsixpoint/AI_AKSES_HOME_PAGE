@@ -1,5 +1,5 @@
 import { Button } from "../ui/button";
-import { CheckCircle, XCircle } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 interface ConfirmationButtonsProps {
   onConfirm: () => void;
@@ -8,25 +8,36 @@ interface ConfirmationButtonsProps {
 }
 
 export function ConfirmationButtons({ onConfirm, onCancel, action }: ConfirmationButtonsProps) {
+  const getActionText = (actionType: string) => {
+    switch (actionType) {
+      case "create_deal":
+        return "Create Deal";
+      case "update_deal":
+        return "Update Deal";
+      case "delete_deal":
+        return "Delete Deal";
+      default:
+        return "Confirm";
+    }
+  };
+
   return (
-    <div className="flex mt-2 mb-2 space-x-2">
+    <div className="flex space-x-2">
       <Button
-        variant="outline"
         size="sm"
-        className="px-4 py-2 flex items-center bg-success/10 text-success border-success/30 hover:bg-success/20 hover:text-success hover:border-success/50"
+        className="bg-success hover:bg-success/80 text-white"
         onClick={onConfirm}
       >
-        <CheckCircle className="h-4 w-4 mr-2" />
-        Confirm
+        <Check className="h-4 w-4 mr-1" />
+        {getActionText(action)}
       </Button>
-      
       <Button
-        variant="outline"
         size="sm"
-        className="px-4 py-2 flex items-center bg-danger/10 text-danger border-danger/30 hover:bg-danger/20 hover:text-danger hover:border-danger/50"
+        variant="outline"
+        className="border-danger text-danger hover:bg-danger/10"
         onClick={onCancel}
       >
-        <XCircle className="h-4 w-4 mr-2" />
+        <X className="h-4 w-4 mr-1" />
         Cancel
       </Button>
     </div>

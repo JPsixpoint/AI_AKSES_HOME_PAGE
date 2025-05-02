@@ -141,79 +141,45 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
 
       // Handle different AI response types
       if (parsedResponse.type === "create_deal" && parsedResponse.data) {
-        try {
-          const newDeal = await createDealMutation.mutateAsync(
-            parsedResponse.data,
-          );
-
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: parsedResponse.message || "Deal created successfully.",
-              data: {
-                type: "deal_details",
-                deal: newDeal,
-                followUpQuestions: parsedResponse.followUpQuestions || [],
-              },
-            },
-          ]);
-
-          toast({
-            title: "Deal Created",
-            description: `${newDeal.company} deal has been created.`,
-          });
-        } catch (error) {
-          console.error("Error creating deal:", error);
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content:
-                "I couldn't create that deal. Please try again or check your information.",
-            },
-          ]);
-          setAIStatus("error");
-          return;
-        }
+        // Ask for confirmation instead of executing immediately
+        const confirmationMessage = `Do you confirm that you want to create a new deal for ${parsedResponse.data.company}?`;
+        
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "I need your confirmation before creating this deal.",
+            pendingAction: {
+              type: "create_deal",
+              data: parsedResponse.data,
+              confirmationMessage
+            }
+          }
+        ]);
+        
+        setAIStatus("listening");
+        return;
       } else if (parsedResponse.type === "update_deal" && parsedResponse.data) {
-        try {
-          const { id, ...dealData } = parsedResponse.data;
-          const updatedDeal = await updateDealMutation.mutateAsync({
-            id: parseInt(id.toString().replace("#", "")),
-            deal: dealData,
-          });
-
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: parsedResponse.message || "Deal updated successfully.",
-              data: {
-                type: "deal_details",
-                deal: updatedDeal,
-                followUpQuestions: parsedResponse.followUpQuestions || [],
-              },
-            },
-          ]);
-
-          toast({
-            title: "Deal Updated",
-            description: `${updatedDeal.company} deal has been updated.`,
-          });
-        } catch (error) {
-          console.error("Error updating deal:", error);
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content:
-                "I couldn't update that deal. Please try again or check your information.",
-            },
-          ]);
-          setAIStatus("error");
-          return;
-        }
+        // Ask for confirmation before updating a deal
+        const { id, ...dealData } = parsedResponse.data;
+        const dealId = parseInt(id.toString().replace("#", ""));
+        const confirmationMessage = `Do you confirm that you want to update deal #${dealId}?`;
+        
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "I need your confirmation before updating this deal.",
+            pendingAction: {
+              type: "update_deal",
+              data: { id: dealId, ...dealData },
+              confirmationMessage
+            }
+          }
+        ]);
+        
+        setAIStatus("listening");
+        return;
       } else if (
         parsedResponse.type === "show_deal" &&
         parsedResponse.data?.dealId
@@ -297,6 +263,90 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const handleQuickCommand = (command: string) => {
     setInput(command);
   };
+  
+  // Handle confirmation of actions like creating or updating deals
+  const handleActionConfirmation = async (actionType: string, actionData: any) => {
+    setAIStatus("processing");
+    
+    try {
+      if (actionType === "create_deal") {
+        // Execute the create deal action
+        const newDeal = await createDealMutation.mutateAsync(actionData);
+        
+        // Add confirmation message
+        setMessages((prev) => [
+          ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
+          {
+            role: "assistant",
+            content: `Deal for ${newDeal.company} has been created successfully.`,
+            data: {
+              type: "deal_details",
+              deal: newDeal,
+              followUpQuestions: ["Would you like to update any information?", "Do you want to view all deals?"]
+            }
+          }
+        ]);
+        
+        toast({
+          title: "Deal Created",
+          description: `${newDeal.company} deal has been created.`,
+        });
+      } 
+      else if (actionType === "update_deal") {
+        // Execute the update deal action
+        const { id, ...dealData } = actionData;
+        const updatedDeal = await updateDealMutation.mutateAsync({
+          id,
+          deal: dealData
+        });
+        
+        // Add confirmation message
+        setMessages((prev) => [
+          ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
+          {
+            role: "assistant",
+            content: `Deal #${id} has been updated successfully.`,
+            data: {
+              type: "deal_details",
+              deal: updatedDeal,
+              followUpQuestions: ["Would you like to make other changes?", "Do you want to view all deals?"]
+            }
+          }
+        ]);
+        
+        toast({
+          title: "Deal Updated",
+          description: `${updatedDeal.company} deal has been updated.`,
+        });
+      }
+      
+      setAIStatus("listening");
+    } catch (error) {
+      console.error(`Error executing ${actionType}:`, error);
+      
+      setMessages((prev) => [
+        ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
+        {
+          role: "assistant",
+          content: `I couldn't complete the requested action. Please try again or check your information.`,
+        }
+      ]);
+      
+      setAIStatus("error");
+    }
+  };
+  
+  // Handle cancellation of pending actions
+  const handleActionCancellation = () => {
+    // Remove the message with the pending action and add a cancellation message
+    setMessages((prev) => [
+      ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
+      {
+        role: "assistant",
+        content: "Action cancelled. Is there anything else you'd like to do?",
+      }
+    ]);
+  };
 
   return (
     <div className="w-full h-full pr-6 flex flex-col relative">
@@ -322,7 +372,10 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                   <AIMessage
                     content={message.content}
                     data={message.data}
+                    pendingAction={message.pendingAction}
                     onSelect={handleQuickCommand}
+                    onConfirm={handleActionConfirmation}
+                    onCancel={handleActionCancellation}
                   />
                 ) : (
                   <UserMessage content={message.content} />
