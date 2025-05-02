@@ -6,14 +6,22 @@ import { Button } from "../ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { Deal } from "@shared/schema";
 import ReactMarkdown from 'react-markdown';
+import { ConfirmationButtons } from "./confirmation-buttons";
 
 interface AIMessageProps {
   content: string;
   data?: any;
+  pendingAction?: {
+    type: "create_deal" | "update_deal" | "delete_deal";
+    data: any;
+    confirmationMessage: string;
+  };
   onSelect?: (content: string) => void;
+  onConfirm?: (actionType: string, actionData: any) => void;
+  onCancel?: () => void;
 }
 
-export function AIMessage({ content, data, onSelect }: AIMessageProps) {
+export function AIMessage({ content, data, pendingAction, onSelect, onConfirm, onCancel }: AIMessageProps) {
   const renderDealDetails = (deal: Deal) => {
     return (
       <div className="space-y-1 mt-2">
@@ -78,6 +86,19 @@ export function AIMessage({ content, data, onSelect }: AIMessageProps) {
         </div>
         
         {data?.type === "deal_details" && data.deal && renderDealDetails(data.deal)}
+        
+        {pendingAction && (
+          <>
+            <div className="mt-3 pt-2 border-t border-dark-surface">
+              <p className="text-sm text-warning font-medium mb-2">{pendingAction.confirmationMessage}</p>
+              <ConfirmationButtons 
+                onConfirm={() => onConfirm && onConfirm(pendingAction.type, pendingAction.data)} 
+                onCancel={() => onCancel && onCancel()}
+                action={pendingAction.type}
+              />
+            </div>
+          </>
+        )}
         
         {data?.followUpQuestions && renderFollowUpQuestions(data.followUpQuestions)}
       </div>

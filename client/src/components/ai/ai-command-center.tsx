@@ -10,6 +10,7 @@ import {
 import { AIAvatar } from "./ai-avatar";
 import { AIMessage } from "./ai-message";
 import { UserMessage } from "./user-message";
+import { ConfirmationButtons } from "./confirmation-buttons";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ConcentricPattern } from "../ui/concentric-pattern";
@@ -23,6 +24,11 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   data?: any;
+  pendingAction?: {
+    type: "create_deal" | "update_deal" | "delete_deal";
+    data: any;
+    confirmationMessage: string;
+  };
 }
 
 type AIStatus = "listening" | "processing" | "speaking" | "error";
@@ -116,14 +122,19 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
 
       // Parse structured responses from AI
       const parsedResponse = await parseAIResponse(aiResponse);
-      
+
       // Log the parsed response structure for debugging
       console.log("Parsed AI response:", {
         type: parsedResponse.type,
         hasMessage: !!parsedResponse.message,
-        messagePreview: parsedResponse.message ? parsedResponse.message.substring(0, 50) + "..." : "none",
+        messagePreview: parsedResponse.message
+          ? parsedResponse.message.substring(0, 50) + "..."
+          : "none",
         hasData: !!parsedResponse.data,
-        hasFollowUpQuestions: !!(parsedResponse.followUpQuestions && parsedResponse.followUpQuestions.length > 0)
+        hasFollowUpQuestions: !!(
+          parsedResponse.followUpQuestions &&
+          parsedResponse.followUpQuestions.length > 0
+        ),
       });
 
       console.log("AI Response:", parsedResponse.message);
@@ -216,9 +227,10 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         }
 
         // Extract the human-readable message or create a fallback
-        const humanReadableMessage = parsedResponse.message || 
+        const humanReadableMessage =
+          parsedResponse.message ||
           "I found that deal and highlighted it in the table for you. Is there anything specific you'd like to know about it?";
-        
+
         // Add assistant message
         setMessages((prev) => [
           ...prev,
@@ -231,22 +243,29 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
       } else {
         // Create a human-readable message even if parsing failed
         let humanReadableMessage = parsedResponse.message;
-        
+
         // If no message was extracted but we have raw content, create a friendly response
         if (!humanReadableMessage) {
           // Clean any JSON-like or code-block content to present a clean message
-          let cleanedResponse = aiResponse.replace(/```json[\s\S]*?```/g, "")
-                                         .replace(/```[\s\S]*?```/g, "")
-                                         .trim();
-          
+          let cleanedResponse = aiResponse
+            .replace(/```json[\s\S]*?```/g, "")
+            .replace(/```[\s\S]*?```/g, "")
+            .trim();
+
           // If it's a JSON string that wasn't properly parsed, don't show it to the user
-          if (cleanedResponse.startsWith("{") && cleanedResponse.endsWith("}")) {
-            humanReadableMessage = "I understand your request. Is there anything specific you'd like me to help you with?";
+          if (
+            cleanedResponse.startsWith("{") &&
+            cleanedResponse.endsWith("}")
+          ) {
+            humanReadableMessage =
+              "I understand your request. Is there anything specific you'd like me to help you with?";
           } else {
-            humanReadableMessage = cleanedResponse || "I understand your request. Is there anything specific you'd like me to help you with?";
+            humanReadableMessage =
+              cleanedResponse ||
+              "I understand your request. Is there anything specific you'd like me to help you with?";
           }
         }
-        
+
         // Add regular assistant message
         setMessages((prev) => [
           ...prev,
