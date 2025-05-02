@@ -27,7 +27,7 @@ export const deals = pgTable("deals", {
   region: text("region").notNull(),
   sector: text("sector").notNull(),
   status: text("status").notNull().default("Prescreening"), // Prescreening, Indicative Proposal, Due Diligence, Committed, Closed, Declined
-  leadInvestor: text("lead_investor").notNull(),
+  leadInvestor: text("lead_investor"),
   deadline: timestamp("deadline"), // Due diligence deadline
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

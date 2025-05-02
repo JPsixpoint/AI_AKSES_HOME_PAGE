@@ -297,8 +297,21 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     
     try {
       if (actionType === "create_deal") {
-        // Execute the create deal action
-        const newDeal = await createDealMutation.mutateAsync(actionData);
+        // Clean up deal data to ensure it matches schema requirements
+        const dealData = {
+          company: actionData.company,
+          value: actionData.value,
+          region: actionData.region,
+          sector: actionData.sector,
+          subSector: actionData.subSector || actionData.sector, // Use sector as fallback
+          status: actionData.status || "Prescreening", // Use default if not provided
+          leadInvestor: actionData.leadInvestor || "", // Convert null to empty string
+          deadline: actionData.deadline, // Keep as is (can be null)
+          notes: actionData.notes || "", // Convert null to empty string
+        };
+        
+        console.log("Submitting deal data:", dealData);
+        const newDeal = await createDealMutation.mutateAsync(dealData);
         
         // Add confirmation message
         setMessages((prev) => [
