@@ -5,6 +5,7 @@ import { AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { Deal } from "@shared/schema";
+import ReactMarkdown from 'react-markdown';
 
 interface AIMessageProps {
   content: string;
@@ -72,7 +73,9 @@ export function AIMessage({ content, data, onSelect }: AIMessageProps) {
         </AvatarFallback>
       </Avatar>
       <div className="ml-3 bg-dark-surface p-3 rounded-lg rounded-tl-none max-w-[85%]">
-        <p className="text-sm whitespace-pre-line">{content}</p>
+        <div className="text-sm markdown-content">
+          <ReactMarkdown>{content}</ReactMarkdown>
+        </div>
         
         {data?.type === "deal_details" && data.deal && renderDealDetails(data.deal)}
         
