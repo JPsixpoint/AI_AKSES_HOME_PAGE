@@ -326,7 +326,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                   handleSendMessage();
                 }
               }}
-              className="w-full bg-dark rounded-lg pl-4 pr-10 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light resize-y min-h-[50px] max-h-[150px] text-gray-100"
+              className="w-full bg-dark rounded-lg pl-4 pr-10 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light resize-y min-h-[50px] max-h-[150px] text-black"
               style={{ overflow: "auto" }}
             />
             <div className="absolute right-3 bottom-3">
