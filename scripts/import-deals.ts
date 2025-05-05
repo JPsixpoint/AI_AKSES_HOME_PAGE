@@ -1,9 +1,14 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import csv from 'csv-parser';
-import { db } from '../db';
-import { sixpointDeals } from '../shared/schema';
-import { sql } from 'drizzle-orm';
+import { db } from '../db/index.js';
+import { sixpointDeals } from '../shared/schema.js';
+import { sql, eq } from 'drizzle-orm';
+
+// ES module equivalent for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const CSV_FILE_PATH = path.resolve(__dirname, './data/deals.csv');
 
@@ -90,6 +95,19 @@ async function importDeals() {
       createdAt = null;
     }
     
+    // Safe parsing of JSON fields
+    const updates = row.updates && row.updates !== '' ? 
+      safeParseJson(row.updates, []) : 
+      [];
+      
+    const preScreening = row.pre_screening && row.pre_screening !== '' ? 
+      safeParseJson(row.pre_screening, {}) : 
+      {};
+      
+    const contacts = row.contacts && row.contacts !== '' ? 
+      safeParseJson(row.contacts, {}) : 
+      {};
+    
     // Create a properly structured record
     return {
       id: row.id,
@@ -99,11 +117,11 @@ async function importDeals() {
       creditHub: cleanValue(row.credit_hub),
       stage: cleanValue(row.stage),
       priority: cleanValue(row.priority),
-      updates: [], // Simplified - we'll handle complex JSON separately
-      preScreening: {}, // Simplified
+      updates: updates,
+      preScreening: preScreening,
       members: members,
       createdAt: createdAt,
-      contacts: cleanValue(row.contacts) || {}
+      contacts: contacts
     };
   });
   
@@ -117,15 +135,17 @@ async function importDeals() {
       await db.insert(sixpointDeals).values(batch).onConflictDoUpdate({
         target: sixpointDeals.id,
         set: {
-          name: sql`EXCLUDED.name`,
-          lead: sql`EXCLUDED.lead`,
-          country: sql`EXCLUDED.country`,
-          creditHub: sql`EXCLUDED.credit_hub`,
-          stage: sql`EXCLUDED.stage`,
-          priority: sql`EXCLUDED.priority`,
-          members: sql`EXCLUDED.members`,
-          createdAt: sql`EXCLUDED.created_at`,
-          contacts: sql`EXCLUDED.contacts`,
+          name: sql`EXCLUDED."name"`,
+          lead: sql`EXCLUDED."lead"`,
+          country: sql`EXCLUDED."country"`,
+          creditHub: sql`EXCLUDED."credit_hub"`,
+          stage: sql`EXCLUDED."stage"`,
+          priority: sql`EXCLUDED."priority"`,
+          updates: sql`EXCLUDED."updates"`,
+          preScreening: sql`EXCLUDED."pre_screening"`,
+          members: sql`EXCLUDED."members"`,
+          createdAt: sql`EXCLUDED."created_at"`,
+          contacts: sql`EXCLUDED."contacts"`,
           importedAt: sql`NOW()`
         }
       });
