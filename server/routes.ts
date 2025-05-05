@@ -361,9 +361,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid deal ID" });
       }
       
-      const deal = await db.query.sixpointDeals.findFirst({
-        where: eq(sixpointDeals.id, id)
-      });
+      // Use a direct SQL query to avoid type compatibility issues
+      const [deal] = await db.select().from(sixpointDeals).where(sql`${sixpointDeals.id} = ${id}`);
       
       if (!deal) {
         return res.status(404).json({ message: "SixPoint deal not found" });
