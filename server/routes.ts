@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { deals, insertDealSchema } from "@shared/schema";
+import { deals, insertDealSchema, sixpointDeals } from "@shared/schema";
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import OpenAI from "openai";
@@ -232,6 +232,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching deal statistics:", error);
       return res.status(500).json({ message: "Failed to fetch deal statistics" });
+    }
+  });
+
+  // SixPoint Deals API Endpoints
+  
+  // Get sixpoint deals statistics - must come before the :id route
+  app.get(`${apiPrefix}/sixpoint-deals/statistics`, async (req, res) => {
+    try {
+      const allDeals = await db.query.sixpointDeals.findMany();
+      
+      // Get unique stages to calculate counts
+      const stages = new Set(allDeals.map(deal => deal.stage).filter(Boolean));
+      const stageStats = {} as { [key: string]: number };
+      
+      stages.forEach(stage => {
+        if (stage) {
+          stageStats[stage] = allDeals.filter(deal => deal.stage === stage).length;
+        }
+      });
+      
+      // Get unique credit hubs
+      const creditHubs = new Set(allDeals.map(deal => deal.creditHub).filter(Boolean));
+      const creditHubStats = {} as { [key: string]: number };
+      
+      creditHubs.forEach(hub => {
+        if (hub) {
+          creditHubStats[hub] = allDeals.filter(deal => deal.creditHub === hub).length;
+        }
+      });
+      
+      // Get unique countries
+      const countries = new Set(allDeals.map(deal => deal.country).filter(Boolean));
+      const countryStats = {} as { [key: string]: number };
+      
+      countries.forEach(country => {
+        if (country) {
+          countryStats[country] = allDeals.filter(deal => deal.country === country).length;
+        }
+      });
+      
+      // Count deals by priority
+      const priorityStats = {
+        high: allDeals.filter(deal => deal.priority === 'high').length,
+        medium: allDeals.filter(deal => deal.priority === 'medium').length,
+        low: allDeals.filter(deal => deal.priority === 'low').length
+      };
+      
+      // Count deals by lead
+      const leads = new Set(allDeals.map(deal => deal.lead).filter(Boolean));
+      const leadStats = {} as { [key: string]: number };
+      
+      leads.forEach(lead => {
+        if (lead) {
+          leadStats[lead] = allDeals.filter(deal => deal.lead === lead).length;
+        }
+      });
+      
+      return res.status(200).json({
+        totalDeals: allDeals.length,
+        stageStats,
+        creditHubStats,
+        countryStats,
+        priorityStats,
+        leadStats
+      });
+    } catch (error) {
+      console.error("Error fetching SixPoint deal statistics:", error);
+      return res.status(500).json({ message: "Failed to fetch SixPoint deal statistics" });
+    }
+  });
+  
+  // Get all sixpoint deals
+  app.get(`${apiPrefix}/sixpoint-deals`, async (req, res) => {
+    try {
+      // Extract query parameters for filtering
+      const { stage, priority, creditHub, country, lead } = req.query;
+      
+      // Build query filters
+      let filters = [];
+      
+      if (stage && typeof stage === 'string') {
+        filters.push(eq(sixpointDeals.stage, stage));
+      }
+      
+      if (priority && typeof priority === 'string') {
+        filters.push(eq(sixpointDeals.priority, priority));
+      }
+      
+      if (creditHub && typeof creditHub === 'string') {
+        filters.push(eq(sixpointDeals.creditHub, creditHub));
+      }
+      
+      if (country && typeof country === 'string') {
+        filters.push(eq(sixpointDeals.country, country));
+      }
+      
+      if (lead && typeof lead === 'string') {
+        filters.push(eq(sixpointDeals.lead, lead));
+      }
+      
+      // Execute query with filters if any
+      let deals;
+      if (filters.length > 0) {
+        deals = await db.query.sixpointDeals.findMany({
+          where: and(...filters),
+          orderBy: desc(sixpointDeals.createdAt)
+        });
+      } else {
+        deals = await db.query.sixpointDeals.findMany({
+          orderBy: desc(sixpointDeals.createdAt)
+        });
+      }
+      
+      return res.status(200).json(deals);
+    } catch (error) {
+      console.error("Error fetching SixPoint deals:", error);
+      return res.status(500).json({ message: "Failed to fetch SixPoint deals" });
+    }
+  });
+  
+  // Get sixpoint deal by ID
+  app.get(`${apiPrefix}/sixpoint-deals/:id`, async (req, res) => {
+    try {
+      const id = req.params.id;
+      
+      if (!id || id.trim() === '') {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const deal = await db.query.sixpointDeals.findFirst({
+        where: eq(sixpointDeals.id, id)
+      });
+      
+      if (!deal) {
+        return res.status(404).json({ message: "SixPoint deal not found" });
+      }
+      
+      return res.status(200).json(deal);
+    } catch (error) {
+      console.error(`Error fetching SixPoint deal with ID ${req.params.id}:`, error);
+      return res.status(500).json({ message: "Failed to fetch SixPoint deal" });
     }
   });
 
