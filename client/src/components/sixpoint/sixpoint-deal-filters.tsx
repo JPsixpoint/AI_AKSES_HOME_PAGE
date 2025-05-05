@@ -42,7 +42,7 @@ export function SixpointDealFilters({
   onCreditHubChange,
   onLeadChange,
 }: SixpointDealFiltersProps) {
-  const { data: statistics } = useQuery({
+  const { data: statistics } = useQuery<SixpointDealStatisticsResponse>({
     queryKey: ['/api/sixpoint-deals/statistics'],
   });
 
