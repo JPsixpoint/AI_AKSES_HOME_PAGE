@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -60,3 +60,35 @@ export const insertDealSchema = createInsertSchema(deals, {
 
 export type InsertDeal = z.infer<typeof insertDealSchema>;
 export type Deal = typeof deals.$inferSelect;
+
+// SixPoint deals table (from CSV import)
+export const sixpointDeals = pgTable("sixpoint_deals", {
+  id: varchar("id", { length: 24 }).primaryKey(), // MongoDB-style ID from CSV
+  name: text("name"), // Company name
+  lead: text("lead"), // Lead person's email
+  country: text("country"),
+  creditHub: text("credit_hub"), // Credit hub region (LATAM, EMENA, SSA, APAC)
+  stage: text("stage"), // Deal stage (Pass, Re-Engage, Pre-Screening, etc.)
+  priority: text("priority"), // Priority level (1-5)
+  updates: json("updates").$type<any[]>(), // Array of update objects
+  preScreening: json("pre_screening").$type<Record<string, any>>(), // Pre-screening data
+  members: json("members").$type<string[]>(), // Team members associated
+  createdAt: timestamp("created_at"), // Original creation timestamp
+  contacts: json("contacts").$type<Record<string, any> | string>(), // Contact information
+  importedAt: timestamp("imported_at").defaultNow().notNull(), // When the record was imported
+});
+
+export const insertSixpointDealSchema = createInsertSchema(sixpointDeals, {
+  id: (schema) => schema.min(1, "ID is required"),
+  name: (schema) => schema.optional(),
+  lead: (schema) => schema.optional(),
+  country: (schema) => schema.optional(),
+  creditHub: (schema) => schema.optional(),
+  stage: (schema) => schema.optional(),
+  priority: (schema) => schema.optional(),
+}).omit({
+  importedAt: true,
+});
+
+export type InsertSixpointDeal = z.infer<typeof insertSixpointDealSchema>;
+export type SixpointDeal = typeof sixpointDeals.$inferSelect;
