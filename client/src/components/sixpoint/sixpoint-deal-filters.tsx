@@ -15,6 +15,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+// Define the statistics response type
+interface SixpointDealStatisticsResponse {
+  totalDeals: number;
+  stageStats: Record<string, number>;
+  creditHubStats: Record<string, number>;
+  countryStats: Record<string, number>;
+  priorityStats: Record<string, number>;
+  leadStats: Record<string, number>;
+}
+
 interface SixpointDealFiltersProps {
   selectedStage: string | null;
   selectedCreditHub: string | null;

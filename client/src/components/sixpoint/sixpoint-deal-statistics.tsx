@@ -21,8 +21,18 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
+// Define the statistics response type
+interface SixpointDealStatisticsResponse {
+  totalDeals: number;
+  stageStats: Record<string, number>;
+  creditHubStats: Record<string, number>;
+  countryStats: Record<string, number>;
+  priorityStats: Record<string, number>;
+  leadStats: Record<string, number>;
+}
+
 export function SixpointDealStatistics() {
-  const { data: statistics, isLoading } = useQuery({
+  const { data: statistics, isLoading } = useQuery<SixpointDealStatisticsResponse>({
     queryKey: ['/api/sixpoint-deals/statistics'],
   });
 
@@ -38,14 +48,20 @@ export function SixpointDealStatistics() {
     );
   }
 
+  // Define chart data type
+  type ChartDataPoint = {
+    name: string;
+    value: number;
+  };
+
   // Prepare data for the charts
-  const stageData = statistics?.stageStats 
+  const stageData: ChartDataPoint[] = statistics?.stageStats 
     ? Object.entries(statistics.stageStats)
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value)
     : [];
 
-  const creditHubData = statistics?.creditHubStats
+  const creditHubData: ChartDataPoint[] = statistics?.creditHubStats
     ? Object.entries(statistics.creditHubStats)
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value)
@@ -176,7 +192,7 @@ export function SixpointDealStatistics() {
                 {statistics?.stageStats?.["Due Diligence & U/W"] || 0}
               </span>
               <span className="text-sm text-muted-foreground">
-                <Badge variant="success">Due Diligence</Badge>
+                <Badge variant="default">Due Diligence</Badge>
               </span>
             </div>
           </div>

@@ -22,8 +22,11 @@ export function SixpointDealsTable({ selectedDealId, onRowClick }: SixpointDeals
     queryKey: ['/api/sixpoint-deals'],
   });
 
+  // Define custom badge variant type that includes "success"
+  type BadgeVariant = "default" | "outline" | "secondary" | "destructive";
+  
   // Function to get badge color based on stage
-  const getStageBadgeVariant = (stage: string | null): "default" | "outline" | "secondary" | "destructive" | "success" => {
+  const getStageBadgeVariant = (stage: string | null): BadgeVariant => {
     if (!stage) return "outline";
     
     switch (stage.toLowerCase()) {
@@ -32,11 +35,11 @@ export function SixpointDealsTable({ selectedDealId, onRowClick }: SixpointDeals
       case "pre-screening":
         return "secondary";
       case "due diligence & u/w":
-        return "success";
+        return "secondary";
       case "term sheet negotiation":
-        return "success";
+        return "default";
       case "closed - won":
-        return "success";
+        return "default";
       case "closed - lost":
         return "destructive";
       case "pass":
@@ -49,7 +52,7 @@ export function SixpointDealsTable({ selectedDealId, onRowClick }: SixpointDeals
   };
 
   // Function to get region badge color
-  const getRegionBadgeVariant = (region: string | null): "default" | "outline" | "secondary" | "destructive" | "success" => {
+  const getRegionBadgeVariant = (region: string | null): BadgeVariant => {
     if (!region) return "outline";
     
     switch (region.toUpperCase()) {
@@ -58,7 +61,7 @@ export function SixpointDealsTable({ selectedDealId, onRowClick }: SixpointDeals
       case "EMENA":
         return "secondary";
       case "SSA":
-        return "success";
+        return "secondary";
       case "APAC":
         return "outline";
       default:
