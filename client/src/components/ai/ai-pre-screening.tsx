@@ -110,7 +110,50 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   
   // Helper function to get the latest tracking event of a certain type
   const getLatestTrackingEvent = (screeningData: ScreeningData, type: TrackingEventType | TrackingEventType[]): TrackingEvent | undefined => {
-    if (!screeningData.trackingData || !Array.isArray(screeningData.trackingData) || screeningData.trackingData.length === 0) {
+    if (!screeningData.trackingData) {
+      return undefined;
+    }
+    
+    // Handle old format (where trackingData might be an object with properties)
+    if (!Array.isArray(screeningData.trackingData)) {
+      // For backward compatibility with the old format
+      const typesToFind = Array.isArray(type) ? type : [type];
+      const oldStatus = (screeningData.trackingData as any).status;
+      
+      // Only handle specific key mappings from old format
+      if (typesToFind.includes("sent" as TrackingEventType) && oldStatus === "sent") {
+        return {
+          type: "sent" as TrackingEventType,
+          timestamp: (screeningData.trackingData as any).lastInteraction || new Date().toISOString(),
+          metadata: {}
+        };
+      } else if (typesToFind.includes("opened" as TrackingEventType) && oldStatus === "opened") {
+        return {
+          type: "opened" as TrackingEventType,
+          timestamp: (screeningData.trackingData as any).lastInteraction || new Date().toISOString(),
+          metadata: {}
+        };
+      } else if (typesToFind.includes("progress" as TrackingEventType)) {
+        return {
+          type: "progress" as TrackingEventType,
+          timestamp: (screeningData.trackingData as any).lastInteraction || new Date().toISOString(),
+          metadata: {
+            completionPercent: (screeningData.trackingData as any).progress || 0
+          }
+        };
+      } else if (typesToFind.includes("submitted" as TrackingEventType) && oldStatus === "completed") {
+        return {
+          type: "submitted" as TrackingEventType,
+          timestamp: (screeningData.trackingData as any).lastInteraction || new Date().toISOString(),
+          metadata: {}
+        };
+      }
+      
+      return undefined;
+    }
+    
+    // New format with array of tracking events
+    if (screeningData.trackingData.length === 0) {
       return undefined;
     }
     
@@ -132,17 +175,37 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     )[0];
   };
   
+  // Helper to safely access tracking data, handling both old and new formats
+  const matchesTrackingType = (screening: any, type: string | string[]): boolean => {
+    // If trackingData doesn't exist or is not properly formatted, return false
+    if (!screening || !screening.trackingData) return false;
+    
+    // Handle old format (object with status property)
+    if (!Array.isArray(screening.trackingData) && typeof screening.trackingData === 'object') {
+      const oldStatus = screening.trackingData.status;
+      if (Array.isArray(type)) {
+        return type.includes(oldStatus);
+      }
+      return oldStatus === type;
+    }
+    
+    // Handle new format (array of tracking events)
+    if (Array.isArray(screening.trackingData)) {
+      if (Array.isArray(type)) {
+        return type.some(t => screening.trackingData.some((event: any) => event.type === t));
+      }
+      return screening.trackingData.some((event: any) => event.type === type);
+    }
+    
+    return false;
+  };
+
   // Helper to check if a deal has screening data matching a specific status
   const hasScreeningWithStatus = (deal: any, status: string | string[]): boolean => {
     const screeningData = getScreeningData(deal);
     if (!screeningData || screeningData.length === 0) return false;
     
-    return screeningData.some(screening => {
-      if (Array.isArray(status)) {
-        return status.some(s => screening.trackingData.some(event => event.type === s));
-      }
-      return screening.trackingData.some(event => event.type === status);
-    });
+    return screeningData.some(screening => matchesTrackingType(screening, status));
   };
   
   // Helper to get screening items with specific statuses
@@ -150,12 +213,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     const screeningData = getScreeningData(deal);
     if (!screeningData || screeningData.length === 0) return [];
     
-    return screeningData.filter(screening => {
-      if (Array.isArray(status)) {
-        return status.some(s => screening.trackingData.some(event => event.type === s));
-      }
-      return screening.trackingData.some(event => event.type === status);
-    });
+    return screeningData.filter(screening => matchesTrackingType(screening, status));
   };
   
   // Function to generate default email template when no deal is selected
