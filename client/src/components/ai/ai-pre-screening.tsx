@@ -62,6 +62,11 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+  
+  // State for deal details modal
+  const [selectedDeal, setSelectedDeal] = useState<any>(null);
+  const [selectedScreening, setSelectedScreening] = useState<ScreeningData | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Form handling
   const form = useForm<PreScreeningForm>({
@@ -408,6 +413,13 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   const onSubmit = (data: PreScreeningForm) => {
     sendPreScreeningMutation.mutate(data);
   };
+  
+  // Function to handle opening the deal details modal
+  const handleDealClick = (deal: any, screening: ScreeningData) => {
+    setSelectedDeal(deal);
+    setSelectedScreening(screening);
+    setShowDetailModal(true);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -529,7 +541,16 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                       {deals
                         .filter(deal => hasScreeningWithStatus(deal, ["opened", "interacting"]))
                         .map(deal => (
-                          <div key={deal.id} className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-blue-500 transition-colors">
+                          <div 
+                            key={deal.id} 
+                            className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-blue-500 transition-colors cursor-pointer"
+                            onClick={() => {
+                              const screenings = getScreeningWithStatus(deal, ["opened", "interacting"]);
+                              if (screenings.length > 0) {
+                                handleDealClick(deal, screenings[0]);
+                              }
+                            }}
+                          >
                             <div className="flex justify-between items-start">
                               <h4 className="font-medium text-sm truncate">{deal.name}</h4>
                               <Badge variant="secondary" className="text-xs">
