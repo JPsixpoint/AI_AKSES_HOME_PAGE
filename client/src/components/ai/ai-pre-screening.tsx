@@ -79,20 +79,27 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   });
   
   // Define types for the screening data
+  // Define tracking event types
+  type TrackingEventType = "sent" | "opened" | "started" | "progress" | "submitted" | "done" | "error";
+  
+  // Define tracking event
+  interface TrackingEvent {
+    type: TrackingEventType;
+    timestamp: string;
+    metadata: Record<string, any>;
+  }
+  
+  // ScreeningData with the updated trackingData structure
   interface ScreeningData {
     timestamp: string;
     initiatingUser: string;
     recipientEmails: string[];
     emailContent: string;
     additionalContext: string;
-    status: "sent" | "not_sent" | "error";
-    resendCount?: number; // Added to track how many times this email has been resent
-    error?: string; // Added to track email sending errors
-    trackingData: {
-      status: "sent" | "opened" | "interacting" | "completed" | "abandoned";
-      progress: number;
-      lastInteraction: string;
-    };
+    status: "sent" | "not_sent" | "error" | "viewing";
+    resendCount?: number; // Track how many times this email has been resent
+    error?: string; // Track email sending errors
+    trackingData: TrackingEvent[];
   }
 
   // Helper function to handle both aiScreening and ai_screening properties
@@ -101,15 +108,41 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     return deal.aiScreening || (deal as any).ai_screening || [];
   };
   
+  // Helper function to get the latest tracking event of a certain type
+  const getLatestTrackingEvent = (screeningData: ScreeningData, type: TrackingEventType | TrackingEventType[]): TrackingEvent | undefined => {
+    if (!screeningData.trackingData || !Array.isArray(screeningData.trackingData) || screeningData.trackingData.length === 0) {
+      return undefined;
+    }
+    
+    // Filter events by type(s)
+    let filteredEvents = screeningData.trackingData;
+    if (Array.isArray(type)) {
+      filteredEvents = screeningData.trackingData.filter(event => type.includes(event.type));
+    } else {
+      filteredEvents = screeningData.trackingData.filter(event => event.type === type);
+    }
+    
+    // Sort by timestamp descending to get the most recent first
+    if (filteredEvents.length === 0) {
+      return undefined;
+    }
+    
+    return filteredEvents.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )[0];
+  };
+  
   // Helper to check if a deal has screening data matching a specific status
   const hasScreeningWithStatus = (deal: any, status: string | string[]): boolean => {
     const screeningData = getScreeningData(deal);
     if (!screeningData || screeningData.length === 0) return false;
     
-    if (Array.isArray(status)) {
-      return screeningData.some((s: ScreeningData) => status.includes(s.trackingData.status));
-    }
-    return screeningData.some((s: ScreeningData) => s.trackingData.status === status);
+    return screeningData.some(screening => {
+      if (Array.isArray(status)) {
+        return status.some(s => screening.trackingData.some(event => event.type === s));
+      }
+      return screening.trackingData.some(event => event.type === status);
+    });
   };
   
   // Helper to get screening items with specific statuses
@@ -117,10 +150,12 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     const screeningData = getScreeningData(deal);
     if (!screeningData || screeningData.length === 0) return [];
     
-    if (Array.isArray(status)) {
-      return screeningData.filter((s: ScreeningData) => status.includes(s.trackingData.status));
-    }
-    return screeningData.filter((s: ScreeningData) => s.trackingData.status === status);
+    return screeningData.filter(screening => {
+      if (Array.isArray(status)) {
+        return status.some(s => screening.trackingData.some(event => event.type === s));
+      }
+      return screening.trackingData.some(event => event.type === status);
+    });
   };
   
   // Function to generate default email template when no deal is selected

@@ -354,20 +354,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the deal
       const deal = checkResult.rows[0];
       
-      // Create a new AI screening entry
+      // Create a new AI screening entry with the new format
+      const currentTimestamp = new Date().toISOString();
       const screeningEntry = {
-        timestamp: new Date().toISOString(),
+        timestamp: currentTimestamp,
         initiatingUser: "Admin", // In a real app, this would come from authentication
         recipientEmails,
         emailContent,
         additionalContext: additionalContext || "",
         status: "sending", // Will be updated to "sent" once emails are sent
         resendCount: 0, // Initialize resend count at 0 for new entries
-        trackingData: {
-          status: "sent",
-          progress: 0,
-          lastInteraction: new Date().toISOString()
-        }
+        trackingData: [
+          {
+            type: "sent",
+            timestamp: currentTimestamp,
+            metadata: {
+              initiatedBy: "Admin",
+              email: recipientEmails.join(", ")
+            }
+          }
+        ]
       };
       
       // Check if this is a resend to the same recipients
@@ -475,6 +481,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const index = aiScreeningData.length - 1;
         aiScreeningData[index].status = 'sent';
         
+        // No need to add another tracking entry as we already added one when creating the screening entry
+        
         // Update the deal with the new status
         await pool.query(updateQuery, [JSON.stringify(aiScreeningData), dealId]);
         
@@ -493,6 +501,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const index = aiScreeningData.length - 1;
         aiScreeningData[index].status = 'error';
         aiScreeningData[index].error = emailError?.message || 'Email sending failed';
+        
+        // Add an error entry to the trackingData array
+        if (Array.isArray(aiScreeningData[index].trackingData)) {
+          aiScreeningData[index].trackingData.push({
+            type: "error",
+            timestamp: new Date().toISOString(),
+            metadata: {
+              errorMessage: emailError?.message || 'Email sending failed',
+              errorDetails: JSON.stringify(emailError)
+            }
+          });
+        }
         
         // Update the deal with the error status
         await pool.query(updateQuery, [JSON.stringify(aiScreeningData), dealId]);
