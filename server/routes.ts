@@ -5,12 +5,16 @@ import { deals, insertDealSchema, sixpointDeals } from "@shared/schema";
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import OpenAI from "openai";
+import { Resend } from "resend";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up OpenAI client
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY || "mock_key_for_development",
   });
+  
+  // Set up Resend client
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   // API Routes
   const apiPrefix = "/api";
@@ -357,7 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recipientEmails,
         emailContent,
         additionalContext: additionalContext || "",
-        status: "not_sent", // Will be updated to "sent" once emails are sent
+        status: "sending", // Will be updated to "sent" once emails are sent
         trackingData: {
           status: "sent",
           progress: 0,
@@ -391,22 +395,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedDeal = updateResult.rows[0];
       
-      // In a real implementation, this would integrate with an email service like Resend
-      // For now, we'll simulate a successful email send
-      
-      // For the purposes of this prototype, we'll assume emails are sent successfully
-      // In production, you would use the Resend API here and update the status based on the response
-      
-      // Return success response
-      return res.status(200).json({
-        message: "Pre-screening process started",
-        recipients: recipientEmails,
-        dealId,
-        dealName: deal.name
-      });
+      // Use Resend to actually send the email
+      try {
+        console.log('Sending email using Resend API...');
+        
+        // Extract recipient emails and convert to string if needed
+        const toEmails = recipientEmails.join(',');
+        
+        // Send email using Resend
+        const emailResult = await resend.emails.send({
+          from: 'AKSES AI <prescreening@akses-ai.resend.dev>',
+          to: recipientEmails,
+          subject: `Pre-Screening Invitation: ${deal.name || 'Deal'}`,
+          html: emailContent,
+          text: emailContent.replace(/<[^>]*>/g, ''), // Strip HTML for plain text version
+        });
+        
+        console.log('Email sent successfully:', emailResult);
+        
+        // Update the screening entry status to sent
+        const index = aiScreeningData.length - 1;
+        aiScreeningData[index].status = 'sent';
+        
+        // Update the deal with the new status
+        await pool.query(updateQuery, [JSON.stringify(aiScreeningData), dealId]);
+        
+        // Return success response with the email result
+        return res.status(200).json({
+          message: "Pre-screening email sent successfully",
+          recipients: recipientEmails,
+          dealId,
+          dealName: deal.name,
+          emailId: emailResult.id
+        });
+      } catch (emailError) {
+        console.error('Error sending email with Resend:', emailError);
+        
+        // Update the screening entry status to error
+        const index = aiScreeningData.length - 1;
+        aiScreeningData[index].status = 'error';
+        aiScreeningData[index].error = emailError.message || 'Email sending failed';
+        
+        // Update the deal with the error status
+        await pool.query(updateQuery, [JSON.stringify(aiScreeningData), dealId]);
+        
+        // Return error response
+        return res.status(500).json({
+          message: "Failed to send pre-screening email",
+          error: emailError.message || 'Unknown error',
+          dealId,
+          dealName: deal.name
+        });
+      }
     } catch (error) {
-      console.error("Error sending pre-screening email:", error);
-      return res.status(500).json({ message: "Failed to send pre-screening email" });
+      console.error("Error in pre-screening process:", error);
+      return res.status(500).json({ message: "Failed to process pre-screening request", error: error.message });
     }
   });
   
