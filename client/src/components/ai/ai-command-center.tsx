@@ -38,6 +38,18 @@ interface AICommandCenterProps {
   onDealSelect?: (dealId: string | number) => void;
 }
 
+// Extend the Window interface to include our custom properties
+declare global {
+  interface Window {
+    openPrescreeningTab?: (dealId?: string) => void;
+    setPreScreeningEmails?: (emails: string) => void;
+    prescreeningDealInfo?: {
+      dealId: string;
+      dealName?: string;
+    };
+  }
+}
+
 export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -96,6 +108,49 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const handleSendMessage = async () => {
     if (!input.trim()) return;
 
+    // Check if the previous assistant message was about prescreening emails
+    const prevMessage = messages[messages.length - 1];
+    if (prevMessage && 
+        prevMessage.role === 'assistant' && 
+        prevMessage.data?.type === 'prescreening_started' &&
+        input.includes('@')) {
+          
+      // User has provided emails after being prompted for prescreening
+      const dealId = prevMessage.data.dealId;
+      const dealName = prevMessage.data.dealName;
+      const emails = input.split(',').map(email => email.trim());
+      
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: input },
+        { 
+          role: 'assistant', 
+          content: `Thank you! I'll send the pre-screening emails to ${emails.join(', ')}. You can follow the progress in the AI Pre-Screening tab.` 
+        }
+      ]);
+      
+      setInput('');
+      
+      // Now, let's update the form in the AI Pre-Screening tab with these emails
+      try {
+        // First ensure the pre-screening tab is open
+        if (window.openPrescreeningTab) {
+          window.openPrescreeningTab(dealId);
+        }
+        
+        // Set the emails in the form (window method will be added to AIPreScreening)
+        if (window.setPreScreeningEmails) {
+          window.setPreScreeningEmails(emails.join(', '));
+        }
+        
+        console.log('Set pre-screening emails:', emails);
+      } catch (error) {
+        console.error('Error setting pre-screening emails:', error);
+      }
+      
+      return;
+    }
+    
     try {
       // Add user message
       const userMessage = { role: "user" as const, content: input };
@@ -434,19 +489,18 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         const { dealId, dealName } = actionData;
         
         console.log("Confirming pre-screening action for deal:", dealId, dealName);
-        console.log("Window openPrescreeningTab function exists:", !!(window as any).openPrescreeningTab);
+        console.log("Window openPrescreeningTab function exists:", !!window.openPrescreeningTab);
         
         // Here we would typically communicate with the TabsSystem to open a new tab
         setMessages((prev) => [
           ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
           {
             role: "assistant",
-            content: `I've started the Pre-Screening process for ${dealName || 'the selected deal'}. To continue, please use the "AI Pre-Screening" tab interface that will open automatically.`,
+            content: `I've started the Pre-Screening process for ${dealName || 'the selected deal'}. Please provide the email addresses for the recipients (separated by commas).`,
             data: {
               type: "prescreening_started",
               dealId,
-              dealName,
-              followUpQuestions: ["How do I complete the pre-screening?", "What happens after pre-screening?"]
+              dealName
             }
           }
         ]);
@@ -460,8 +514,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         try {
           // This is a global method exposed by the TabsSystem component
           console.log("Attempting to open pre-screening tab for deal:", dealId);
-          if ((window as any).openPrescreeningTab) {
-            (window as any).openPrescreeningTab(dealId);
+          if (window.openPrescreeningTab) {
+            window.openPrescreeningTab(dealId);
             console.log("Called openPrescreeningTab successfully");
           } else {
             console.error("openPrescreeningTab method not found on window object");

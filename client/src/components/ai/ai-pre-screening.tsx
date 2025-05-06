@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -39,11 +39,23 @@ const preScreeningSchema = z.object({
 
 type PreScreeningForm = z.infer<typeof preScreeningSchema>;
 
+// Extend Window interface for external communication
+declare global {
+  interface Window {
+    setPreScreeningEmails?: (emails: string) => void;
+    openPrescreeningTab?: (dealId?: string) => void;
+  }
+}
+
 interface AIPreScreeningProps {
   initialDealId?: string;
 }
 
 export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
+  // Ref for external access to component methods
+  const prescreeningRef = useRef<{
+    setEmails: (emails: string) => void;
+  }>({ setEmails: () => {} });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [emailPreview, setEmailPreview] = useState<string>("");
@@ -153,6 +165,24 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     `;
   };
   
+  // Set emails method for external access (from AI Command Center)
+  prescreeningRef.current.setEmails = (emails: string) => {
+    form.setValue('recipientEmails', emails);
+    console.log('Pre-screening emails set via ref:', emails);
+  };
+
+  // Expose the setEmails method to the window object for external components
+  useEffect(() => {
+    window.setPreScreeningEmails = (emails: string) => {
+      prescreeningRef.current.setEmails(emails);
+    };
+
+    // Cleanup
+    return () => {
+      window.setPreScreeningEmails = undefined;
+    };
+  }, []);
+  
   // Initialize email preview with default or deal-specific template
   useEffect(() => {
     if (deals.length > 0) {
@@ -161,6 +191,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
         const selectedDeal = deals.find(d => d.id === initialDealId);
         if (selectedDeal) {
           setEmailPreview(generateDealEmailTemplate(selectedDeal));
+          form.setValue('dealId', initialDealId); // Set the form's dealId
           return;
         }
       }
@@ -168,7 +199,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     
     // If no match or no initialDealId, use default template
     setEmailPreview(generateDefaultEmailTemplate());
-  }, [initialDealId, deals]);
+  }, [initialDealId, deals, form]);
   
   // Update email template when deal selection changes
   const handleDealChange = (dealId: string) => {
