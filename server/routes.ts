@@ -439,16 +439,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Extract recipient emails and convert to string if needed
         const toEmails = recipientEmails.join(',');
         
+        // Clean up email addresses to ensure they're valid
+        const cleanedEmails = recipientEmails
+          .filter(email => typeof email === 'string')
+          .map(email => {
+            // Extract just the email if it contains text like "send to xyz@example.com"
+            const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/;
+            const match = email.match(emailRegex);
+            return match ? match[1] : email.trim();
+          })
+          .filter(email => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email));
+          
+        if (cleanedEmails.length === 0) {
+          throw new Error('No valid email addresses provided');
+        }
+        
         // Send email using Resend with the provided domain and email
         console.log('Attempting to send email with Resend API:', {
           from: 'Akses AI <info@rsvp.emfintechconference.com>',
-          to: recipientEmails,
+          to: cleanedEmails,
           subject: `Pre-Screening Invitation: ${deal.name || 'Deal'}`,
         });
         
         const emailResult = await resend.emails.send({
           from: 'Akses AI <info@rsvp.emfintechconference.com>',
-          to: recipientEmails,  // Send to actual recipients
+          to: cleanedEmails,  // Send to actual recipients
           subject: `Pre-Screening Invitation: ${deal.name || 'Deal'}`,
           html: emailContent,
           text: emailContent.replace(/<[^>]*>/g, ''), // Strip HTML for plain text version
