@@ -53,7 +53,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: deals = [] } = useQuery({
+  const { data: deals = [] } = useQuery<Deal[]>({
     queryKey: ["/api/deals"],
     staleTime: 5000,
   });
@@ -418,9 +418,12 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           description: `Pre-Screening process initiated for ${dealName || 'selected deal'}.`,
         });
         
-        // In a real implementation, this is where we would directly trigger the opening of a new tab
-        // via a callback or context function
-        if (onDealSelect) {
+        // Open the AI Pre-Screening tab via the exposed window method
+        // This is a global method exposed by the TabsSystem component
+        if ((window as any).openPrescreeningTab) {
+          (window as any).openPrescreeningTab(dealId);
+        } else if (onDealSelect) {
+          // Fallback to just selecting the deal if the tab function isn't available
           onDealSelect(dealId);
         }
       }

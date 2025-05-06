@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { 
   Search, 
   Plus, 
@@ -43,6 +43,10 @@ interface TabsSystemProps {
 }
 
 export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemProps) {
+  // Ref for imperative tab opening
+  const tabsRef = useRef<{
+    openPrescreeningTab: (dealId?: string) => void;
+  }>({openPrescreeningTab: () => {}});
   // Track open tabs
   const [tabs, setTabs] = useState<Tab[]>([
     { id: "default-pipeline", type: "Pipeline", title: "Pipeline" }
@@ -72,7 +76,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   };
 
   // Add a new tab
-  const addNewTab = (tabType: TabType, title: string) => {
+  const addNewTab = (tabType: TabType, title: string, data?: any) => {
     // Special case for Pipeline tab - use the existing one if it exists
     if (tabType === "Pipeline") {
       const existingPipelineTab = tabs.find(tab => tab.type === "Pipeline");
@@ -89,6 +93,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
       id: `${tabType}-${Date.now()}`,
       type: tabType,
       title: title,
+      data: data
     };
     
     setTabs([...tabs, newTab]);
@@ -136,6 +141,39 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
     }
   }, [isNewTabDialogOpen, tabs]);
 
+  // Method to open pre-screening tab with a specific deal
+  const openPrescreeningTab = useCallback((dealId?: string) => {
+    // Find existing pre-screening tab
+    const existingTab = tabs.find(tab => tab.type === "AI PreScreening");
+    if (existingTab) {
+      // Update the tab data if needed
+      if (dealId) {
+        const updatedTabs = tabs.map(tab => {
+          if (tab.id === existingTab.id) {
+            return { ...tab, data: { dealId } };
+          }
+          return tab;
+        });
+        setTabs(updatedTabs);
+      }
+      setActiveTabId(existingTab.id);
+    } else {
+      // Create a new tab
+      addNewTab("AI PreScreening", "AI PreScreening", dealId ? { dealId } : undefined);
+    }
+  }, [tabs]);
+
+  // Update the ref
+  useEffect(() => {
+    tabsRef.current.openPrescreeningTab = openPrescreeningTab;
+  }, [openPrescreeningTab]);
+  
+  // Expose the method to the parent component via props
+  useEffect(() => {
+    // Expose the tab opening methods via window for easy access from anywhere
+    (window as any).openPrescreeningTab = openPrescreeningTab;
+  }, [openPrescreeningTab]);
+  
   return (
     <div className="flex flex-col h-full relative">
       {/* Tabs bar - more prominent and separated from content */}
@@ -201,7 +239,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                 />
               )}
               {tab.type === "AI PreScreening" && (
-                <AIPreScreening initialDealId={selectedDealId || undefined} />
+                <AIPreScreening initialDealId={(tab.data?.dealId as string) || selectedDealId || undefined} />
               )}
               {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && (
                 <div className="h-full flex items-center justify-center p-6">

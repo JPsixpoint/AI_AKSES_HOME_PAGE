@@ -253,7 +253,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                         <div>
                           <h3 className="text-lg font-semibold">{deal.name}</h3>
                           <div className="flex flex-wrap gap-2 mt-1">
-                            {deal.aiScreening.map((screening: any, index: number) => {
+                            {deal.aiScreening && deal.aiScreening.map((screening: any, index: number) => {
                               let badgeVariant: "default" | "secondary" | "outline" | "destructive" = "outline";
                               let icon = <Clock className="h-3 w-3 mr-1" />;
                               
@@ -288,7 +288,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                       
                       {/* Progress bars for each screening */}
                       <div className="mt-4 space-y-3">
-                        {deal.aiScreening.map((screening: any, index: number) => (
+                        {deal.aiScreening && deal.aiScreening.map((screening: any, index: number) => (
                           <div key={index} className="space-y-1">
                             <div className="flex justify-between text-xs">
                               <span>{screening.recipientEmails[0]}</span>
