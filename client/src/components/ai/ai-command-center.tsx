@@ -26,7 +26,7 @@ interface Message {
   content: string;
   data?: any;
   pendingAction?: {
-    type: "create_deal" | "update_deal" | "delete_deal";
+    type: "create_deal" | "update_deal" | "delete_deal" | "start_prescreening";
     data: any;
     confirmationMessage: string;
   };
@@ -196,6 +196,41 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         setAIStatus("listening");
         return;
       } else if (
+        parsedResponse.type === "start_prescreening" &&
+        parsedResponse.data?.dealId
+      ) {
+        // Handle starting pre-screening process
+        const dealId = parsedResponse.data.dealId.toString().replace("#", "");
+        const deal = deals.find((d: any) => d.id === dealId);
+        
+        if (deal) {
+          const confirmationMessage = `Do you want to start the Pre-Screening process for ${deal.name || 'this deal'}?`;
+          
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "I need your confirmation before starting the Pre-Screening process.",
+              pendingAction: {
+                type: "start_prescreening",
+                data: { dealId, dealName: deal.name },
+                confirmationMessage
+              }
+            }
+          ]);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: `I couldn't find a deal with ID ${dealId}. Please check the ID and try again.`,
+            }
+          ]);
+        }
+        
+        setAIStatus("listening");
+        return;
+      } else if (
         parsedResponse.type === "show_deal" &&
         parsedResponse.data?.dealId
       ) {
@@ -356,8 +391,39 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         toast({
           title: "Deal Updated",
-          description: `${updatedDeal.company} deal has been updated.`,
+          description: `${updatedDeal.name} deal has been updated.`,
         });
+      }
+      else if (actionType === "start_prescreening") {
+        // Show AI Pre-Screening in a new tab
+        const { dealId, dealName } = actionData;
+        
+        // Here we would typically communicate with the TabsSystem to open a new tab
+        // For this prototype, we'll inform the user that they need to open the AI Pre-Screening tab manually
+        setMessages((prev) => [
+          ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
+          {
+            role: "assistant",
+            content: `I've started the Pre-Screening process for ${dealName || 'the selected deal'}. To continue, please use the "AI Pre-Screening" tab interface that will open automatically.`,
+            data: {
+              type: "prescreening_started",
+              dealId,
+              dealName,
+              followUpQuestions: ["How do I complete the pre-screening?", "What happens after pre-screening?"]
+            }
+          }
+        ]);
+        
+        toast({
+          title: "Pre-Screening Started",
+          description: `Pre-Screening process initiated for ${dealName || 'selected deal'}.`,
+        });
+        
+        // In a real implementation, this is where we would directly trigger the opening of a new tab
+        // via a callback or context function
+        if (onDealSelect) {
+          onDealSelect(dealId);
+        }
       }
       
       setAIStatus("listening");

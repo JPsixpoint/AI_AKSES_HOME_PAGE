@@ -12,7 +12,7 @@ interface AIMessageProps {
   content: string;
   data?: any;
   pendingAction?: {
-    type: "create_deal" | "update_deal" | "delete_deal";
+    type: "create_deal" | "update_deal" | "delete_deal" | "start_prescreening";
     data: any;
     confirmationMessage: string;
   };

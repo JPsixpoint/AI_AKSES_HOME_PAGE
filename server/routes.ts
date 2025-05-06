@@ -329,6 +329,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
 
 
+  // Pre-Screening Endpoints
+  
+  // Send pre-screening email
+  app.post(`${apiPrefix}/prescreening/send`, async (req, res) => {
+    try {
+      const { dealId, recipientEmails, additionalContext, emailContent } = req.body;
+      
+      if (!dealId || !recipientEmails || !Array.isArray(recipientEmails) || recipientEmails.length === 0) {
+        return res.status(400).json({ message: "Missing required fields: dealId and recipientEmails" });
+      }
+      
+      // Check if deal exists
+      const checkResult = await pool.query('SELECT * FROM pipeline WHERE id = $1', [dealId]);
+      
+      if (checkResult.rows.length === 0) {
+        return res.status(404).json({ message: "Deal not found" });
+      }
+      
+      // Get the deal
+      const deal = checkResult.rows[0];
+      
+      // Create a new AI screening entry
+      const screeningEntry = {
+        timestamp: new Date().toISOString(),
+        initiatingUser: "Admin", // In a real app, this would come from authentication
+        recipientEmails,
+        emailContent,
+        additionalContext: additionalContext || "",
+        status: "not_sent", // Will be updated to "sent" once emails are sent
+        trackingData: {
+          status: "sent",
+          progress: 0,
+          lastInteraction: new Date().toISOString()
+        }
+      };
+      
+      // Get existing AI screening data or initialize empty array
+      let aiScreeningData = [];
+      if (deal.ai_screening) {
+        try {
+          aiScreeningData = JSON.parse(deal.ai_screening);
+          if (!Array.isArray(aiScreeningData)) {
+            aiScreeningData = [];
+          }
+        } catch (e) {
+          aiScreeningData = [];
+        }
+      }
+      
+      // Add new screening entry
+      aiScreeningData.push(screeningEntry);
+      
+      // Update the deal with new AI screening data
+      const updateQuery = `UPDATE pipeline SET ai_screening = $1 WHERE id = $2 RETURNING *`;
+      const updateResult = await pool.query(updateQuery, [JSON.stringify(aiScreeningData), dealId]);
+      
+      if (updateResult.rows.length === 0) {
+        throw new Error('Failed to update deal with pre-screening data');
+      }
+      
+      const updatedDeal = updateResult.rows[0];
+      
+      // In a real implementation, this would integrate with an email service like Resend
+      // For now, we'll simulate a successful email send
+      
+      // For the purposes of this prototype, we'll assume emails are sent successfully
+      // In production, you would use the Resend API here and update the status based on the response
+      
+      // Return success response
+      return res.status(200).json({
+        message: "Pre-screening process started",
+        recipients: recipientEmails,
+        dealId,
+        dealName: deal.name
+      });
+    } catch (error) {
+      console.error("Error sending pre-screening email:", error);
+      return res.status(500).json({ message: "Failed to send pre-screening email" });
+    }
+  });
+  
+  // Get pre-screening status for a deal
+  app.get(`${apiPrefix}/prescreening/:dealId`, async (req, res) => {
+    try {
+      const dealId = req.params.dealId;
+      
+      if (!dealId || dealId.trim() === '') {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      // Check if deal exists
+      const checkResult = await pool.query('SELECT * FROM pipeline WHERE id = $1', [dealId]);
+      
+      if (checkResult.rows.length === 0) {
+        return res.status(404).json({ message: "Deal not found" });
+      }
+      
+      const deal = checkResult.rows[0];
+      
+      // Get AI screening data
+      let aiScreeningData = [];
+      if (deal.ai_screening) {
+        try {
+          aiScreeningData = JSON.parse(deal.ai_screening);
+          if (!Array.isArray(aiScreeningData)) {
+            aiScreeningData = [];
+          }
+        } catch (e) {
+          aiScreeningData = [];
+        }
+      }
+      
+      return res.status(200).json(aiScreeningData);
+    } catch (error) {
+      console.error(`Error fetching pre-screening status for deal ID ${req.params.dealId}:`, error);
+      return res.status(500).json({ message: "Failed to fetch pre-screening status" });
+    }
+  });
+  
   // SixPoint Deals API Endpoints
   
   // Get sixpoint deals statistics - must come before the :id route
