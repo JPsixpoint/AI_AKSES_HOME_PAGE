@@ -194,7 +194,11 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => setIsNewTabDialogOpen(false)}
+                onClick={() => {
+                  setIsNewTabDialogOpen(false);
+                  // Make sure the active tab is displayed
+                  setActiveTabId(activeTabId);
+                }}
                 className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
               >
                 <X size={16} />
