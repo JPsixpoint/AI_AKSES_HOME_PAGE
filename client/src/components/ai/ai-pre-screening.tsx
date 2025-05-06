@@ -149,12 +149,12 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                       onValueChange={(value) => form.setValue("dealId", value)}
                       defaultValue={form.getValues("dealId")}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a deal" />
+                      <SelectTrigger className="text-white bg-dark-surface border-gray-700">
+                        <SelectValue placeholder="Select a deal" className="text-white" />
                       </SelectTrigger>
-                      <SelectContent className="bg-dark-lighter">
+                      <SelectContent className="bg-dark-lighter text-white">
                         {deals.map((deal) => (
-                          <SelectItem key={deal.id} value={deal.id}>
+                          <SelectItem key={deal.id} value={deal.id} className="text-white hover:bg-dark-surface">
                             {deal.name}
                           </SelectItem>
                         ))}
@@ -169,6 +169,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                     <Label htmlFor="recipientEmails">Recipient Emails</Label>
                     <Input
                       placeholder="Enter emails separated by commas"
+                      className="text-white bg-dark-surface border-gray-700"
                       {...form.register("recipientEmails")}
                     />
                     {form.formState.errors.recipientEmails && (
@@ -181,6 +182,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                     <Label htmlFor="additionalContext">Additional Context (Optional)</Label>
                     <Textarea
                       placeholder="Add any additional information or context for the recipient..."
+                      className="text-white bg-dark-surface border-gray-700"
                       {...form.register("additionalContext")}
                       rows={4}
                     />
