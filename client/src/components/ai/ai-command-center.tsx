@@ -281,6 +281,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                 // Set the email after a short delay to ensure the tab is open
                 setTimeout(() => {
                   if (window.setPreScreeningEmails) {
+                    console.log("Raw additional email string being sent:", additionalEmail);
                     window.setPreScreeningEmails(additionalEmail);
                     console.log("Set additional pre-screening email:", additionalEmail);
                   }

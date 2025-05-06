@@ -169,26 +169,45 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   
   // Set emails method for external access (from AI Command Center)
   prescreeningRef.current.setEmails = (emails: string) => {
-    form.setValue('recipientEmails', emails);
     console.log('Pre-screening emails set via ref:', emails);
     
-    // Set showModal to true so the form appears
-    setShowModal(true);
+    // Extract just the email addresses from the text
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const extractedEmails = emails.match(emailRegex);
     
-    // Optional: Automatically submit the form if a deal is selected
-    if (form.getValues('dealId')) {
-      // We have both a deal and emails, let's submit automatically
-      const currentFormValues = form.getValues();
-      if (currentFormValues.dealId && emails) {
-        // Small delay to ensure state updates have been processed
-        setTimeout(() => {
-          sendPreScreeningMutation.mutate({
-            dealId: currentFormValues.dealId,
-            recipientEmails: emails,
-            additionalContext: currentFormValues.additionalContext || ''
-          });
-        }, 500);
+    if (extractedEmails && extractedEmails.length > 0) {
+      // Join multiple emails with commas
+      const cleanedEmails = extractedEmails.join(',');
+      console.log("Extracted clean emails:", extractedEmails);
+      
+      // Set the form value with cleaned emails
+      form.setValue('recipientEmails', cleanedEmails);
+      
+      // Set showModal to true so the form appears
+      setShowModal(true);
+      
+      // Optional: Automatically submit the form if a deal is selected
+      if (form.getValues('dealId')) {
+        // We have both a deal and emails, let's submit automatically
+        const currentFormValues = form.getValues();
+        if (currentFormValues.dealId && cleanedEmails) {
+          // Small delay to ensure state updates have been processed
+          setTimeout(() => {
+            sendPreScreeningMutation.mutate({
+              dealId: currentFormValues.dealId,
+              recipientEmails: cleanedEmails,
+              additionalContext: currentFormValues.additionalContext || ''
+            });
+          }, 500);
+        }
       }
+    } else {
+      console.log("No valid emails found in input:", emails);
+      toast({
+        title: "Invalid Email Format",
+        description: "Please provide a valid email address.",
+        variant: "destructive"
+      });
     }
   };
 
