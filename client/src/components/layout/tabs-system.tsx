@@ -1,5 +1,18 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, Plus, X, PanelLeft, MoveRight } from "lucide-react";
+import { 
+  Search, 
+  Plus, 
+  X, 
+  PanelLeft, 
+  MoveRight, 
+  Database, 
+  Settings, 
+  BarChart4, 
+  FileSpreadsheet, 
+  Brain, 
+  Folder, 
+  Files
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -173,44 +186,159 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
         ))}
       </div>
       
-      {/* New tab dialog */}
-      <Dialog open={isNewTabDialogOpen} onOpenChange={setIsNewTabDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>New Tab</DialogTitle>
-            <DialogDescription>
-              Select a tab type or search for available options
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search for tabs..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <div className="max-h-[400px] overflow-y-auto space-y-1">
-              {filteredTabOptions.map((option) => (
-                <button
-                  key={option.type}
-                  className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-lighter flex items-center"
-                  onClick={() => addNewTab(option.type, option.title)}
-                >
-                  <div>
-                    <div className="font-medium">{option.title}</div>
-                    <div className="text-sm text-muted-foreground">{option.description}</div>
-                  </div>
-                </button>
-              ))}
+      {/* New tab fullscreen view */}
+      {isNewTabDialogOpen && (
+        <div className="fixed inset-0 z-50 bg-dark bg-opacity-90 flex flex-col">
+          <div className="bg-dark-lighter p-4 border-b border-dark">
+            <div className="container mx-auto flex justify-between items-center">
+              <h2 className="text-lg font-medium">New tab</h2>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsNewTabDialogOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X size={18} />
+              </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+          
+          <div className="container mx-auto px-4 py-6 flex-1 overflow-auto">
+            <div className="max-w-3xl mx-auto">
+              {/* Search input */}
+              <div className="relative mb-6">
+                <div className="flex items-center bg-dark-surface rounded-lg border border-dark px-3 focus-within:border-primary">
+                  <Search className="h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Ask AI, search for tabs & open tools"
+                    className="border-0 bg-transparent pl-2 shadow-none focus-visible:ring-0 text-foreground"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              {/* Available tab sections */}
+              <div className="space-y-8">
+                {/* Files section */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Files</h3>
+                  <div className="space-y-1">
+                    <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                      <Folder className="h-4 w-4 text-muted-foreground mr-2" />
+                      <span className="text-sm">Find a file</span>
+                      <span className="ml-auto text-xs text-muted-foreground">→</span>
+                    </button>
+                    <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                      <Search className="h-4 w-4 text-muted-foreground mr-2" />
+                      <span className="text-sm">Search through your files</span>
+                      <span className="ml-auto text-xs text-muted-foreground">→</span>
+                    </button>
+                    <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                      <Plus className="h-4 w-4 text-muted-foreground mr-2" />
+                      <span className="text-sm">Create a new file</span>
+                      <span className="ml-auto text-xs text-muted-foreground">→</span>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Tools section */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Tools</h3>
+                  <div className="space-y-1">
+                    <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                      <Settings className="h-4 w-4 text-muted-foreground mr-2" />
+                      <span className="text-sm">Settings</span>
+                      <span className="ml-auto text-xs text-muted-foreground">→</span>
+                    </button>
+                    <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                      <Database className="h-4 w-4 text-muted-foreground mr-2" />
+                      <span className="text-sm">Database</span>
+                      <span className="ml-auto text-xs text-muted-foreground">→</span>
+                    </button>
+                  </div>
+                </div>
+                {/* Main modules section */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">Deal Management</h3>
+                  <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {filteredTabOptions
+                      .filter(option => ["Pipeline", "Deal Information", "Due Diligence"].includes(option.type))
+                      .map((option) => (
+                        <button
+                          key={option.type}
+                          className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                          onClick={() => addNewTab(option.type, option.title)}
+                        >
+                          <div className="mr-3 text-primary">
+                            {option.type === "Pipeline" && <PanelLeft className="h-5 w-5" />}
+                            {option.type === "Deal Information" && <Files className="h-5 w-5" />}
+                            {option.type === "Due Diligence" && <FileSpreadsheet className="h-5 w-5" />}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{option.title}</div>
+                            <div className="text-xs text-muted-foreground">{option.description}</div>
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+                
+                {/* AI Tools section */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">AI Tools</h3>
+                  <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {filteredTabOptions
+                      .filter(option => ["AI PreScreening", "Rag Databases"].includes(option.type))
+                      .map((option) => (
+                        <button
+                          key={option.type}
+                          className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                          onClick={() => addNewTab(option.type, option.title)}
+                        >
+                          <div className="mr-3 text-primary">
+                            {option.type === "AI PreScreening" && <Brain className="h-5 w-5" />}
+                            {option.type === "Rag Databases" && <Database className="h-5 w-5" />}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{option.title}</div>
+                            <div className="text-xs text-muted-foreground">{option.description}</div>
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+                
+                {/* Analysis Tools section */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">Analysis Tools</h3>
+                  <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {filteredTabOptions
+                      .filter(option => ["Pricer", "Org Settings"].includes(option.type))
+                      .map((option) => (
+                        <button
+                          key={option.type}
+                          className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                          onClick={() => addNewTab(option.type, option.title)}
+                        >
+                          <div className="mr-3 text-primary">
+                            {option.type === "Pricer" && <BarChart4 className="h-5 w-5" />}
+                            {option.type === "Org Settings" && <Settings className="h-5 w-5" />}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{option.title}</div>
+                            <div className="text-xs text-muted-foreground">{option.description}</div>
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
