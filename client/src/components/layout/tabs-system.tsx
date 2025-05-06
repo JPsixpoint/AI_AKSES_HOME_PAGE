@@ -155,188 +155,189 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
       
       {/* Tab content */}
       <div className="flex-1 overflow-auto">
-        {tabs.map((tab) => (
-          <div 
-            key={tab.id} 
-            className={cn("h-full", activeTabId === tab.id ? "block" : "hidden")}
-          >
-            {tab.type === "Pipeline" && (
-              <DealsPipeline 
-                selectedDealId={selectedDealId} 
-                onSelectedDealChange={onSelectedDealChange} 
-              />
-            )}
-            {tab.type !== "Pipeline" && (
-              <div className="h-full flex items-center justify-center p-6">
-                <div className="text-center max-w-md mx-auto">
-                  <h2 className="text-2xl font-semibold mb-3">{tab.title}</h2>
-                  <p className="text-muted-foreground mb-4">
-                    This section is currently under development. Check back later for full functionality.
-                  </p>
-                  <Button 
-                    variant="outline"
-                    onClick={() => closeTab(tab.id, { stopPropagation: () => {} } as React.MouseEvent)}
-                  >
-                    Close This Tab
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      
-      {/* New tab drawer/panel */}
-      {isNewTabDialogOpen && (
-        <div className="absolute top-[48px] right-0 bottom-0 left-0 z-50 bg-dark-surface border-t border-dark flex flex-col overflow-hidden">
-          <div className="p-3 border-b border-dark flex justify-between items-center">
-            <h2 className="text-base font-medium">New tab</h2>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setIsNewTabDialogOpen(false)}
-              className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+        {!isNewTabDialogOpen ? (
+          // Normal tab content when not in new tab selection mode
+          tabs.map((tab) => (
+            <div 
+              key={tab.id} 
+              className={cn("h-full", activeTabId === tab.id ? "block" : "hidden")}
             >
-              <X size={16} />
-            </Button>
-          </div>
-          
-          <div className="p-4 flex-1 overflow-auto">
-            <div className="max-w-3xl mx-auto">
-              {/* Search input */}
-              <div className="relative mb-6">
-                <div className="flex items-center bg-dark-surface rounded-lg border border-dark px-3 focus-within:border-primary">
-                  <Search className="h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Ask AI, search for tabs & open tools"
-                    className="border-0 bg-transparent pl-2 shadow-none focus-visible:ring-0 text-foreground"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+              {tab.type === "Pipeline" && (
+                <DealsPipeline 
+                  selectedDealId={selectedDealId} 
+                  onSelectedDealChange={onSelectedDealChange} 
+                />
+              )}
+              {tab.type !== "Pipeline" && (
+                <div className="h-full flex items-center justify-center p-6">
+                  <div className="text-center max-w-md mx-auto">
+                    <h2 className="text-2xl font-semibold mb-3">{tab.title}</h2>
+                    <p className="text-muted-foreground mb-4">
+                      This section is currently under development. Check back later for full functionality.
+                    </p>
+                    <Button 
+                      variant="outline"
+                      onClick={() => closeTab(tab.id, { stopPropagation: () => {} } as React.MouseEvent)}
+                    >
+                      Close This Tab
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              
-              {/* Available tab sections */}
-              <div className="space-y-8">
-                {/* Files section */}
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Files</h3>
-                  <div className="space-y-1">
-                    <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
-                      <Folder className="h-4 w-4 text-muted-foreground mr-2" />
-                      <span className="text-sm">Find a file</span>
-                      <span className="ml-auto text-xs text-muted-foreground">→</span>
-                    </button>
-                    <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
-                      <Search className="h-4 w-4 text-muted-foreground mr-2" />
-                      <span className="text-sm">Search through your files</span>
-                      <span className="ml-auto text-xs text-muted-foreground">→</span>
-                    </button>
-                    <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
-                      <Plus className="h-4 w-4 text-muted-foreground mr-2" />
-                      <span className="text-sm">Create a new file</span>
-                      <span className="ml-auto text-xs text-muted-foreground">→</span>
-                    </button>
+              )}
+            </div>
+          ))
+        ) : (
+          // New tab selection interface
+          <div className="h-full bg-dark-surface border-t border-dark flex flex-col overflow-hidden">
+            <div className="p-3 border-b border-dark flex justify-between items-center">
+              <h2 className="text-base font-medium">New tab</h2>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsNewTabDialogOpen(false)}
+                className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+              >
+                <X size={16} />
+              </Button>
+            </div>
+            
+            <div className="p-4 flex-1 overflow-auto">
+              <div className="max-w-3xl mx-auto">
+                {/* Search input */}
+                <div className="relative mb-6">
+                  <div className="flex items-center bg-dark-surface rounded-lg border border-dark px-3 focus-within:border-primary">
+                    <Search className="h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Ask AI, search for tabs & open tools"
+                      className="border-0 bg-transparent pl-2 shadow-none focus-visible:ring-0 text-foreground"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                   </div>
                 </div>
                 
-                {/* Tools section */}
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Tools</h3>
-                  <div className="space-y-1">
-                    <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
-                      <Settings className="h-4 w-4 text-muted-foreground mr-2" />
-                      <span className="text-sm">Settings</span>
-                      <span className="ml-auto text-xs text-muted-foreground">→</span>
-                    </button>
-                    <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
-                      <Database className="h-4 w-4 text-muted-foreground mr-2" />
-                      <span className="text-sm">Database</span>
-                      <span className="ml-auto text-xs text-muted-foreground">→</span>
-                    </button>
+                {/* Available tab sections */}
+                <div className="space-y-8">
+                  {/* Files section */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Files</h3>
+                    <div className="space-y-1">
+                      <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                        <Folder className="h-4 w-4 text-muted-foreground mr-2" />
+                        <span className="text-sm">Find a file</span>
+                        <span className="ml-auto text-xs text-muted-foreground">→</span>
+                      </button>
+                      <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                        <Search className="h-4 w-4 text-muted-foreground mr-2" />
+                        <span className="text-sm">Search through your files</span>
+                        <span className="ml-auto text-xs text-muted-foreground">→</span>
+                      </button>
+                      <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                        <Plus className="h-4 w-4 text-muted-foreground mr-2" />
+                        <span className="text-sm">Create a new file</span>
+                        <span className="ml-auto text-xs text-muted-foreground">→</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-                {/* Main modules section */}
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-3">Deal Management</h3>
-                  <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {filteredTabOptions
-                      .filter(option => ["Pipeline", "Deal Information", "Due Diligence"].includes(option.type))
-                      .map((option) => (
-                        <button
-                          key={option.type}
-                          className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
-                          onClick={() => addNewTab(option.type, option.title)}
-                        >
-                          <div className="mr-3 text-primary">
-                            {option.type === "Pipeline" && <PanelLeft className="h-5 w-5" />}
-                            {option.type === "Deal Information" && <Files className="h-5 w-5" />}
-                            {option.type === "Due Diligence" && <FileSpreadsheet className="h-5 w-5" />}
-                          </div>
-                          <div>
-                            <div className="font-medium text-sm">{option.title}</div>
-                            <div className="text-xs text-muted-foreground">{option.description}</div>
-                          </div>
-                        </button>
-                      ))}
+                  
+                  {/* Tools section */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Tools</h3>
+                    <div className="space-y-1">
+                      <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                        <Settings className="h-4 w-4 text-muted-foreground mr-2" />
+                        <span className="text-sm">Settings</span>
+                        <span className="ml-auto text-xs text-muted-foreground">→</span>
+                      </button>
+                      <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                        <Database className="h-4 w-4 text-muted-foreground mr-2" />
+                        <span className="text-sm">Database</span>
+                        <span className="ml-auto text-xs text-muted-foreground">→</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-                
-                {/* AI Tools section */}
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-3">AI Tools</h3>
-                  <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {filteredTabOptions
-                      .filter(option => ["AI PreScreening", "Rag Databases"].includes(option.type))
-                      .map((option) => (
-                        <button
-                          key={option.type}
-                          className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
-                          onClick={() => addNewTab(option.type, option.title)}
-                        >
-                          <div className="mr-3 text-primary">
-                            {option.type === "AI PreScreening" && <Brain className="h-5 w-5" />}
-                            {option.type === "Rag Databases" && <Database className="h-5 w-5" />}
-                          </div>
-                          <div>
-                            <div className="font-medium text-sm">{option.title}</div>
-                            <div className="text-xs text-muted-foreground">{option.description}</div>
-                          </div>
-                        </button>
-                      ))}
+                  {/* Main modules section */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Deal Management</h3>
+                    <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {filteredTabOptions
+                        .filter(option => ["Pipeline", "Deal Information", "Due Diligence"].includes(option.type))
+                        .map((option) => (
+                          <button
+                            key={option.type}
+                            className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                            onClick={() => addNewTab(option.type, option.title)}
+                          >
+                            <div className="mr-3 text-primary">
+                              {option.type === "Pipeline" && <PanelLeft className="h-5 w-5" />}
+                              {option.type === "Deal Information" && <Files className="h-5 w-5" />}
+                              {option.type === "Due Diligence" && <FileSpreadsheet className="h-5 w-5" />}
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{option.title}</div>
+                              <div className="text-xs text-muted-foreground">{option.description}</div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
                   </div>
-                </div>
-                
-                {/* Analysis Tools section */}
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-3">Analysis Tools</h3>
-                  <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {filteredTabOptions
-                      .filter(option => ["Pricer", "Org Settings"].includes(option.type))
-                      .map((option) => (
-                        <button
-                          key={option.type}
-                          className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
-                          onClick={() => addNewTab(option.type, option.title)}
-                        >
-                          <div className="mr-3 text-primary">
-                            {option.type === "Pricer" && <BarChart4 className="h-5 w-5" />}
-                            {option.type === "Org Settings" && <Settings className="h-5 w-5" />}
-                          </div>
-                          <div>
-                            <div className="font-medium text-sm">{option.title}</div>
-                            <div className="text-xs text-muted-foreground">{option.description}</div>
-                          </div>
-                        </button>
-                      ))}
+                  
+                  {/* AI Tools section */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">AI Tools</h3>
+                    <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {filteredTabOptions
+                        .filter(option => ["AI PreScreening", "Rag Databases"].includes(option.type))
+                        .map((option) => (
+                          <button
+                            key={option.type}
+                            className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                            onClick={() => addNewTab(option.type, option.title)}
+                          >
+                            <div className="mr-3 text-primary">
+                              {option.type === "AI PreScreening" && <Brain className="h-5 w-5" />}
+                              {option.type === "Rag Databases" && <Database className="h-5 w-5" />}
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{option.title}</div>
+                              <div className="text-xs text-muted-foreground">{option.description}</div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                  
+                  {/* Analysis Tools section */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Analysis Tools</h3>
+                    <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {filteredTabOptions
+                        .filter(option => ["Pricer", "Org Settings"].includes(option.type))
+                        .map((option) => (
+                          <button
+                            key={option.type}
+                            className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                            onClick={() => addNewTab(option.type, option.title)}
+                          >
+                            <div className="mr-3 text-primary">
+                              {option.type === "Pricer" && <BarChart4 className="h-5 w-5" />}
+                              {option.type === "Org Settings" && <Settings className="h-5 w-5" />}
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{option.title}</div>
+                              <div className="text-xs text-muted-foreground">{option.description}</div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
