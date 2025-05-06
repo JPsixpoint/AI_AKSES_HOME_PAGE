@@ -88,13 +88,11 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: Dea
         <Table>
           <TableHeader className="bg-dark-surface border-b border-dark text-left">
             <TableRow>
-              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">ID</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Company</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Country</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Credit Hub</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Lead</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Stage</TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Updated</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground"></TableHead>
             </TableRow>
           </TableHeader>
@@ -104,10 +102,10 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: Dea
               // Loading skeletons
               Array(6).fill(0).map((_, index) => (
                 <TableRow key={`skeleton-${index}`}>
-                  {Array(8).fill(0).map((_, cellIndex) => (
+                  {Array(6).fill(0).map((_, cellIndex) => (
                     <TableCell key={`cell-${index}-${cellIndex}`} className="px-4 py-3">
-                      <Skeleton className={`h-4 ${cellIndex === 1 ? 'w-32' : 'w-16'}`} />
-                      {cellIndex === 1 && <Skeleton className="h-3 w-24 mt-1" />}
+                      <Skeleton className={`h-4 ${cellIndex === 0 ? 'w-32' : 'w-16'}`} />
+                      {cellIndex === 0 && <Skeleton className="h-3 w-24 mt-1" />}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -126,7 +124,6 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: Dea
                     }`}
                     onClick={() => onRowClick && onRowClick(deal.id)}
                   >
-                    <TableCell className="px-4 py-3 text-sm">{deal.id.substring(0, 6)}...</TableCell>
                     <TableCell className="px-4 py-3">
                       <div>
                         <p className="text-sm font-medium">{deal.name || 'Unnamed Deal'}</p>
@@ -140,9 +137,6 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: Dea
                       <Badge variant="outline" className={`px-2 py-1 rounded text-xs ${getStageStyles(deal.stage)}`}>
                         {deal.stage}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-xs text-muted-foreground">
-                      {deal.updated_at ? formatTimeAgo(new Date(deal.updated_at)) : 'N/A'}
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground transition-colors">
