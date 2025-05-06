@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Header } from "@/components/layout/header";
 import { AICommandCenter } from "@/components/ai/ai-command-center";
-import { DealsPipeline } from "@/components/deals/deals-pipeline";
+import { TabsSystem } from "@/components/layout/tabs-system";
 import { useMobile } from "@/hooks/use-mobile";
 
 export default function Home() {
-  const [selectedDealId, setSelectedDealId] = useState<number | null>(null);
+  const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
   const isMobile = useMobile();
   
   return (
@@ -14,7 +14,7 @@ export default function Home() {
       
       <main className="container mx-auto px-4 py-6 flex-1 overflow-hidden">
         <div className="flex flex-col lg:flex-row h-full overflow-hidden">
-          {/* Mobile view - tabbed interface */}
+          {/* Mobile view - simple tabbed interface */}
           {isMobile && (
             <div className="flex flex-col h-full overflow-hidden">
               <div className="flex border-b border-dark-surface mb-4">
@@ -26,7 +26,7 @@ export default function Home() {
                 </button>
                 <button 
                   className={`py-2 px-4 text-sm font-medium ${selectedDealId !== null ? 'text-primary-light border-b-2 border-primary-light' : 'text-muted-foreground'}`}
-                  onClick={() => selectedDealId === null ? setSelectedDealId(3421) : null}
+                  onClick={() => selectedDealId === null ? setSelectedDealId("default") : null}
                 >
                   Deals Pipeline
                 </button>
@@ -34,9 +34,9 @@ export default function Home() {
               
               <div className="flex-1 overflow-hidden">
                 {selectedDealId === null ? (
-                  <AICommandCenter onDealSelect={setSelectedDealId} />
+                  <AICommandCenter onDealSelect={(id) => setSelectedDealId(String(id))} />
                 ) : (
-                  <DealsPipeline 
+                  <TabsSystem 
                     selectedDealId={selectedDealId} 
                     onSelectedDealChange={setSelectedDealId} 
                   />
@@ -45,15 +45,15 @@ export default function Home() {
             </div>
           )}
           
-          {/* Desktop view - side by side */}
+          {/* Desktop view - AI Command Center and Tabs */}
           {!isMobile && (
             <>
               <div className="w-1/3 overflow-y-auto overflow-x-hidden pr-6 flex flex-col relative">
-                <AICommandCenter onDealSelect={setSelectedDealId} />
+                <AICommandCenter onDealSelect={(id) => setSelectedDealId(String(id))} />
               </div>
               
               <div className="w-2/3 overflow-y-auto">
-                <DealsPipeline 
+                <TabsSystem 
                   selectedDealId={selectedDealId} 
                   onSelectedDealChange={setSelectedDealId} 
                 />

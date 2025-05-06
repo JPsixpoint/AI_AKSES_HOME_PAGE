@@ -35,7 +35,7 @@ interface Message {
 type AIStatus = "listening" | "processing" | "speaking" | "error";
 
 interface AICommandCenterProps {
-  onDealSelect?: (dealId: number) => void;
+  onDealSelect?: (dealId: string | number) => void;
 }
 
 export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
