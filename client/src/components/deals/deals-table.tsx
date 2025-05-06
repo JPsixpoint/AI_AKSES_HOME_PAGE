@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Table,
@@ -100,9 +100,9 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: Dea
           <TableBody className="divide-y divide-dark">
             {isLoading ? (
               // Loading skeletons
-              Array(6).fill(0).map((_, index) => (
+              [...Array(6)].map((_, index) => (
                 <TableRow key={`skeleton-${index}`}>
-                  {Array(6).fill(0).map((_, cellIndex) => (
+                  {[...Array(6)].map((_, cellIndex) => (
                     <TableCell key={`cell-${index}-${cellIndex}`} className="px-4 py-3">
                       <Skeleton className={`h-4 ${cellIndex === 0 ? 'w-32' : 'w-16'}`} />
                       {cellIndex === 0 && <Skeleton className="h-3 w-24 mt-1" />}
@@ -167,17 +167,55 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: Dea
             <ChevronLeftIcon className="h-3 w-3 mr-1" /> Previous
           </Button>
           
-          {[...Array(totalPages)].map((_, index) => (
-            <Button
-              key={index + 1}
-              variant={currentPage === index + 1 ? "default" : "outline"}
-              size="sm"
-              className="text-xs px-3"
-              onClick={() => setCurrentPage(index + 1)}
-            >
-              {index + 1}
-            </Button>
-          ))}
+          {/* Show limited number of pages */}
+          {(() => {
+            // Always show first page, last page, current page, and one page before and after current
+            const pagesToShow = new Set<number>();
+            
+            // Always show first page and last page
+            pagesToShow.add(1);
+            pagesToShow.add(totalPages);
+            
+            // Show current page and one page before and after
+            const range = [-1, 0, 1];
+            range.forEach(offset => {
+              const pageNum = currentPage + offset;
+              if (pageNum >= 1 && pageNum <= totalPages) {
+                pagesToShow.add(pageNum);
+              }
+            });
+            
+            // Convert to array and sort
+            const pageArray = Array.from(pagesToShow).sort((a, b) => a - b);
+            
+            // Create buttons with ellipses where needed
+            const paginationItems: React.ReactNode[] = [];
+            
+            // Add page buttons with ellipses
+            pageArray.forEach((pageNum, index) => {
+              // Add ellipsis if there's a gap
+              if (index > 0 && pageNum > pageArray[index - 1] + 1) {
+                paginationItems.push(
+                  <span key={`ellipsis-${index}`} className="mx-1 text-xs text-muted-foreground">...</span>
+                );
+              }
+              
+              // Add page button
+              paginationItems.push(
+                <Button
+                  key={`page-${pageNum}`}
+                  variant={currentPage === pageNum ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs px-3"
+                  onClick={() => setCurrentPage(pageNum)}
+                >
+                  {pageNum}
+                </Button>
+              );
+            });
+            
+            return paginationItems;
+          })()}
           
           <Button
             variant={currentPage === totalPages ? "outline" : "secondary"}
