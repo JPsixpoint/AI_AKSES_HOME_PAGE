@@ -58,7 +58,7 @@ export function DealsPipeline({ selectedDealId, onSelectedDealChange }: DealsPip
   };
   
   return (
-    <div className="w-full pl-6">
+    <div className="w-full">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Deals Pipeline</h2>
         

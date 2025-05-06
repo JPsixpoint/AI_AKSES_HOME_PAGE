@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Search, Plus, X, PanelLeft, MoveRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { DealsPipeline } from "@/components/deals/deals-pipeline";
 
@@ -103,39 +103,40 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
 
   return (
     <div className="flex flex-col h-full">
-      {/* Tabs bar */}
-      <div className="flex items-center bg-dark-surface border-b border-dark overflow-x-auto">
+      {/* Tabs bar - more prominent and separated from content */}
+      <div className="sticky top-0 z-10 flex items-center bg-dark-lighter border-b border-dark overflow-x-auto shadow-sm mb-4">
         {tabs.map((tab) => (
           <div 
             key={tab.id}
             className={cn(
-              "flex items-center min-w-fit px-3 py-2 text-sm border-r border-dark cursor-pointer",
+              "flex items-center min-w-fit px-4 py-2.5 text-sm border-r border-dark cursor-pointer relative",
               activeTabId === tab.id 
-                ? "bg-dark-lighter text-foreground" 
-                : "text-muted-foreground hover:bg-dark-lighter/50"
+                ? "bg-dark text-foreground before:absolute before:bottom-0 before:left-0 before:right-0 before:h-0.5 before:bg-primary" 
+                : "text-muted-foreground hover:bg-dark/60"
             )}
             onClick={() => switchToTab(tab.id)}
           >
-            <span className="truncate max-w-[150px]">{tab.title}</span>
+            <span className="truncate max-w-[150px] mr-2">{tab.title}</span>
             
-            {/* Only show close button if there's more than one tab */}
-            {tabs.length > 1 && (
-              <button 
-                className="ml-2 p-0.5 rounded-sm opacity-70 hover:opacity-100 hover:bg-background"
-                onClick={(e) => closeTab(tab.id, e)}
-              >
-                <X size={14} />
-              </button>
-            )}
+            {/* Always show close button */}
+            <button 
+              className="ml-1 p-0.5 rounded-sm opacity-70 hover:opacity-100 hover:bg-dark-surface"
+              onClick={(e) => closeTab(tab.id, e)}
+              aria-label={`Close ${tab.title} tab`}
+            >
+              <X size={14} />
+            </button>
           </div>
         ))}
         
         {/* New tab button */}
         <button 
-          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-dark-lighter/50"
+          className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-dark/60 flex items-center"
           onClick={() => setIsNewTabDialogOpen(true)}
+          aria-label="Add new tab"
         >
-          <Plus size={16} />
+          <Plus size={16} className="mr-1" />
+          <span className="text-xs font-medium">New Tab</span>
         </button>
       </div>
       
@@ -153,12 +154,18 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
               />
             )}
             {tab.type !== "Pipeline" && (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center">
-                  <h2 className="text-xl font-semibold mb-2">{tab.title}</h2>
-                  <p className="text-muted-foreground">
-                    This tab is under development. 
+              <div className="h-full flex items-center justify-center p-6">
+                <div className="text-center max-w-md mx-auto">
+                  <h2 className="text-2xl font-semibold mb-3">{tab.title}</h2>
+                  <p className="text-muted-foreground mb-4">
+                    This section is currently under development. Check back later for full functionality.
                   </p>
+                  <Button 
+                    variant="outline"
+                    onClick={() => closeTab(tab.id, { stopPropagation: () => {} } as React.MouseEvent)}
+                  >
+                    Close This Tab
+                  </Button>
                 </div>
               </div>
             )}
@@ -171,6 +178,9 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>New Tab</DialogTitle>
+            <DialogDescription>
+              Select a tab type or search for available options
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="relative">
