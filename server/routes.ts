@@ -402,20 +402,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Extract recipient emails and convert to string if needed
         const toEmails = recipientEmails.join(',');
         
-        // Send email using Resend
-        // With a free Resend account, we can only send emails to the email address associated with the account
-        // In this case, the account email is scale@sixpoint.io
+        // Send email using Resend with the provided domain and email
         
         const emailResult = await resend.emails.send({
-          from: 'Akses AI <onboarding@resend.dev>',
-          to: ['scale@sixpoint.io'],  // Using the account's email address
+          from: 'Akses AI <info@rsvp.emfintechconference.com>',
+          to: recipientEmails,  // Send to actual recipients
           subject: `Pre-Screening Invitation: ${deal.name || 'Deal'}`,
           html: emailContent,
           text: emailContent.replace(/<[^>]*>/g, ''), // Strip HTML for plain text version
-          // Include original recipients in the email body so the user knows who it was intended for
-          headers: {
-            'X-Original-Recipients': recipientEmails.join(', ')
-          }
         });
         
         console.log('Email sent successfully:', emailResult);

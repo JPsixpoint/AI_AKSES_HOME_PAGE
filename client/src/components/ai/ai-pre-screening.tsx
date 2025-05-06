@@ -148,10 +148,10 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
       
       return await apiRequest("POST", "/api/prescreening/send", requestData);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Pre-Screening Email Sent",
-        description: "The pre-screening email has been sent to scale@sixpoint.io (due to Resend API limitations, all emails can only be sent to this address in development).",
+        description: `The pre-screening email has been sent to the specified recipients using info@rsvp.emfintechconference.com as the sender.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
       form.reset();
@@ -218,11 +218,6 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                       <p className="text-sm text-red-500">{form.formState.errors.recipientEmails.message}</p>
                     )}
                     <p className="text-xs text-muted-foreground">Enter multiple emails separated by commas</p>
-                    <div className="mt-2 p-2 bg-yellow-900/30 border border-yellow-600/30 rounded-md">
-                      <p className="text-xs text-yellow-300">
-                        <span className="font-bold">Note:</span> In development mode, all emails will be sent to scale@sixpoint.io due to Resend API limitations. Original recipients will be included in email headers.
-                      </p>
-                    </div>
                   </div>
 
                   <div className="space-y-2">
