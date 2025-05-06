@@ -105,7 +105,17 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   // Helper function to handle both aiScreening and ai_screening properties
   const getScreeningData = (deal: any): ScreeningData[] => {
     // TypeScript workaround for dealing with both camelCase and snake_case properties
-    return deal.aiScreening || (deal as any).ai_screening || [];
+    const data = deal.aiScreening || (deal as any).ai_screening;
+    
+    // Make sure we always return an array
+    if (!data) return [];
+    
+    // Handle case where it's a single object instead of an array
+    if (!Array.isArray(data)) {
+      return [data];
+    }
+    
+    return data;
   };
   
   // Helper function to get the latest tracking event of a certain type
