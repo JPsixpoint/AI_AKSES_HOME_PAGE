@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { db } from "@db";
+import { db, pool } from "@db";
 import { deals, insertDealSchema, sixpointDeals } from "@shared/schema";
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -55,12 +55,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Deals CRUD routes
   
-  // Get all deals
+  // Get all deals (from pipeline table)
   app.get(`${apiPrefix}/deals`, async (req, res) => {
     try {
-      const allDeals = await db.query.deals.findMany({
-        orderBy: desc(deals.updatedAt),
-      });
+      // Extract query parameters for filtering
+      const { stage, priority, creditHub, country, lead } = req.query;
+      
+      // Build query with filters
+      let query = "SELECT * FROM pipeline";
+      let conditions = [];
+      let params = [];
+      let paramIndex = 1;
+      
+      if (stage && typeof stage === 'string') {
+        conditions.push(`stage = $${paramIndex}`);
+        params.push(stage);
+        paramIndex++;
+      }
+      
+      if (priority && typeof priority === 'string') {
+        conditions.push(`priority = $${paramIndex}`);
+        params.push(priority);
+        paramIndex++;
+      }
+      
+      if (creditHub && typeof creditHub === 'string') {
+        conditions.push(`credit_hub = $${paramIndex}`);
+        params.push(creditHub);
+        paramIndex++;
+      }
+      
+      if (country && typeof country === 'string') {
+        conditions.push(`country = $${paramIndex}`);
+        params.push(country);
+        paramIndex++;
+      }
+      
+      if (lead && typeof lead === 'string') {
+        conditions.push(`lead = $${paramIndex}`);
+        params.push(lead);
+        paramIndex++;
+      }
+      
+      if (conditions.length > 0) {
+        query += " WHERE " + conditions.join(" AND ");
+      }
+      
+      // Add ordering
+      query += " ORDER BY id DESC";
+      
+      // Execute query
+      const result = await pool.query(query, params);
+      const allDeals = result.rows;
       
       return res.status(200).json(allDeals);
     } catch (error) {
@@ -69,23 +115,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get deal by ID
+  // Get deal by ID (from pipeline table)
   app.get(`${apiPrefix}/deals/:id`, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id;
       
-      if (isNaN(id)) {
+      if (!id || id.trim() === '') {
         return res.status(400).json({ message: "Invalid deal ID" });
       }
       
-      const deal = await db.query.deals.findFirst({
-        where: eq(deals.id, id),
-      });
+      // Use raw SQL query with the pool directly
+      const result = await pool.query('SELECT * FROM pipeline WHERE id = $1', [id]);
       
-      if (!deal) {
+      if (result.rows.length === 0) {
         return res.status(404).json({ message: "Deal not found" });
       }
       
+      const deal = result.rows[0];
       return res.status(200).json(deal);
     } catch (error) {
       console.error(`Error fetching deal with ID ${req.params.id}:`, error);
@@ -93,95 +139,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create new deal
+  // Create new deal (in pipeline table)
   app.post(`${apiPrefix}/deals`, async (req, res) => {
     try {
-      const validatedData = insertDealSchema.parse(req.body);
+      // Get the validated data from request body
+      const { name, stage, priority, country, lead, creditHub } = req.body;
       
-      // Ensure we have a subSector value
-      if (!validatedData.subSector) {
-        validatedData.subSector = validatedData.sector;
+      // Generate a MongoDB-style ID (24 character hex string)
+      const id = Array.from({ length: 24 }, () => 
+        Math.floor(Math.random() * 16).toString(16)
+      ).join('');
+      
+      // Prepare the deal object for insertion
+      const dealData = {
+        id,
+        name: name || null,
+        stage: stage || 'Pre-Screening',
+        priority: priority || null,
+        country: country || null,
+        lead: lead || null,
+        credit_hub: creditHub || null,
+        updates: JSON.stringify([]),
+        members: JSON.stringify([]),
+        pre_screening: JSON.stringify({})
+      };
+      
+      // Insert the new deal using raw SQL
+      const fields = Object.keys(dealData).join(', ');
+      const placeholders = Object.keys(dealData).map((_, i) => `$${i + 1}`).join(', ');
+      const values = Object.values(dealData);
+      
+      const query = `INSERT INTO pipeline (${fields}) VALUES (${placeholders}) RETURNING *`;
+      const result = await pool.query(query, values);
+      
+      if (result.rows.length === 0) {
+        throw new Error('Failed to create deal');
       }
       
-      const [newDeal] = await db.insert(deals).values({
-        ...validatedData,
-        updatedAt: new Date(),
-      }).returning();
-      
+      const newDeal = result.rows[0];
       return res.status(201).json(newDeal);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ errors: error.errors });
-      }
-      
       console.error("Error creating deal:", error);
       return res.status(500).json({ message: "Failed to create deal" });
     }
   });
   
-  // Update deal
+  // Update deal (in pipeline table)
   app.patch(`${apiPrefix}/deals/:id`, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id;
       
-      if (isNaN(id)) {
+      if (!id || id.trim() === '') {
         return res.status(400).json({ message: "Invalid deal ID" });
       }
       
-      // Get existing deal
-      const existingDeal = await db.query.deals.findFirst({
-        where: eq(deals.id, id),
-      });
+      // Check if deal exists
+      const checkResult = await pool.query('SELECT * FROM pipeline WHERE id = $1', [id]);
       
-      if (!existingDeal) {
+      if (checkResult.rows.length === 0) {
         return res.status(404).json({ message: "Deal not found" });
       }
       
-      // Validate update data against schema omitting required fields
-      // to allow partial updates
-      const updateSchema = insertDealSchema.partial();
-      const validatedData = updateSchema.parse(req.body);
+      // Get the existing deal
+      const existingDeal = checkResult.rows[0];
       
-      // Update the deal
-      const [updatedDeal] = await db.update(deals)
-        .set({
-          ...validatedData,
-          updatedAt: new Date(),
-        })
-        .where(eq(deals.id, id))
-        .returning();
+      // Prepare update data
+      const { name, stage, priority, country, lead, creditHub } = req.body;
       
-      return res.status(200).json(updatedDeal);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ errors: error.errors });
+      // Build the SET clause and values array for SQL update
+      const updates = {};
+      if (name !== undefined) updates.name = name;
+      if (stage !== undefined) updates.stage = stage;
+      if (priority !== undefined) updates.priority = priority;
+      if (country !== undefined) updates.country = country;
+      if (lead !== undefined) updates.lead = lead;
+      if (creditHub !== undefined) updates.credit_hub = creditHub;
+      
+      // If no updates, return the existing deal
+      if (Object.keys(updates).length === 0) {
+        return res.status(200).json(existingDeal);
       }
       
+      // Build the SQL query
+      const setClauses = Object.keys(updates).map((key, index) => `${key} = $${index + 2}`);
+      const values = [id, ...Object.values(updates)];
+      
+      const query = `UPDATE pipeline SET ${setClauses.join(', ')} WHERE id = $1 RETURNING *`;
+      const result = await pool.query(query, values);
+      
+      if (result.rows.length === 0) {
+        throw new Error('Failed to update deal');
+      }
+      
+      const updatedDeal = result.rows[0];
+      return res.status(200).json(updatedDeal);
+    } catch (error) {
       console.error(`Error updating deal with ID ${req.params.id}:`, error);
       return res.status(500).json({ message: "Failed to update deal" });
     }
   });
   
-  // Delete deal
+  // Delete deal (from pipeline table)
   app.delete(`${apiPrefix}/deals/:id`, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id;
       
-      if (isNaN(id)) {
+      if (!id || id.trim() === '') {
         return res.status(400).json({ message: "Invalid deal ID" });
       }
       
       // Check if deal exists
-      const existingDeal = await db.query.deals.findFirst({
-        where: eq(deals.id, id),
-      });
+      const checkResult = await pool.query('SELECT * FROM pipeline WHERE id = $1', [id]);
       
-      if (!existingDeal) {
+      if (checkResult.rows.length === 0) {
         return res.status(404).json({ message: "Deal not found" });
       }
       
       // Delete the deal
-      await db.delete(deals).where(eq(deals.id, id));
+      await pool.query('DELETE FROM pipeline WHERE id = $1', [id]);
       
       return res.status(204).send();
     } catch (error) {
@@ -190,28 +265,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get deal statistics
+  // Get deal statistics (from pipeline table)
   app.get(`${apiPrefix}/deals/statistics`, async (req, res) => {
     try {
-      const allDeals = await db.query.deals.findMany();
+      // Using raw SQL to get statistics from pipeline table
+      const totalResult = await pool.query('SELECT COUNT(*) as count FROM pipeline');
+      const totalDeals = parseInt(totalResult.rows[0].count);
       
-      // Calculate total deal value
-      const totalDealValue = allDeals.reduce((sum, deal) => sum + deal.value, 0);
+      // Get stage counts
+      const stageResult = await pool.query(`
+        SELECT stage, COUNT(*) as count 
+        FROM pipeline 
+        GROUP BY stage
+      `);
       
-      // Count active deals
-      const activeDealCount = allDeals.filter(deal => 
-        deal.status !== "Closed" && deal.status !== "Declined"
-      ).length;
+      const stageStats = stageResult.rows.reduce((acc, row) => {
+        acc[row.stage || 'Unknown'] = parseInt(row.count);
+        return acc;
+      }, {});
       
-      // Count deals in due diligence
-      const dueDiligenceCount = allDeals.filter(deal => 
-        deal.status === "Due Diligence"
-      ).length;
+      // Get credit hub counts
+      const creditHubResult = await pool.query(`
+        SELECT credit_hub, COUNT(*) as count 
+        FROM pipeline 
+        GROUP BY credit_hub
+      `);
       
-      // Count completed deals
-      const completedDealCount = allDeals.filter(deal => 
-        deal.status === "Closed"
-      ).length;
+      const creditHubStats = creditHubResult.rows.reduce((acc, row) => {
+        acc[row.credit_hub || 'Unknown'] = parseInt(row.count);
+        return acc;
+      }, {});
+      
+      // Get counts for specific stages we're interested in
+      const dueDiligenceCount = stageStats['Due Diligence & U/W'] || 0;
+      const prescreeningCount = stageStats['Pre-Screening'] || 0;
+      const leadCount = stageStats['Lead'] || 0;
+      const closedCount = (stageStats['Closed - Won'] || 0) + (stageStats['Closed - Lost'] || 0);
       
       // Mock statistic changes for demonstration
       const valueChangePercent = 12;
@@ -220,10 +309,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const completedThisQuarter = 2;
       
       return res.status(200).json({
-        totalDealValue,
-        activeDealCount,
+        totalDeals,
+        stageStats,
+        creditHubStats,
         dueDiligenceCount,
-        completedDealCount,
+        prescreeningCount,
+        leadCount,
+        closedCount,
         valueChangePercent,
         newDealsThisMonth,
         dueDiligenceChangeWeekly,
