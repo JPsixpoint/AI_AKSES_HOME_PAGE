@@ -269,42 +269,51 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         if (additionalEmail) {
           console.log("Sending additional email to:", additionalEmail);
           
-          // Check if we have deal info stored in window
-          if (window.prescreeningDealInfo?.dealId) {
-            const dealId = window.prescreeningDealInfo.dealId;
-            const dealName = window.prescreeningDealInfo.dealName;
-            
-            // Open pre-screening tab and set email
-            try {
-              if (window.openPrescreeningTab) {
-                window.openPrescreeningTab(dealId);
-                // Set the email after a short delay to ensure the tab is open
-                setTimeout(() => {
-                  if (window.setPreScreeningEmails) {
-                    console.log("Raw additional email string being sent:", additionalEmail);
-                    window.setPreScreeningEmails(additionalEmail);
-                    console.log("Set additional pre-screening email:", additionalEmail);
-                  }
-                }, 500);
-              }
+          // Extract just the email addresses from the text to avoid including previous emails
+          const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+          const extractedEmails = additionalEmail.match(emailRegex);
+          
+          // Make sure we have extracted email addresses
+          if (extractedEmails && extractedEmails.length > 0) {
+            // Check if we have deal info stored in window
+            if (window.prescreeningDealInfo?.dealId) {
+              const dealId = window.prescreeningDealInfo.dealId;
+              const dealName = window.prescreeningDealInfo.dealName;
               
-              // Add message to confirm
-              setMessages((prev) => [
-                ...prev,
-                {
-                  role: "assistant",
-                  content: parsedResponse.message || `I'm sending the pre-screening email to ${additionalEmail}. You can track this in the AI Pre-Screening tab.`,
-                },
-              ]);
-            } catch (error) {
-              console.error("Error setting additional email:", error);
-              setMessages((prev) => [
-                ...prev,
-                {
-                  role: "assistant",
-                  content: "I couldn't send the additional email. Please try opening the AI Pre-Screening tab manually and entering the email address there.",
-                },
-              ]);
+              // Open pre-screening tab and set email
+              try {
+                if (window.openPrescreeningTab) {
+                  window.openPrescreeningTab(dealId);
+                  // Set the email after a short delay to ensure the tab is open
+                  setTimeout(() => {
+                    if (window.setPreScreeningEmails) {
+                      // Send just the new email(s), not combined with previous ones
+                      const newEmailsString = extractedEmails.join(',');
+                      console.log("Raw additional email string being sent:", newEmailsString);
+                      window.setPreScreeningEmails(newEmailsString);
+                      console.log("Set additional pre-screening email:", newEmailsString);
+                    }
+                  }, 500);
+                }
+                
+                // Add message to confirm
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    role: "assistant",
+                    content: parsedResponse.message || `I'm sending the pre-screening email to ${extractedEmails.join(', ')}. You can track this in the AI Pre-Screening tab.`,
+                  },
+                ]);
+              } catch (error) {
+                console.error("Error setting additional email:", error);
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    role: "assistant",
+                    content: "I couldn't send the additional email. Please try opening the AI Pre-Screening tab manually and entering the email address there.",
+                  },
+                ]);
+              }
             }
           } else {
             // No deal info stored

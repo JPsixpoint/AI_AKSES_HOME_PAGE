@@ -191,13 +191,33 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
         // We have both a deal and emails, let's submit automatically
         const currentFormValues = form.getValues();
         if (currentFormValues.dealId && cleanedEmails) {
+          const requestData = {
+            dealId: currentFormValues.dealId,
+            // Convert the cleaned emails string to an array
+            recipientEmails: cleanedEmails.split(',').map(email => email.trim()),
+            additionalContext: currentFormValues.additionalContext || '',
+            emailContent: emailPreview
+          };
+          
           // Small delay to ensure state updates have been processed
           setTimeout(() => {
-            sendPreScreeningMutation.mutate({
-              dealId: currentFormValues.dealId,
-              recipientEmails: cleanedEmails,
-              additionalContext: currentFormValues.additionalContext || ''
-            });
+            // Make direct API request instead of using the mutation to bypass recipientEmails processing
+            apiRequest("POST", "/api/prescreening/send", requestData)
+              .then(data => {
+                toast({
+                  title: "Pre-Screening Email Sent",
+                  description: `The pre-screening email has been sent to the specified recipients.`,
+                });
+                queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
+                setShowModal(false);
+              })
+              .catch(error => {
+                toast({
+                  title: "Error",
+                  description: `Failed to send pre-screening email: ${error.toString()}`,
+                  variant: "destructive",
+                });
+              });
           }, 500);
         }
       }
