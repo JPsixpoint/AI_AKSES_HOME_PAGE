@@ -6,25 +6,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertCircle,
   Send,
-  Upload,
-  Check,
-  X,
-  FileText,
-  Clock,
   RefreshCw,
-  Activity,
   CheckSquare,
   Eye,
   EyeOff,
   Database,
   CheckCircle,
   ArrowUp,
-  Mail
+  Mail,
+  X
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Deal } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ConcentricPattern } from "@/components/ui/concentric-pattern";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 // Schema for the form data
 const preScreeningSchema = z.object({
@@ -52,6 +48,8 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   const queryClient = useQueryClient();
   const [emailPreview, setEmailPreview] = useState<string>("");
   const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Form handling
   const form = useForm<PreScreeningForm>({
@@ -159,6 +157,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
       form.reset();
+      setShowModal(false);
     },
     onError: (error) => {
       toast({
@@ -177,155 +176,37 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     <div className="flex flex-col h-full">
       <ConcentricPattern />
       <div className="flex-1 z-10 overflow-auto">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-8 p-4">
-          <div className="col-span-1 lg:col-span-2">
-            <Card className="bg-dark-surface">
-              <CardHeader>
-                <CardTitle>AI Pre-Screening</CardTitle>
-                <CardDescription>
-                  Start the AI AVATAR Pre-Screening process for a deal.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="dealId">Select Deal</Label>
-                    <Select 
-                      onValueChange={(value) => handleDealChange(value)}
-                      defaultValue={form.getValues("dealId")}
-                    >
-                      <SelectTrigger className="text-white bg-dark-surface border-gray-700">
-                        <SelectValue placeholder="Select a deal" className="text-white" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-dark-lighter text-white border border-gray-700 shadow-lg select-content" style={{backgroundColor: '#1e1e2d', color: 'white'}}>
-                        {deals.map((deal) => (
-                          <SelectItem key={deal.id} value={deal.id} className="text-white hover:bg-purple-700 focus:bg-purple-700 focus:text-white select-item" style={{backgroundColor: '#1e1e2d'}}>
-                          
-                            {deal.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.dealId && (
-                      <p className="text-sm text-red-500">{form.formState.errors.dealId.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="recipientEmails">Recipient Emails</Label>
-                    <Input
-                      placeholder="Enter emails separated by commas"
-                      className="text-white bg-dark-surface border-gray-700"
-                      {...form.register("recipientEmails")}
-                    />
-                    {form.formState.errors.recipientEmails && (
-                      <p className="text-sm text-red-500">{form.formState.errors.recipientEmails.message}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">Enter multiple emails separated by commas</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="additionalContext">Additional Context (Optional)</Label>
-                    <Textarea
-                      placeholder="Add any additional information or context for the recipient..."
-                      className="text-white bg-dark-surface border-gray-700"
-                      {...form.register("additionalContext")}
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="pt-4">
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={sendPreScreeningMutation.isPending}
-                    >
-                      {sendPreScreeningMutation.isPending ? (
-                        <>
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="mr-2 h-4 w-4" />
-                          Send Pre-Screening Email
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="col-span-1 lg:col-span-3">
-            <Card className="bg-dark-surface">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Email Preview</CardTitle>
-                  <CardDescription>
-                    Preview of the pre-screening email that will be sent
-                  </CardDescription>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowEmailPreview(!showEmailPreview)}
-                >
-                  {showEmailPreview ? (
-                    <>
-                      <EyeOff className="h-4 w-4 mr-2" />
-                      Hide Preview
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-4 w-4 mr-2" />
-                      Show Preview
-                    </>
-                  )}
-                </Button>
-              </CardHeader>
-              {showEmailPreview && (
-                <CardContent className="border border-white/10 rounded-md p-4 bg-white text-black h-[600px] overflow-auto">
-                  {emailPreview ? (
-                    <div dangerouslySetInnerHTML={{ __html: emailPreview }} />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-dark">
-                      <div className="text-center">
-                        <AlertCircle className="mx-auto h-12 w-12 mb-2 opacity-30" />
-                        <p>Email template preview</p>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              )}
-            </Card>
-          </div>
-        </div>
-
-        {/* AI Pre-Screening Canvas View */}
-        <div className="max-w-5xl mx-auto mt-8 p-4">
+        <div className="max-w-5xl mx-auto p-4">
           <Card className="bg-dark-surface">
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle>Pre-Screening Canvas</CardTitle>
                   <CardDescription>
                     Visual overview of all pre-screening processes and their current status
                   </CardDescription>
                 </div>
-                <Select defaultValue="all">
-                  <SelectTrigger className="w-[180px] text-white bg-dark-surface border-gray-700">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-dark-lighter text-white border border-gray-700 shadow-lg">
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="sent">Email Sent</SelectItem>
-                    <SelectItem value="opened">Email Opened</SelectItem>
-                    <SelectItem value="interacting">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                  <Select defaultValue="all" onValueChange={(value) => setStatusFilter(value)}>
+                    <SelectTrigger className="w-full sm:w-[180px] text-white bg-dark-surface border-gray-700">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-dark-lighter text-white border border-gray-700 shadow-lg">
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="sent">Email Sent</SelectItem>
+                      <SelectItem value="opened">Email Opened</SelectItem>
+                      <SelectItem value="interacting">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={() => setShowModal(true)} 
+                    className="w-full sm:w-auto"
+                    size="sm"
+                  >
+                    <Send className="h-4 w-4 mr-2" /> New Pre-Screening
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-6">
@@ -498,9 +379,9 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                   <CheckSquare className="h-16 w-16 mb-4 opacity-20" />
                   <h3 className="text-lg font-medium mb-2">No Pre-Screening Processes Found</h3>
                   <p className="max-w-md text-center mb-6">Start a new pre-screening process by selecting a deal and entering recipient emails.</p>
-                  <Button variant="outline" size="sm" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                    <ArrowUp className="h-4 w-4 mr-2" />
-                    Go to Pre-Screening Form
+                  <Button variant="outline" size="sm" onClick={() => setShowModal(true)}>
+                    <Send className="h-4 w-4 mr-2" />
+                    Create Pre-Screening
                   </Button>
                 </div>
               )}
@@ -508,6 +389,93 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
           </Card>
         </div>
       </div>
+
+      {/* New Pre-Screening Modal */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="bg-dark-surface border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">AI-Driven Pre-Screening</DialogTitle>
+            <DialogDescription className="text-center text-gray-400">
+              Create a new pre-screening process to evaluate deals
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="dealId">Company</Label>
+              <Select 
+                onValueChange={(value) => handleDealChange(value)}
+                defaultValue={form.getValues("dealId")}
+              >
+                <SelectTrigger className="w-full text-white bg-dark-surface border-gray-700">
+                  <SelectValue placeholder="Select a company" className="text-white" />
+                </SelectTrigger>
+                <SelectContent className="bg-dark-lighter text-white border border-gray-700 shadow-lg">
+                  {deals.map((deal) => (
+                    <SelectItem key={deal.id} value={deal.id} className="text-white hover:bg-purple-700 focus:bg-purple-700">
+                      {deal.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.formState.errors.dealId && (
+                <p className="text-sm text-red-500">{form.formState.errors.dealId.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="recipientEmails">Emails</Label>
+              <Input
+                placeholder="Enter emails separated by commas"
+                className="text-white bg-dark-surface border-gray-700"
+                {...form.register("recipientEmails")}
+              />
+              {form.formState.errors.recipientEmails && (
+                <p className="text-sm text-red-500">{form.formState.errors.recipientEmails.message}</p>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-between items-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEmailPreview(!showEmailPreview)}
+              >
+                {showEmailPreview ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Hide Preview
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Show Preview
+                  </>
+                )}
+              </Button>
+
+              <Button
+                type="submit"
+                size="sm"
+                disabled={sendPreScreeningMutation.isPending}
+              >
+                {sendPreScreeningMutation.isPending ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : "Send"}
+              </Button>
+            </div>
+
+            {showEmailPreview && (
+              <div className="border border-gray-700 rounded p-2 mt-4 bg-white text-black h-[300px] overflow-auto">
+                <div dangerouslySetInnerHTML={{ __html: emailPreview }} />
+              </div>
+            )}
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
