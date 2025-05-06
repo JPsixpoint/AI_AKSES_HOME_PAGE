@@ -125,6 +125,15 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
     option.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     option.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  // If new tab dialog is open but we only have one tab, make sure we show content
+  // for that tab rather than an empty state
+  useEffect(() => {
+    if (isNewTabDialogOpen && tabs.length === 1) {
+      // Make sure the default Pipeline tab is selected
+      setActiveTabId(tabs[0].id); 
+    }
+  }, [isNewTabDialogOpen, tabs]);
 
   return (
     <div className="flex flex-col h-full relative">
@@ -167,9 +176,19 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
       
       {/* Tab content */}
       <div className="flex-1 overflow-auto">
+        {/* Always render tab content for single tab system */}
+        {tabs.length === 1 && tabs[0].type === "Pipeline" && (
+          <div className={isNewTabDialogOpen ? "absolute inset-0 -z-10" : "h-full"}>
+            <DealsPipeline 
+              selectedDealId={selectedDealId} 
+              onSelectedDealChange={onSelectedDealChange} 
+            />
+          </div>
+        )}
+        
         {!isNewTabDialogOpen ? (
-          // Normal tab content when not in new tab selection mode
-          tabs.map((tab) => (
+          // Normal tab content when not in new tab selection mode and more than one tab
+          tabs.length > 1 && tabs.map((tab) => (
             <div 
               key={tab.id} 
               className={cn("h-full", activeTabId === tab.id ? "block" : "hidden")}
