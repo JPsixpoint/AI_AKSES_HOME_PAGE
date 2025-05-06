@@ -201,7 +201,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
       ) {
         // Handle starting pre-screening process
         const dealId = parsedResponse.data.dealId.toString().replace("#", "");
-        const deal = deals.find((d: any) => d.id === dealId);
+        const deal = deals.find(d => d.id === dealId);
         
         if (deal) {
           const confirmationMessage = `Do you want to start the Pre-Screening process for ${deal.name || 'this deal'}?`;
@@ -338,10 +338,13 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           priority: actionData.priority || "medium",
           country: actionData.country || actionData.region,
           lead: actionData.lead || actionData.leadInvestor,
-          creditHub: actionData.creditHub || "Main",
+          creditHub: actionData.creditHub || "LATAM", // Use valid value from schema
           stage: actionData.stage || actionData.status || "Pre-Screening",
-          updates: JSON.stringify([]),
-          members: JSON.stringify([])
+          updates: [], // JSON array of updates
+          members: [], // JSON array of member strings
+          preScreening: {}, // Empty object for pre-screening data
+          aiScreening: [], // Empty array for AI screening data
+          createdBy: undefined // Optional created by user ID
         };
         
         console.log("Submitting deal data:", dealData);
