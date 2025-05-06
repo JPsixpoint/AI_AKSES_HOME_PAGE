@@ -72,6 +72,18 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
 
   // Add a new tab
   const addNewTab = (tabType: TabType, title: string) => {
+    // Special case for Pipeline tab - use the existing one if it exists
+    if (tabType === "Pipeline") {
+      const existingPipelineTab = tabs.find(tab => tab.type === "Pipeline");
+      if (existingPipelineTab) {
+        setActiveTabId(existingPipelineTab.id);
+        setIsNewTabDialogOpen(false);
+        setSearchTerm("");
+        return;
+      }
+    }
+    
+    // For all other tabs or if Pipeline tab doesn't exist yet
     const newTab: Tab = {
       id: `${tabType}-${Date.now()}`,
       type: tabType,
