@@ -18,8 +18,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-// Deals table (matches pipeline table structure)
-export const deals = pgTable("deals", {
+// Deals table (using the existing pipeline table)
+export const deals = pgTable("pipeline", {
   id: varchar("id", { length: 24 }).primaryKey(),
   name: text("name"), // Company name
   priority: text("priority"),
@@ -30,6 +30,19 @@ export const deals = pgTable("deals", {
   updates: json("updates").$type<any[]>().default([]), // Array of update objects
   members: json("members").$type<string[]>().default([]), // Team members associated
   preScreening: json("pre_screening").$type<Record<string, any>>().default({}), // Pre-screening data
+  aiScreening: json("ai_screening").$type<{
+    timestamp: string;
+    initiatingUser: string;
+    recipientEmails: string[];
+    emailContent: string;
+    additionalContext: string;
+    status: "sent" | "not_sent";
+    trackingData: {
+      status: "sent" | "opened" | "interacting" | "completed" | "abandoned";
+      progress: number;
+      lastInteraction: string;
+    };
+  }[]>().default([]), // AI Screening process data
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   createdBy: integer("created_by").references(() => users.id),
