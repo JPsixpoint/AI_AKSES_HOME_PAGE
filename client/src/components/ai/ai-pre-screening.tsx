@@ -406,8 +406,16 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                               <h4 className="font-medium text-sm truncate">{deal.name}</h4>
                               <Badge variant="outline" className="text-xs">
                                 {getScreeningWithStatus(deal, "sent")
-                                    .sort((a, b) => new Date(b.trackingData.lastInteraction).getTime() - new Date(a.trackingData.lastInteraction).getTime())
-                                    .map(item => new Date(item.trackingData.lastInteraction).toLocaleDateString())[0]
+                                    .sort((a, b) => {
+                                      const aEvent = getLatestTrackingEvent(a, "sent");
+                                      const bEvent = getLatestTrackingEvent(b, "sent");
+                                      return new Date(bEvent?.timestamp || "").getTime() - 
+                                             new Date(aEvent?.timestamp || "").getTime();
+                                    })
+                                    .map(item => {
+                                      const event = getLatestTrackingEvent(item, "sent");
+                                      return event ? new Date(event.timestamp).toLocaleDateString() : "";
+                                    })[0]
                                 }
                               </Badge>
                             </div>
@@ -457,14 +465,14 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                             <div className="flex justify-between items-start">
                               <h4 className="font-medium text-sm truncate">{deal.name}</h4>
                               <Badge variant="secondary" className="text-xs">
-                                {getScreeningWithStatus(deal, ["opened", "interacting"])
-                                    .map(s => s.trackingData.progress)
-                                    .length > 0 ? 
-                                      Math.max(
-                                        ...getScreeningWithStatus(deal, ["opened", "interacting"])
-                                          .map(s => s.trackingData.progress)
-                                      ) : 0
-                                }%
+                                {(() => {
+                                  const screenings = getScreeningWithStatus(deal, ["opened", "interacting"]);
+                                  const progressValues = screenings.map(s => {
+                                    const latestProgress = getLatestTrackingEvent(s, "progress");
+                                    return latestProgress?.metadata?.completionPercent || 0;
+                                  });
+                                  return progressValues.length > 0 ? Math.max(...progressValues) : 0;
+                                })()}%
                               </Badge>
                             </div>
                             <div className="mt-2 space-y-2">
@@ -473,9 +481,25 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                                   <div key={idx} className="space-y-1">
                                     <div className="flex items-center justify-between text-xs">
                                       <span className="text-white/70 truncate">{screening.recipientEmails[0]}</span>
-                                      <span className="text-white/70">{screening.trackingData.status}</span>
+                                      <span className="text-white/70">
+                                        {(() => {
+                                          // Show the latest status based on tracking events
+                                          const events = ["progress", "started", "opened"];
+                                          for (const eventType of events) {
+                                            const event = getLatestTrackingEvent(screening, eventType as TrackingEventType);
+                                            if (event) return eventType;
+                                          }
+                                          return "in progress";
+                                        })()}
+                                      </span>
                                     </div>
-                                    <Progress value={screening.trackingData.progress} className="h-1" />
+                                    <Progress 
+                                      value={(() => {
+                                        const progressEvent = getLatestTrackingEvent(screening, "progress");
+                                        return progressEvent?.metadata?.completionPercent || 0;
+                                      })()} 
+                                      className="h-1" 
+                                    />
                                   </div>
                                 ))
                               }
@@ -518,7 +542,12 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                                   <div key={idx} className="flex items-center gap-2 text-xs text-white/70">
                                     <CheckSquare className="h-3 w-3 text-green-400" />
                                     <span className="truncate">{screening.recipientEmails[0]}</span>
-                                    <span className="text-xs ml-auto">{new Date(screening.trackingData.lastInteraction).toLocaleDateString()}</span>
+                                    <span className="text-xs ml-auto">
+                                      {(() => {
+                                        const submittedEvent = getLatestTrackingEvent(screening, "submitted");
+                                        return submittedEvent ? new Date(submittedEvent.timestamp).toLocaleDateString() : "";
+                                      })()}
+                                    </span>
                                   </div>
                                 ))
                               }
