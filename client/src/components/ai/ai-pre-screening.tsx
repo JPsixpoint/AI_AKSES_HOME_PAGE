@@ -45,6 +45,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [emailPreview, setEmailPreview] = useState<string>("");
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
 
   // Form handling
   const form = useForm<PreScreeningForm>({
@@ -61,20 +62,31 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     queryKey: ["/api/deals"],
   });
   
-  // Update email preview when deal changes
-  useEffect(() => {
-    const dealId = form.watch("dealId");
-    if (dealId) {
-      const selectedDeal = deals.find((d) => d.id === dealId);
-      if (selectedDeal) {
-        generateEmailPreview(selectedDeal);
-      }
-    }
-  }, [form.watch("dealId"), deals]);
+  // Function to generate default email template when no deal is selected
+  const generateDefaultEmailTemplate = () => {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/purple+logo+new+2025.png" alt="SixPoint Logo" style="width: 150px;">
+        </div>
+        <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
+          <h2 style="color: #4a2b87; margin-bottom: 15px;">Pre-Screening for [Deal]</h2>
+          <p style="margin-bottom: 20px;">Akses welcomes you to our AI AVATAR Pre-Screening. We will guide you through the entire process. Click the link below to start your deal with us.</p>
+          <div style="text-align: center;">
+            <a href="https://originator.akses.ai/prescreening/deal-id" style="display: inline-block; background-color: #4a2b87; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Start Pre-Screening Process</a>
+          </div>
+          <p style="margin-top: 20px; font-size: 14px; color: #666;">If you have any questions, please don't hesitate to contact us at support@sixpoint.com</p>
+        </div>
+        <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
+          <p>© 2025 SixPoint Partners. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+  };
 
-  // Generate HTML email preview
-  const generateEmailPreview = (deal: Deal) => {
-    const emailHtml = `
+  // Function to generate email template for a specific deal
+  const generateDealEmailTemplate = (deal: Deal) => {
+    return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="text-align: center; margin-bottom: 20px;">
           <img src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/purple+logo+new+2025.png" alt="SixPoint Logo" style="width: 150px;">
@@ -92,7 +104,34 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
         </div>
       </div>
     `;
-    setEmailPreview(emailHtml);
+  };
+  
+  // Initialize email preview with default or deal-specific template
+  useEffect(() => {
+    if (deals.length > 0) {
+      // If we have an initialDealId, try to find that deal
+      if (initialDealId) {
+        const selectedDeal = deals.find(d => d.id === initialDealId);
+        if (selectedDeal) {
+          setEmailPreview(generateDealEmailTemplate(selectedDeal));
+          return;
+        }
+      }
+    }
+    
+    // If no match or no initialDealId, use default template
+    setEmailPreview(generateDefaultEmailTemplate());
+  }, [initialDealId, deals]);
+  
+  // Update email template when deal selection changes
+  const handleDealChange = (dealId: string) => {
+    form.setValue("dealId", dealId);
+    const selectedDeal = deals.find(d => d.id === dealId);
+    if (selectedDeal) {
+      setEmailPreview(generateDealEmailTemplate(selectedDeal));
+    } else {
+      setEmailPreview(generateDefaultEmailTemplate());
+    }
   };
 
   // Submit handler
@@ -146,7 +185,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                   <div className="space-y-2">
                     <Label htmlFor="dealId">Select Deal</Label>
                     <Select 
-                      onValueChange={(value) => form.setValue("dealId", value)}
+                      onValueChange={(value) => handleDealChange(value)}
                       defaultValue={form.getValues("dealId")}
                     >
                       <SelectTrigger className="text-white bg-dark-surface border-gray-700">
@@ -214,24 +253,45 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
 
           <div className="col-span-1 lg:col-span-3">
             <Card className="bg-dark-surface">
-              <CardHeader>
-                <CardTitle>Email Preview</CardTitle>
-                <CardDescription>
-                  Preview of the pre-screening email that will be sent
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Email Preview</CardTitle>
+                  <CardDescription>
+                    Preview of the pre-screening email that will be sent
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEmailPreview(!showEmailPreview)}
+                >
+                  {showEmailPreview ? (
+                    <>
+                      <EyeOff className="h-4 w-4 mr-2" />
+                      Hide Preview
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Show Preview
+                    </>
+                  )}
+                </Button>
               </CardHeader>
-              <CardContent className="border border-white/10 rounded-md p-4 bg-white text-black h-[600px] overflow-auto">
-                {emailPreview ? (
-                  <div dangerouslySetInnerHTML={{ __html: emailPreview }} />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-dark">
-                    <div className="text-center">
-                      <AlertCircle className="mx-auto h-12 w-12 mb-2 opacity-30" />
-                      <p>Select a deal to preview the email</p>
+              {showEmailPreview && (
+                <CardContent className="border border-white/10 rounded-md p-4 bg-white text-black h-[600px] overflow-auto">
+                  {emailPreview ? (
+                    <div dangerouslySetInnerHTML={{ __html: emailPreview }} />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-dark">
+                      <div className="text-center">
+                        <AlertCircle className="mx-auto h-12 w-12 mb-2 opacity-30" />
+                        <p>Email template preview</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
+                  )}
+                </CardContent>
+              )}
             </Card>
           </div>
         </div>
