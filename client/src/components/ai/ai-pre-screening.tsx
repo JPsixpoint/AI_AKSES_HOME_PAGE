@@ -57,7 +57,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   });
 
   // Fetch deals for dropdown
-  const { data: deals = [] } = useQuery({
+  const { data: deals = [] } = useQuery<Deal[]>({
     queryKey: ["/api/deals"],
   });
   
@@ -65,7 +65,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   useEffect(() => {
     const dealId = form.watch("dealId");
     if (dealId) {
-      const selectedDeal = deals.find((d: Deal) => d.id === dealId);
+      const selectedDeal = deals.find((d) => d.id === dealId);
       if (selectedDeal) {
         generateEmailPreview(selectedDeal);
       }
@@ -105,10 +105,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
         emailContent: emailPreview
       };
       
-      return await apiRequest("/api/prescreening/send", {
-        method: "POST",
-        data: requestData
-      });
+      return await apiRequest("POST", "/api/prescreening/send", requestData);
     },
     onSuccess: () => {
       toast({
@@ -156,7 +153,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                         <SelectValue placeholder="Select a deal" />
                       </SelectTrigger>
                       <SelectContent className="bg-dark-lighter">
-                        {deals.map((deal: Deal) => (
+                        {deals.map((deal) => (
                           <SelectItem key={deal.id} value={deal.id}>
                             {deal.name}
                           </SelectItem>
@@ -249,8 +246,8 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
             <CardContent>
               <div className="space-y-4">
                 {deals
-                  .filter((deal: any) => deal.aiScreening && deal.aiScreening.length > 0)
-                  .map((deal: any) => (
+                  .filter((deal) => deal.aiScreening && deal.aiScreening.length > 0)
+                  .map((deal) => (
                     <div key={deal.id} className="border border-white/10 rounded-md p-4">
                       <div className="flex justify-between items-start">
                         <div>
@@ -307,7 +304,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                     </div>
                   ))}
                   
-                {(!deals.some((deal: any) => deal.aiScreening && deal.aiScreening.length > 0)) && (
+                {(!deals.some((deal) => deal.aiScreening && deal.aiScreening.length > 0)) && (
                   <div className="text-center py-8 text-muted-foreground">
                     <AlertCircle className="mx-auto h-12 w-12 mb-2 opacity-30" />
                     <p>No active pre-screening processes found</p>
