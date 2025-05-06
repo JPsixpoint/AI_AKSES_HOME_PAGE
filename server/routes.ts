@@ -404,7 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Send email using Resend
         const emailResult = await resend.emails.send({
-          from: 'AKSES AI <prescreening@akses-ai.resend.dev>',
+          from: 'Akses AI <onboarding@resend.dev>',
           to: recipientEmails,
           subject: `Pre-Screening Invitation: ${deal.name || 'Deal'}`,
           html: emailContent,
@@ -426,15 +426,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           recipients: recipientEmails,
           dealId,
           dealName: deal.name,
-          emailId: emailResult.id
+          emailResult
         });
-      } catch (emailError) {
+      } catch (emailError: any) {
         console.error('Error sending email with Resend:', emailError);
         
         // Update the screening entry status to error
         const index = aiScreeningData.length - 1;
         aiScreeningData[index].status = 'error';
-        aiScreeningData[index].error = emailError.message || 'Email sending failed';
+        aiScreeningData[index].error = emailError?.message || 'Email sending failed';
         
         // Update the deal with the error status
         await pool.query(updateQuery, [JSON.stringify(aiScreeningData), dealId]);
@@ -442,14 +442,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Return error response
         return res.status(500).json({
           message: "Failed to send pre-screening email",
-          error: emailError.message || 'Unknown error',
+          error: emailError?.message || 'Unknown error',
           dealId,
           dealName: deal.name
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in pre-screening process:", error);
-      return res.status(500).json({ message: "Failed to process pre-screening request", error: error.message });
+      return res.status(500).json({ message: "Failed to process pre-screening request", error: error?.message || 'Unknown error' });
     }
   });
   
