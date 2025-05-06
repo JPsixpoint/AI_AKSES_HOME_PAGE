@@ -15,7 +15,11 @@ import {
   Activity,
   CheckSquare,
   Eye,
-  EyeOff
+  EyeOff,
+  Database,
+  CheckCircle,
+  ArrowUp,
+  Mail
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Deal } from "@shared/schema";
@@ -299,83 +303,207 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
           </div>
         </div>
 
-        {/* Active Pre-Screening Processes */}
-        <div className="max-w-4xl mx-auto mt-8 p-4">
+        {/* AI Pre-Screening Canvas View */}
+        <div className="max-w-5xl mx-auto mt-8 p-4">
           <Card className="bg-dark-surface">
             <CardHeader>
-              <CardTitle>Active Pre-Screening Processes</CardTitle>
-              <CardDescription>
-                Monitor the progress of ongoing pre-screening processes
-              </CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Pre-Screening Canvas</CardTitle>
+                  <CardDescription>
+                    Visual overview of all pre-screening processes and their current status
+                  </CardDescription>
+                </div>
+                <Select defaultValue="all">
+                  <SelectTrigger className="w-[180px] text-white bg-dark-surface border-gray-700">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-dark-lighter text-white border border-gray-700 shadow-lg">
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="sent">Email Sent</SelectItem>
+                    <SelectItem value="opened">Email Opened</SelectItem>
+                    <SelectItem value="interacting">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {deals
-                  .filter((deal) => deal.aiScreening && deal.aiScreening.length > 0)
-                  .map((deal) => (
-                    <div key={deal.id} className="border border-white/10 rounded-md p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-lg font-semibold">{deal.name}</h3>
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {deal.aiScreening && deal.aiScreening.map((screening: any, index: number) => {
-                              let badgeVariant: "default" | "secondary" | "outline" | "destructive" = "outline";
-                              let icon = <Clock className="h-3 w-3 mr-1" />;
-                              
-                              if (screening.trackingData.status === "sent") {
-                                badgeVariant = "outline";
-                                icon = <Clock className="h-3 w-3 mr-1" />;
-                              } else if (screening.trackingData.status === "opened") {
-                                badgeVariant = "secondary";
-                                icon = <Activity className="h-3 w-3 mr-1" />;
-                              } else if (screening.trackingData.status === "interacting") {
-                                badgeVariant = "default";
-                                icon = <RefreshCw className="h-3 w-3 mr-1" />;
-                              } else if (screening.trackingData.status === "completed") {
-                                badgeVariant = "default";
-                                icon = <CheckSquare className="h-3 w-3 mr-1" />;
-                              }
-                              
-                              return (
-                                <Badge key={index} variant={badgeVariant} className="flex items-center">
-                                  {icon}
-                                  {screening.recipientEmails[0]}
-                                  <span className="ml-1 text-xs">({screening.trackingData.status})</span>
-                                </Badge>
-                              );
-                            })}
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4 mr-1" /> View Details
-                        </Button>
-                      </div>
-                      
-                      {/* Progress bars for each screening */}
-                      <div className="mt-4 space-y-3">
-                        {deal.aiScreening && deal.aiScreening.map((screening: any, index: number) => (
-                          <div key={index} className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span>{screening.recipientEmails[0]}</span>
-                              <span>{screening.trackingData.progress}% complete</span>
-                            </div>
-                            <Progress value={screening.trackingData.progress} className="h-2" />
-                            <div className="text-xs text-muted-foreground">
-                              Last activity: {new Date(screening.trackingData.lastInteraction).toLocaleString()}
-                            </div>
-                          </div>
-                        ))}
+            <CardContent className="p-6">
+              {deals.some((deal) => deal.aiScreening && deal.aiScreening.length > 0) ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Status Column: Email Sent */}
+                  <div className="flex flex-col">
+                    <div className="bg-purple-900/20 rounded-t-lg p-3 border-b border-white/10">
+                      <div className="flex items-center gap-2">
+                        <Send className="h-4 w-4" />
+                        <h3 className="font-semibold">Email Sent</h3>
+                        <Badge variant="outline" className="ml-auto">
+                          {deals.filter(deal => 
+                            deal.aiScreening?.some(s => 
+                              s.trackingData.status === "sent"
+                            )
+                          ).length}
+                        </Badge>
                       </div>
                     </div>
-                  ))}
-                  
-                {(!deals.some((deal) => deal.aiScreening && deal.aiScreening.length > 0)) && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <AlertCircle className="mx-auto h-12 w-12 mb-2 opacity-30" />
-                    <p>No active pre-screening processes found</p>
+                    <div className="bg-purple-900/10 rounded-b-lg p-3 min-h-[300px] space-y-3">
+                      {deals
+                        .filter(deal => deal.aiScreening?.some(s => s.trackingData.status === "sent"))
+                        .map(deal => (
+                          <div key={deal.id} className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-purple-500 transition-colors">
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-medium text-sm truncate">{deal.name}</h4>
+                              <Badge variant="outline" className="text-xs">
+                                {deal.aiScreening && deal.aiScreening
+                                    .filter(s => s.trackingData.status === "sent")
+                                    .sort((a, b) => new Date(b.trackingData.lastInteraction).getTime() - new Date(a.trackingData.lastInteraction).getTime())
+                                    .map(item => new Date(item.trackingData.lastInteraction).toLocaleDateString())[0]
+                                }
+                              </Badge>
+                            </div>
+                            <div className="mt-2 space-y-2">
+                              {deal.aiScreening && deal.aiScreening
+                                .filter(s => s.trackingData.status === "sent")
+                                .map((screening, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 text-xs text-white/70">
+                                    <Mail className="h-3 w-3" />
+                                    <span className="truncate">{screening.recipientEmails[0]}</span>
+                                  </div>
+                                ))
+                              }
+                            </div>
+                          </div>
+                        ))
+                      }
+                      {!deals.some(deal => deal.aiScreening?.some(s => s.trackingData.status === "sent")) && (
+                        <div className="flex flex-col items-center justify-center h-full text-white/50">
+                          <Send className="h-8 w-8 mb-2 opacity-30" />
+                          <p className="text-sm">No emails sent</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
+                  
+                  {/* Status Column: Lead Enrichment */}
+                  <div className="flex flex-col">
+                    <div className="bg-blue-900/20 rounded-t-lg p-3 border-b border-white/10">
+                      <div className="flex items-center gap-2">
+                        <Database className="h-4 w-4" />
+                        <h3 className="font-semibold">Lead Enrichment</h3>
+                        <Badge variant="outline" className="ml-auto">
+                          {deals.filter(deal => 
+                            deal.aiScreening?.some(s => 
+                              s.trackingData.status === "opened" || s.trackingData.status === "interacting"
+                            )
+                          ).length}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="bg-blue-900/10 rounded-b-lg p-3 min-h-[300px] space-y-3">
+                      {deals
+                        .filter(deal => deal.aiScreening?.some(s => s.trackingData.status === "opened" || s.trackingData.status === "interacting"))
+                        .map(deal => (
+                          <div key={deal.id} className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-blue-500 transition-colors">
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-medium text-sm truncate">{deal.name}</h4>
+                              <Badge variant="secondary" className="text-xs">
+                                {deal.aiScreening && deal.aiScreening
+                                    .filter(s => s.trackingData.status === "opened" || s.trackingData.status === "interacting")
+                                    .map(s => s.trackingData.progress)
+                                    .length > 0 ? 
+                                      Math.max(
+                                        ...deal.aiScreening
+                                          .filter(s => s.trackingData.status === "opened" || s.trackingData.status === "interacting")
+                                          .map(s => s.trackingData.progress)
+                                      ) : 0
+                                }%
+                              </Badge>
+                            </div>
+                            <div className="mt-2 space-y-2">
+                              {deal.aiScreening && deal.aiScreening
+                                .filter(s => s.trackingData.status === "opened" || s.trackingData.status === "interacting")
+                                .map((screening, idx) => (
+                                  <div key={idx} className="space-y-1">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-white/70 truncate">{screening.recipientEmails[0]}</span>
+                                      <span className="text-white/70">{screening.trackingData.status}</span>
+                                    </div>
+                                    <Progress value={screening.trackingData.progress} className="h-1" />
+                                  </div>
+                                ))
+                              }
+                            </div>
+                          </div>
+                        ))
+                      }
+                      {!deals.some(deal => deal.aiScreening?.some(s => s.trackingData.status === "opened" || s.trackingData.status === "interacting")) && (
+                        <div className="flex flex-col items-center justify-center h-full text-white/50">
+                          <Database className="h-8 w-8 mb-2 opacity-30" />
+                          <p className="text-sm">No leads in progress</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Status Column: Completed */}
+                  <div className="flex flex-col">
+                    <div className="bg-green-900/20 rounded-t-lg p-3 border-b border-white/10">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        <h3 className="font-semibold">Completed</h3>
+                        <Badge variant="outline" className="ml-auto">
+                          {deals.filter(deal => 
+                            deal.aiScreening?.some(s => 
+                              s.trackingData.status === "completed"
+                            )
+                          ).length}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="bg-green-900/10 rounded-b-lg p-3 min-h-[300px] space-y-3">
+                      {deals
+                        .filter(deal => deal.aiScreening?.some(s => s.trackingData.status === "completed"))
+                        .map(deal => (
+                          <div key={deal.id} className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-green-500 transition-colors">
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-medium text-sm truncate">{deal.name}</h4>
+                              <Badge variant="default" className="text-xs bg-green-600 hover:bg-green-700">100%</Badge>
+                            </div>
+                            <div className="mt-2 space-y-2">
+                              {deal.aiScreening && deal.aiScreening
+                                .filter(s => s.trackingData.status === "completed")
+                                .map((screening, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 text-xs text-white/70">
+                                    <CheckSquare className="h-3 w-3 text-green-400" />
+                                    <span className="truncate">{screening.recipientEmails[0]}</span>
+                                    <span className="text-xs ml-auto">{new Date(screening.trackingData.lastInteraction).toLocaleDateString()}</span>
+                                  </div>
+                                ))
+                              }
+                            </div>
+                          </div>
+                        ))
+                      }
+                      {!deals.some(deal => deal.aiScreening?.some(s => s.trackingData.status === "completed")) && (
+                        <div className="flex flex-col items-center justify-center h-full text-white/50">
+                          <CheckCircle className="h-8 w-8 mb-2 opacity-30" />
+                          <p className="text-sm">No completed screenings</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-white/60">
+                  <CheckSquare className="h-16 w-16 mb-4 opacity-20" />
+                  <h3 className="text-lg font-medium mb-2">No Pre-Screening Processes Found</h3>
+                  <p className="max-w-md text-center mb-6">Start a new pre-screening process by selecting a deal and entering recipient emails.</p>
+                  <Button variant="outline" size="sm" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                    <ArrowUp className="h-4 w-4 mr-2" />
+                    Go to Pre-Screening Form
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
