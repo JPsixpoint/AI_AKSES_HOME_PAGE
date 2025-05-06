@@ -36,6 +36,18 @@ export async function parseAIResponse(content: string): Promise<{
   message?: string;
   followUpQuestions?: string[];
 }> {
+  // Check for "send email to" pattern in the content
+  const emailRegex = /(?:send|forward|resend)\s*(?:that|this|an|the)?\s*(?:email|screening|pre-screening|prescreening)\s*(?:to|for)\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
+  const emailMatch = content.match(emailRegex);
+  
+  if (emailMatch && emailMatch[1]) {
+    return {
+      type: "send_additional_email",
+      data: { email: emailMatch[1].trim() },
+      message: `I'll send the pre-screening email to ${emailMatch[1].trim()}.`
+    };
+  }
+  
   try {
     // First try to find a code block with JSON
     const match = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);

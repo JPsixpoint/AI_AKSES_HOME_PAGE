@@ -262,6 +262,63 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         setAIStatus("listening");
         return;
+      } else if (parsedResponse.type === "send_additional_email") {
+        // Handle request to send additional email
+        const additionalEmail = parsedResponse.data?.email;
+        
+        if (additionalEmail) {
+          console.log("Sending additional email to:", additionalEmail);
+          
+          // Check if we have deal info stored in window
+          if (window.prescreeningDealInfo?.dealId) {
+            const dealId = window.prescreeningDealInfo.dealId;
+            const dealName = window.prescreeningDealInfo.dealName;
+            
+            // Open pre-screening tab and set email
+            try {
+              if (window.openPrescreeningTab) {
+                window.openPrescreeningTab(dealId);
+                // Set the email after a short delay to ensure the tab is open
+                setTimeout(() => {
+                  if (window.setPreScreeningEmails) {
+                    window.setPreScreeningEmails(additionalEmail);
+                    console.log("Set additional pre-screening email:", additionalEmail);
+                  }
+                }, 500);
+              }
+              
+              // Add message to confirm
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: "assistant",
+                  content: parsedResponse.message || `I'm sending the pre-screening email to ${additionalEmail}. You can track this in the AI Pre-Screening tab.`,
+                },
+              ]);
+            } catch (error) {
+              console.error("Error setting additional email:", error);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: "assistant",
+                  content: "I couldn't send the additional email. Please try opening the AI Pre-Screening tab manually and entering the email address there.",
+                },
+              ]);
+            }
+          } else {
+            // No deal info stored
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: "I need to know which deal you want to send the pre-screening email for. Please start by saying 'Start AI Pre-Screening on [Deal Name]'.",
+              },
+            ]);
+          }
+          
+          setAIStatus("listening");
+          return;
+        }
       } else if (parsedResponse.type === "start_prescreening") {
         console.log("Handling start_prescreening request:", parsedResponse.data);
         
