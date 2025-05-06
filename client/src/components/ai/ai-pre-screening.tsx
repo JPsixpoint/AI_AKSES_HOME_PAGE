@@ -234,12 +234,12 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                     <SelectTrigger className="w-full sm:w-[180px] text-white bg-dark-surface border-gray-700">
                       <SelectValue placeholder="Filter by status" />
                     </SelectTrigger>
-                    <SelectContent className="bg-dark-lighter text-white border border-gray-700 shadow-lg">
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="sent">Email Sent</SelectItem>
-                      <SelectItem value="opened">Email Opened</SelectItem>
-                      <SelectItem value="interacting">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
+                    <SelectContent className="bg-dark-surface text-white border border-gray-700 shadow-lg">
+                      <SelectItem value="all" className="text-white hover:bg-purple-700 focus:bg-purple-700">All Statuses</SelectItem>
+                      <SelectItem value="sent" className="text-white hover:bg-purple-700 focus:bg-purple-700">Email Sent</SelectItem>
+                      <SelectItem value="opened" className="text-white hover:bg-purple-700 focus:bg-purple-700">Email Opened</SelectItem>
+                      <SelectItem value="interacting" className="text-white hover:bg-purple-700 focus:bg-purple-700">In Progress</SelectItem>
+                      <SelectItem value="completed" className="text-white hover:bg-purple-700 focus:bg-purple-700">Completed</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button 
@@ -326,21 +326,18 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                             <div className="flex justify-between items-start">
                               <h4 className="font-medium text-sm truncate">{deal.name}</h4>
                               <Badge variant="secondary" className="text-xs">
-                                {deal.aiScreening && deal.aiScreening
-                                    .filter(s => s.trackingData.status === "opened" || s.trackingData.status === "interacting")
+                                {getScreeningWithStatus(deal, ["opened", "interacting"])
                                     .map(s => s.trackingData.progress)
                                     .length > 0 ? 
                                       Math.max(
-                                        ...deal.aiScreening
-                                          .filter(s => s.trackingData.status === "opened" || s.trackingData.status === "interacting")
+                                        ...getScreeningWithStatus(deal, ["opened", "interacting"])
                                           .map(s => s.trackingData.progress)
                                       ) : 0
                                 }%
                               </Badge>
                             </div>
                             <div className="mt-2 space-y-2">
-                              {deal.aiScreening && deal.aiScreening
-                                .filter(s => s.trackingData.status === "opened" || s.trackingData.status === "interacting")
+                              {getScreeningWithStatus(deal, ["opened", "interacting"])
                                 .map((screening, idx) => (
                                   <div key={idx} className="space-y-1">
                                     <div className="flex items-center justify-between text-xs">
@@ -355,7 +352,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                           </div>
                         ))
                       }
-                      {!deals.some(deal => deal.aiScreening?.some(s => s.trackingData.status === "opened" || s.trackingData.status === "interacting")) && (
+                      {!deals.some(deal => hasScreeningWithStatus(deal, ["opened", "interacting"])) && (
                         <div className="flex flex-col items-center justify-center h-full text-white/50">
                           <Database className="h-8 w-8 mb-2 opacity-30" />
                           <p className="text-sm">No leads in progress</p>
@@ -371,17 +368,13 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                         <CheckCircle className="h-4 w-4" />
                         <h3 className="font-semibold">Completed</h3>
                         <Badge variant="outline" className="ml-auto">
-                          {deals.filter(deal => 
-                            deal.aiScreening?.some(s => 
-                              s.trackingData.status === "completed"
-                            )
-                          ).length}
+                          {deals.filter(deal => hasScreeningWithStatus(deal, "completed")).length}
                         </Badge>
                       </div>
                     </div>
                     <div className="bg-green-900/10 rounded-b-lg p-3 min-h-[300px] space-y-3">
                       {deals
-                        .filter(deal => deal.aiScreening?.some(s => s.trackingData.status === "completed"))
+                        .filter(deal => hasScreeningWithStatus(deal, "completed"))
                         .map(deal => (
                           <div key={deal.id} className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-green-500 transition-colors">
                             <div className="flex justify-between items-start">
@@ -447,7 +440,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                 <SelectTrigger className="w-full text-white bg-dark-surface border-gray-700">
                   <SelectValue placeholder="Select a company" className="text-white" />
                 </SelectTrigger>
-                <SelectContent className="bg-dark-lighter text-white border border-gray-700 shadow-lg">
+                <SelectContent className="bg-dark-surface text-white border border-gray-700 shadow-lg">
                   {deals.map((deal) => (
                     <SelectItem key={deal.id} value={deal.id} className="text-white hover:bg-purple-700 focus:bg-purple-700">
                       {deal.name}

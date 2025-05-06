@@ -1,16 +1,30 @@
 /* Global Select Component Overrides */
-.select-content {
+.select-content,
+.SelectContent {
   background-color: #1e1e2d !important;
   border: 1px solid #3a3a4a !important;
   color: white !important;
 }
 
-.select-item {
+.select-item,
+.SelectItem {
   background-color: #1e1e2d !important;
   color: white !important;
 }
 
-.select-item:hover, .select-item:focus {
+.select-item:hover, .select-item:focus,
+.SelectItem:hover, .SelectItem:focus,
+.SelectItem[data-highlighted] {
   background-color: #4a2b87 !important;
   color: white !important;
+}
+
+/* Fix transparent dropdown background issue */
+[cmdk-item] {
+  background-color: #1e1e2d !important;
+  color: white !important;
+}
+
+[cmdk-item][data-selected=true] {
+  background-color: #4a2b87 !important;
 }
