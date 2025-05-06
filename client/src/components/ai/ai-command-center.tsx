@@ -435,11 +435,22 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     } catch (error) {
       console.error(`Error executing ${actionType}:`, error);
       
+      // Provide more helpful error messages depending on the action type
+      let errorMessage = `I couldn't complete the requested action. Please try again or check your information.`;
+      
+      if (actionType === "start_prescreening") {
+        errorMessage = "I couldn't start the pre-screening process. Please make sure you've selected a valid deal and try again with a command like 'Start pre-screening for [deal name]'.";
+      } else if (actionType === "create_deal") {
+        errorMessage = "I couldn't create the deal. Please check that all required information is provided and try again.";
+      } else if (actionType === "update_deal") {
+        errorMessage = "I couldn't update the deal. Please check that you're specifying a valid deal ID and try again.";
+      }
+      
       setMessages((prev) => [
         ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
         {
           role: "assistant",
-          content: `I couldn't complete the requested action. Please try again or check your information.`,
+          content: errorMessage,
         }
       ]);
       
