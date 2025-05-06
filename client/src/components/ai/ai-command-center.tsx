@@ -207,15 +207,34 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         setAIStatus("listening");
         return;
-      } else if (
-        parsedResponse.type === "start_prescreening" &&
-        parsedResponse.data?.dealId
-      ) {
-        // Handle starting pre-screening process
-        const dealId = parsedResponse.data.dealId.toString().replace("#", "");
-        const deal = deals.find(d => d.id === dealId);
+      } else if (parsedResponse.type === "start_prescreening") {
+        console.log("Handling start_prescreening request:", parsedResponse.data);
+        
+        // Check if we have a dealId or dealName in the parsed response
+        let deal;
+        
+        if (parsedResponse.data?.dealId) {
+          // Try to find by ID first
+          const dealId = parsedResponse.data.dealId.toString().replace("#", "");
+          deal = deals.find(d => d.id === dealId);
+          console.log("Looking for deal by ID:", dealId, deal ? "found" : "not found");
+        } 
+        
+        // If no deal found by ID and we have a name, try to find by name
+        if (!deal && parsedResponse.data?.dealName) {
+          const dealName = parsedResponse.data.dealName.toLowerCase();
+          deal = deals.find(d => d.name?.toLowerCase().includes(dealName));
+          console.log("Looking for deal by name:", parsedResponse.data.dealName, deal ? "found" : "not found");
+        }
+        
+        // Try to find deal containing 'monet' in the name if all else fails
+        if (!deal && (parsedResponse.data?.dealName || '').toLowerCase().includes('monet')) {
+          deal = deals.find(d => d.name?.toLowerCase().includes('monet'));
+          console.log("Fallback search for 'monet':", deal ? "found" : "not found");
+        }
         
         if (deal) {
+          console.log("Found deal for pre-screening:", deal.id, deal.name);
           const confirmationMessage = `Do you want to start the Pre-Screening process for ${deal.name || 'this deal'}?`;
           
           setMessages((prev) => [
@@ -225,17 +244,19 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
               content: "I need your confirmation before starting the Pre-Screening process.",
               pendingAction: {
                 type: "start_prescreening",
-                data: { dealId, dealName: deal.name },
+                data: { dealId: deal.id, dealName: deal.name },
                 confirmationMessage
               }
             }
           ]);
         } else {
+          // If we have a search term but couldn't find a match
+          const searchTerm = parsedResponse.data?.dealName || parsedResponse.data?.dealId || "the specified deal";
           setMessages((prev) => [
             ...prev,
             {
               role: "assistant",
-              content: `I couldn't find a deal with ID ${dealId}. Please check the ID and try again.`,
+              content: `I couldn't find a deal with the name ${searchTerm}. Please check the name and try again, or create a new deal first.`,
             }
           ]);
         }
@@ -412,8 +433,10 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         // Show AI Pre-Screening in a new tab
         const { dealId, dealName } = actionData;
         
+        console.log("Confirming pre-screening action for deal:", dealId, dealName);
+        console.log("Window openPrescreeningTab function exists:", !!(window as any).openPrescreeningTab);
+        
         // Here we would typically communicate with the TabsSystem to open a new tab
-        // For this prototype, we'll inform the user that they need to open the AI Pre-Screening tab manually
         setMessages((prev) => [
           ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
           {
@@ -433,13 +456,23 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           description: `Pre-Screening process initiated for ${dealName || 'selected deal'}.`,
         });
         
-        // Open the AI Pre-Screening tab via the exposed window method
-        // This is a global method exposed by the TabsSystem component
-        if ((window as any).openPrescreeningTab) {
-          (window as any).openPrescreeningTab(dealId);
-        } else if (onDealSelect) {
-          // Fallback to just selecting the deal if the tab function isn't available
-          onDealSelect(dealId);
+        // Try to open the AI Pre-Screening tab via the exposed window method
+        try {
+          // This is a global method exposed by the TabsSystem component
+          console.log("Attempting to open pre-screening tab for deal:", dealId);
+          if ((window as any).openPrescreeningTab) {
+            (window as any).openPrescreeningTab(dealId);
+            console.log("Called openPrescreeningTab successfully");
+          } else {
+            console.error("openPrescreeningTab method not found on window object");
+            // Fallback to just selecting the deal if the tab function isn't available
+            if (onDealSelect) {
+              onDealSelect(dealId);
+              console.log("Used onDealSelect fallback");
+            }
+          }
+        } catch (error) {
+          console.error("Error opening prescreening tab:", error);
         }
       }
       
