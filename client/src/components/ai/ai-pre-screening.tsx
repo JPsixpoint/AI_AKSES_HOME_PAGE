@@ -181,7 +181,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
             <CardHeader>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <CardTitle>Pre-Screening Canvas</CardTitle>
+                  <CardTitle>AI-Driven Pre-Screening</CardTitle>
                   <CardDescription>
                     Visual overview of all pre-screening processes and their current status
                   </CardDescription>
@@ -210,7 +210,13 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              {deals.some((deal) => deal.aiScreening && deal.aiScreening.length > 0) ? (
+              {/* Debug info to see data structure */}
+              <div className="text-xs text-white/50 mb-4">
+                Total deals: {deals.length}, 
+                Deals with aiScreening: {deals.filter(d => d.ai_screening || d.aiScreening).length}, 
+                Deals with non-empty aiScreening: {deals.filter(d => (d.ai_screening && d.ai_screening.length > 0) || (d.aiScreening && d.aiScreening.length > 0)).length}
+              </div>
+              {deals.some((deal) => (deal.ai_screening && deal.ai_screening.length > 0) || (deal.aiScreening && deal.aiScreening.length > 0)) ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Status Column: Email Sent */}
                   <div className="flex flex-col">
@@ -220,9 +226,8 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                         <h3 className="font-semibold">Email Sent</h3>
                         <Badge variant="outline" className="ml-auto">
                           {deals.filter(deal => 
-                            deal.aiScreening?.some(s => 
-                              s.trackingData.status === "sent"
-                            )
+                            (deal.aiScreening?.some(s => s.trackingData.status === "sent")) ||
+                            (deal.ai_screening?.some(s => s.trackingData.status === "sent"))
                           ).length}
                         </Badge>
                       </div>
