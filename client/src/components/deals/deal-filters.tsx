@@ -29,27 +29,27 @@ export function DealFilters({
       </Button>
       
       <Button
-        variant={selectedStatus === "Due Diligence" ? "default" : "outline"}
-        className={`px-4 py-2 ${selectedStatus === "Due Diligence" ? "bg-primary text-white" : "bg-dark-surface text-muted-foreground"} rounded-lg text-sm hover:bg-dark-lighter transition-colors`}
-        onClick={() => onStatusChange("Due Diligence")}
+        variant={selectedStatus === "Due Diligence & U/W" ? "default" : "outline"}
+        className={`px-4 py-2 ${selectedStatus === "Due Diligence & U/W" ? "bg-primary text-white" : "bg-dark-surface text-muted-foreground"} rounded-lg text-sm hover:bg-dark-lighter transition-colors`}
+        onClick={() => onStatusChange("Due Diligence & U/W")}
       >
         Due Diligence ({dueDiligenceCount})
       </Button>
       
       <Button
-        variant={selectedStatus === "Prescreening" ? "default" : "outline"}
-        className={`px-4 py-2 ${selectedStatus === "Prescreening" ? "bg-primary text-white" : "bg-dark-surface text-muted-foreground"} rounded-lg text-sm hover:bg-dark-lighter transition-colors`}
-        onClick={() => onStatusChange("Prescreening")}
+        variant={selectedStatus === "Pre-Screening" ? "default" : "outline"}
+        className={`px-4 py-2 ${selectedStatus === "Pre-Screening" ? "bg-primary text-white" : "bg-dark-surface text-muted-foreground"} rounded-lg text-sm hover:bg-dark-lighter transition-colors`}
+        onClick={() => onStatusChange("Pre-Screening")}
       >
-        Prescreening ({prescreeningCount})
+        Pre-Screening ({prescreeningCount})
       </Button>
       
       <Button
-        variant={selectedStatus === "Indicative Proposal" ? "default" : "outline"}
-        className={`px-4 py-2 ${selectedStatus === "Indicative Proposal" ? "bg-primary text-white" : "bg-dark-surface text-muted-foreground"} rounded-lg text-sm hover:bg-dark-lighter transition-colors`}
-        onClick={() => onStatusChange("Indicative Proposal")}
+        variant={selectedStatus === "Term Sheet Negotiation" ? "default" : "outline"}
+        className={`px-4 py-2 ${selectedStatus === "Term Sheet Negotiation" ? "bg-primary text-white" : "bg-dark-surface text-muted-foreground"} rounded-lg text-sm hover:bg-dark-lighter transition-colors`}
+        onClick={() => onStatusChange("Term Sheet Negotiation")}
       >
-        Indicative Proposal ({indicativeProposalCount})
+        Term Sheet ({indicativeProposalCount})
       </Button>
     </div>
   );

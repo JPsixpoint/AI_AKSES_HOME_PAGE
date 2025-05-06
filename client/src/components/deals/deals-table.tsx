@@ -11,12 +11,27 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreHorizontalIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Deal } from "@shared/schema";
+// Import the PipelineDeal interface from deals-pipeline
+interface PipelineDeal {
+  id: string;
+  name: string | null;
+  priority: string | null;
+  country: string | null;
+  lead: string | null;
+  credit_hub: string | null;
+  stage: string;
+  updates: any[] | null;
+  members: string[] | null;
+  pre_screening: Record<string, any> | null;
+  created_at?: Date | null;
+  updated_at?: Date | null;
+  created_by?: number | null;
+}
 import { formatTimeAgo } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface DealsTableProps {
-  deals: Deal[];
+  deals: PipelineDeal[];
   isLoading: boolean;
   selectedDealId?: string | null;
   onRowClick?: (dealId: string) => void;
@@ -119,7 +134,7 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: Dea
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm">{deal.country || 'N/A'}</TableCell>
-                    <TableCell className="px-4 py-3 text-sm">{deal.creditHub || 'N/A'}</TableCell>
+                    <TableCell className="px-4 py-3 text-sm">{deal.credit_hub || 'N/A'}</TableCell>
                     <TableCell className="px-4 py-3 text-sm">{deal.lead || 'N/A'}</TableCell>
                     <TableCell className="px-4 py-3">
                       <Badge variant="outline" className={`px-2 py-1 rounded text-xs ${getStageStyles(deal.stage)}`}>
@@ -127,7 +142,7 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: Dea
                       </Badge>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-xs text-muted-foreground">
-                      {deal.updatedAt ? formatTimeAgo(deal.updatedAt) : 'N/A'}
+                      {deal.updated_at ? formatTimeAgo(new Date(deal.updated_at)) : 'N/A'}
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground transition-colors">

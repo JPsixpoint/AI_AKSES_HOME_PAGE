@@ -4,8 +4,23 @@ import { DollarSign, Briefcase, Activity, CheckCircle } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
 
+// Define the shape of the statistics response
+interface DealStatisticsResponse {
+  totalDeals: number;
+  stageStats: Record<string, number>;
+  creditHubStats: Record<string, number>;
+  dueDiligenceCount: number;
+  prescreeningCount: number;
+  leadCount: number;
+  closedCount: number;
+  valueChangePercent: number;
+  newDealsThisMonth: number;
+  dueDiligenceChangeWeekly: number;
+  completedThisQuarter: number;
+}
+
 export function DealStatistics() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading } = useQuery<DealStatisticsResponse>({
     queryKey: ['/api/deals/statistics'],
   });
   
@@ -70,15 +85,18 @@ export function DealStatistics() {
   }
   
   // Default values if stats are missing
-  const defaultStats = {
-    totalDealValue: 32500000,
-    activeDealCount: 15,
-    dueDiligenceCount: 3,
-    completedDealCount: 8,
-    valueChangePercent: 12,
-    newDealsThisMonth: 3,
+  const defaultStats: DealStatisticsResponse = {
+    totalDeals: 0,
+    stageStats: {},
+    creditHubStats: {},
+    leadCount: 0,
+    dueDiligenceCount: 0,
+    closedCount: 0,
+    prescreeningCount: 0,
+    valueChangePercent: 0,
+    newDealsThisMonth: 0,
     dueDiligenceChangeWeekly: 0,
-    completedThisQuarter: 2
+    completedThisQuarter: 0
   };
   
   const displayStats = stats || defaultStats;
@@ -86,8 +104,8 @@ export function DealStatistics() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
       <StatCard
-        title="Total Deal Value"
-        value={formatCurrency(displayStats.totalDealValue)}
+        title="Total Deals"
+        value={displayStats.totalDeals}
         change={`${displayStats.valueChangePercent}%`}
         changeText="vs last month"
         icon={<DollarSign className="h-4 w-4 text-success" />}
@@ -95,8 +113,8 @@ export function DealStatistics() {
       />
       
       <StatCard
-        title="Active Deals"
-        value={displayStats.activeDealCount}
+        title="Leads"
+        value={displayStats.leadCount}
         change={displayStats.newDealsThisMonth}
         changeText="new this month"
         icon={<Briefcase className="h-4 w-4 text-primary-light" />}
@@ -113,8 +131,8 @@ export function DealStatistics() {
       />
       
       <StatCard
-        title="Completed Deals"
-        value={displayStats.completedDealCount}
+        title="Pre-Screening"
+        value={displayStats.prescreeningCount}
         change={displayStats.completedThisQuarter}
         changeText="this quarter"
         icon={<CheckCircle className="h-4 w-4 text-success" />}
