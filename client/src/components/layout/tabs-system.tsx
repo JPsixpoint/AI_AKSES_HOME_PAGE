@@ -115,7 +115,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* Tabs bar - more prominent and separated from content */}
       <div className="sticky top-0 z-10 flex items-center bg-dark-lighter border-b border-dark overflow-x-auto shadow-sm mb-4">
         {tabs.map((tab) => (
@@ -186,24 +186,22 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
         ))}
       </div>
       
-      {/* New tab fullscreen view */}
+      {/* New tab drawer/panel */}
       {isNewTabDialogOpen && (
-        <div className="fixed inset-0 z-50 bg-dark bg-opacity-90 flex flex-col">
-          <div className="bg-dark-lighter p-4 border-b border-dark">
-            <div className="container mx-auto flex justify-between items-center">
-              <h2 className="text-lg font-medium">New tab</h2>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setIsNewTabDialogOpen(false)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X size={18} />
-              </Button>
-            </div>
+        <div className="absolute top-[48px] right-0 bottom-0 left-0 z-50 bg-dark-surface border-t border-dark flex flex-col overflow-hidden">
+          <div className="p-3 border-b border-dark flex justify-between items-center">
+            <h2 className="text-base font-medium">New tab</h2>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsNewTabDialogOpen(false)}
+              className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+            >
+              <X size={16} />
+            </Button>
           </div>
           
-          <div className="container mx-auto px-4 py-6 flex-1 overflow-auto">
+          <div className="p-4 flex-1 overflow-auto">
             <div className="max-w-3xl mx-auto">
               {/* Search input */}
               <div className="relative mb-6">
