@@ -193,9 +193,9 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                       <SelectTrigger className="text-white bg-dark-surface border-gray-700">
                         <SelectValue placeholder="Select a deal" className="text-white" />
                       </SelectTrigger>
-                      <SelectContent className="bg-dark-lighter text-white border border-gray-700 shadow-lg">
+                      <SelectContent className="bg-dark-lighter text-white border border-gray-700 shadow-lg !bg-dark-surface select-content">
                         {deals.map((deal) => (
-                          <SelectItem key={deal.id} value={deal.id} className="text-white hover:bg-dark-surface focus:bg-dark-surface focus:text-white">
+                          <SelectItem key={deal.id} value={deal.id} className="text-white hover:bg-purple-700 focus:bg-purple-700 focus:text-white !bg-dark-surface">
                             {deal.name}
                           </SelectItem>
                         ))}
