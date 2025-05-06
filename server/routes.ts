@@ -387,14 +387,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               // Check if every email in current list exists in the existing list
-              return currentEmailList.every(email => 
-                existingEmailList.some(existingEmail => existingEmail === email)
+              return currentEmailList.every((email: string) => 
+                existingEmailList.some((existingEmail: string) => existingEmail === email)
               );
             });
             
             if (matchingScreenings.length > 0) {
               // This is a resend, set the resend count based on previous entries
-              const maxResendCount = Math.max(...matchingScreenings.map(s => s.resendCount || 0));
+              const resendCounts = matchingScreenings.map(s => typeof s.resendCount === 'number' ? s.resendCount : 0);
+              const maxResendCount = resendCounts.length > 0 ? Math.max(...resendCounts) : 0;
               screeningEntry.resendCount = maxResendCount + 1;
               console.log(`This is a resend (${maxResendCount + 1}) to the same recipients`);
             }
@@ -439,6 +440,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const toEmails = recipientEmails.join(',');
         
         // Send email using Resend with the provided domain and email
+        console.log('Attempting to send email with Resend API:', {
+          from: 'Akses AI <info@rsvp.emfintechconference.com>',
+          to: recipientEmails,
+          subject: `Pre-Screening Invitation: ${deal.name || 'Deal'}`,
+        });
         
         const emailResult = await resend.emails.send({
           from: 'Akses AI <info@rsvp.emfintechconference.com>',

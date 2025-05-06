@@ -85,7 +85,9 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     recipientEmails: string[];
     emailContent: string;
     additionalContext: string;
-    status: "sent" | "not_sent";
+    status: "sent" | "not_sent" | "error";
+    resendCount?: number; // Added to track how many times this email has been resent
+    error?: string; // Added to track email sending errors
     trackingData: {
       status: "sent" | "opened" | "interacting" | "completed" | "abandoned";
       progress: number;
@@ -341,7 +343,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                                   <div key={idx} className="flex items-center gap-2 text-xs text-white/70">
                                     <Mail className="h-3 w-3" />
                                     <span className="truncate">{screening.recipientEmails[0]}</span>
-                                    {screening.resendCount > 0 && (
+                                    {typeof screening.resendCount === 'number' && screening.resendCount > 0 && (
                                       <Badge variant="outline" className="ml-auto text-xs py-0 h-4">
                                         Resent {screening.resendCount}x
                                       </Badge>
