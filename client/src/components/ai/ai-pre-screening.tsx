@@ -234,7 +234,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                     <SelectTrigger className="w-full sm:w-[180px] text-white bg-dark-surface border-gray-700">
                       <SelectValue placeholder="Filter by status" />
                     </SelectTrigger>
-                    <SelectContent className="bg-dark-surface text-white border border-gray-700 shadow-lg">
+                    <SelectContent className="bg-[#121220] text-white border border-gray-700 shadow-lg" style={{ backgroundColor: '#121220', backdropFilter: 'none' }}>
                       <SelectItem value="all" className="text-white hover:bg-purple-700 focus:bg-purple-700">All Statuses</SelectItem>
                       <SelectItem value="sent" className="text-white hover:bg-purple-700 focus:bg-purple-700">Email Sent</SelectItem>
                       <SelectItem value="opened" className="text-white hover:bg-purple-700 focus:bg-purple-700">Email Opened</SelectItem>
@@ -422,7 +422,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
 
       {/* New Pre-Screening Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="bg-dark-surface border-gray-700 text-white max-w-md">
+        <DialogContent className="bg-dark-surface border-gray-700 text-white max-w-md dialog-content-bg">
           <DialogHeader>
             <DialogTitle className="text-center">AI-Driven Pre-Screening</DialogTitle>
             <DialogDescription className="text-center text-gray-400">
@@ -439,7 +439,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                 <SelectTrigger className="w-full text-white bg-dark-surface border-gray-700">
                   <SelectValue placeholder="Select a company" className="text-white" />
                 </SelectTrigger>
-                <SelectContent className="bg-dark-surface text-white border border-gray-700 shadow-lg">
+                <SelectContent className="bg-[#121220] text-white border border-gray-700 shadow-lg" style={{ backgroundColor: '#121220', backdropFilter: 'none' }}>
                   {deals.map((deal) => (
                     <SelectItem key={deal.id} value={deal.id} className="text-white hover:bg-purple-700 focus:bg-purple-700">
                       {deal.name}

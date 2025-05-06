@@ -1,0 +1,36 @@
+/* Global overrides for UI components */
+
+/* SelectContent - Force solid background */
+div[data-radix-popper-content-wrapper],
+div[role="listbox"], 
+.radix-dropdown,
+.radix-select {
+  background-color: #121220 !important;
+  backdrop-filter: none !important;
+}
+
+/* Dropdown menus with full background */
+.SelectContent,
+.ComboboxContent,
+.PopoverContent,
+.DropdownMenuContent,
+.MenubarContent {
+  background-color: #121220 !important;
+  color: white !important;
+  border: 1px solid #3a3a4a !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Command menu and dialog background */
+[cmdk-dialog],
+[cmdk-listbox] {
+  background-color: #121220 !important;
+}
+
+/* Fix any other components with transparency */
+.radix-popup,
+.dialog-content,
+[data-state="open"] > div,
+[data-radix-portal] > div {
+  background-color: #121220 !important;
+}
