@@ -344,7 +344,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           members: [], // JSON array of member strings
           preScreening: {}, // Empty object for pre-screening data
           aiScreening: [], // Empty array for AI screening data
-          createdBy: undefined // Optional created by user ID
+          createdBy: null // Set createdBy to null instead of undefined
         };
         
         console.log("Submitting deal data:", dealData);
