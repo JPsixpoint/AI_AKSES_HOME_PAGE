@@ -13,7 +13,9 @@ import {
   Clock,
   RefreshCw,
   Activity,
-  CheckSquare
+  CheckSquare,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Deal } from "@shared/schema";
