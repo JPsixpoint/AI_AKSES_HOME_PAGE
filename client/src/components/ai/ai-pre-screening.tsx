@@ -481,7 +481,16 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                       {deals
                         .filter(deal => hasScreeningWithStatus(deal, "sent"))
                         .map(deal => (
-                          <div key={deal.id} className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-purple-500 transition-colors">
+                          <div 
+                            key={deal.id} 
+                            className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-purple-500 transition-colors cursor-pointer"
+                            onClick={() => {
+                              const screenings = getScreeningWithStatus(deal, "sent");
+                              if (screenings.length > 0) {
+                                handleDealClick(deal, screenings[0]);
+                              }
+                            }}
+                          >
                             <div className="flex justify-between items-start">
                               <h4 className="font-medium text-sm truncate">{deal.name}</h4>
                               <Badge variant="outline" className="text-xs">
@@ -620,7 +629,16 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                       {deals
                         .filter(deal => hasScreeningWithStatus(deal, "completed"))
                         .map(deal => (
-                          <div key={deal.id} className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-green-500 transition-colors">
+                          <div 
+                            key={deal.id} 
+                            className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-green-500 transition-colors cursor-pointer"
+                            onClick={() => {
+                              const screenings = getScreeningWithStatus(deal, "completed");
+                              if (screenings.length > 0) {
+                                handleDealClick(deal, screenings[0]);
+                              }
+                            }}
+                          >
                             <div className="flex justify-between items-start">
                               <h4 className="font-medium text-sm truncate">{deal.name}</h4>
                               <Badge variant="default" className="text-xs bg-green-600 hover:bg-green-700">100%</Badge>
@@ -669,6 +687,138 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
         </div>
       </div>
 
+      {/* Details Modal */}
+      <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
+        <DialogContent className="bg-dark-surface border-gray-700 text-white max-w-lg dialog-content-bg overflow-y-auto max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle className="text-center">Pre-Screening Timeline</DialogTitle>
+            <DialogDescription className="text-center text-gray-400">
+              {selectedDeal?.name || "Deal"} - Detailed progress tracking
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedDeal && selectedScreening && (
+            <div className="space-y-4 mt-4">
+              <div className="flex justify-between items-start p-3 bg-gray-800/50 rounded-lg">
+                <div className="space-y-1">
+                  <h3 className="font-medium">{selectedDeal.name}</h3>
+                  <p className="text-sm text-gray-400">Recipient: {selectedScreening.recipientEmails[0]}</p>
+                </div>
+                <Badge variant="outline" className="ml-auto">
+                  {(() => {
+                    // Determine the current status based on available events
+                    const events = ["submitted", "progress", "started", "opened", "sent"];
+                    for (const eventType of events) {
+                      const event = getLatestTrackingEvent(selectedScreening, eventType as TrackingEventType);
+                      if (event) {
+                        if (eventType === "submitted") return "Completed";
+                        if (eventType === "progress") {
+                          const percent = event.metadata?.completionPercent || 0;
+                          return `${percent}% Complete`;
+                        }
+                        if (eventType === "started") return "Started";
+                        if (eventType === "opened") return "Viewed";
+                        if (eventType === "sent") return "Sent";
+                      }
+                    }
+                    return "Unknown";
+                  })()}
+                </Badge>
+              </div>
+              
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-400">Timeline</h4>
+                <div className="space-y-3 pl-4 border-l border-gray-700">
+                  {(() => {
+                    // Get all events sorted by timestamp
+                    let events: TrackingEvent[] = [];
+                    
+                    // Handle old format (object with properties)
+                    if (!Array.isArray(selectedScreening.trackingData)) {
+                      // Convert old format to events array
+                      const oldData = selectedScreening.trackingData as any;
+                      if (oldData.status === "sent") {
+                        events.push({
+                          type: "sent",
+                          timestamp: oldData.timestamp || oldData.lastInteraction || selectedScreening.timestamp,
+                          metadata: { status: "sent" }
+                        });
+                      }
+                      if (oldData.status === "opened" || oldData.status === "viewing") {
+                        events.push({
+                          type: "opened",
+                          timestamp: oldData.openedAt || oldData.lastInteraction || new Date().toISOString(),
+                          metadata: { status: oldData.status }
+                        });
+                      }
+                      if (oldData.progress && oldData.progress > 0) {
+                        events.push({
+                          type: "progress",
+                          timestamp: oldData.lastInteraction || new Date().toISOString(),
+                          metadata: { completionPercent: oldData.progress }
+                        });
+                      }
+                      if (oldData.status === "completed") {
+                        events.push({
+                          type: "submitted",
+                          timestamp: oldData.completedAt || oldData.lastInteraction || new Date().toISOString(),
+                          metadata: { status: "completed" }
+                        });
+                      }
+                    } else {
+                      // New format
+                      events = [...selectedScreening.trackingData];
+                    }
+                    
+                    // Sort events chronologically (oldest first)
+                    events.sort((a, b) => 
+                      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                    );
+                    
+                    return events.map((event, idx) => (
+                      <div key={idx} className="relative pb-4">
+                        <div className="absolute -left-[22px] mt-1 h-3 w-3 rounded-full bg-blue-500 border-4 border-gray-800"></div>
+                        <div className="flex flex-col">
+                          <div className="text-xs text-gray-400">
+                            {new Date(event.timestamp).toLocaleString()}
+                          </div>
+                          <div className="font-medium capitalize">
+                            {event.type === "sent" && "Email Sent"}
+                            {event.type === "opened" && "Email Opened"}
+                            {event.type === "started" && "Pre-Screening Started"}
+                            {event.type === "progress" && (
+                              <div className="flex items-center gap-2">
+                                <span>Progress Update: {event.metadata?.completionPercent || 0}%</span>
+                                <Progress value={event.metadata?.completionPercent || 0} className="h-1 w-16" />
+                              </div>
+                            )}
+                            {event.type === "submitted" && "Pre-Screening Completed"}
+                            {event.type === "done" && "Process Finalized"}
+                            {event.type === "error" && "Error Occurred"}
+                          </div>
+                          {event.metadata && event.metadata.message && (
+                            <div className="text-sm text-gray-400 mt-1">{event.metadata.message}</div>
+                          )}
+                          {event.type === "error" && event.metadata && event.metadata.error && (
+                            <div className="text-sm text-red-400 mt-1">{event.metadata.error}</div>
+                          )}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-end mt-4">
+            <Button variant="outline" size="sm" onClick={() => setShowDetailModal(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+            
       {/* New Pre-Screening Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="bg-dark-surface border-gray-700 text-white max-w-md dialog-content-bg">
