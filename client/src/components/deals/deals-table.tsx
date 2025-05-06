@@ -12,14 +12,14 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontalIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Deal } from "@shared/schema";
-import { formatCurrency, formatTimeAgo } from "@/lib/utils";
+import { formatTimeAgo } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface DealsTableProps {
   deals: Deal[];
   isLoading: boolean;
-  selectedDealId?: number | null;
-  onRowClick?: (dealId: number) => void;
+  selectedDealId?: string | null;
+  onRowClick?: (dealId: string) => void;
 }
 
 export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: DealsTableProps) {
@@ -44,20 +44,24 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: Dea
     }
   };
   
-  const getStatusStyles = (status: string) => {
-    switch (status) {
-      case "Due Diligence":
+  const getStageStyles = (stage: string) => {
+    switch (stage) {
+      case "Due Diligence & U/W":
         return "bg-info/20 text-info";
-      case "Prescreening":
+      case "Pre-Screening":
         return "bg-primary-lighter/20 text-primary-lighter";
-      case "Indicative Proposal":
+      case "Term Sheet Negotiation":
         return "bg-warning/20 text-warning";
-      case "Committed":
+      case "Closed - Won":
         return "bg-success/20 text-success";
-      case "Closed":
-        return "bg-success/20 text-success";
-      case "Declined":
+      case "Closed - Lost":
         return "bg-danger/20 text-danger";
+      case "Pass":
+        return "bg-danger/20 text-danger";
+      case "Re-Engage":
+        return "bg-muted/20 text-muted-foreground";
+      case "Lead":
+        return "bg-warning/20 text-warning";
       default:
         return "bg-muted/20 text-muted-foreground";
     }
@@ -71,10 +75,10 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: Dea
             <TableRow>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">ID</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Company</TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Value</TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Region</TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Sector</TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Status</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Country</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Credit Hub</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Lead</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Stage</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Updated</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground"></TableHead>
             </TableRow>
@@ -107,23 +111,23 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: Dea
                     }`}
                     onClick={() => onRowClick && onRowClick(deal.id)}
                   >
-                    <TableCell className="px-4 py-3 text-sm">#{deal.id}</TableCell>
+                    <TableCell className="px-4 py-3 text-sm">{deal.id.substring(0, 6)}...</TableCell>
                     <TableCell className="px-4 py-3">
                       <div>
-                        <p className="text-sm font-medium">{deal.company}</p>
-                        <p className="text-xs text-muted-foreground">{deal.subSector}</p>
+                        <p className="text-sm font-medium">{deal.name || 'Unnamed Deal'}</p>
+                        <p className="text-xs text-muted-foreground">{deal.priority || 'No Priority'}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-sm">{formatCurrency(deal.value)}</TableCell>
-                    <TableCell className="px-4 py-3 text-sm">{deal.region}</TableCell>
-                    <TableCell className="px-4 py-3 text-sm">{deal.sector}</TableCell>
+                    <TableCell className="px-4 py-3 text-sm">{deal.country || 'N/A'}</TableCell>
+                    <TableCell className="px-4 py-3 text-sm">{deal.creditHub || 'N/A'}</TableCell>
+                    <TableCell className="px-4 py-3 text-sm">{deal.lead || 'N/A'}</TableCell>
                     <TableCell className="px-4 py-3">
-                      <Badge variant="outline" className={`px-2 py-1 rounded text-xs ${getStatusStyles(deal.status)}`}>
-                        {deal.status}
+                      <Badge variant="outline" className={`px-2 py-1 rounded text-xs ${getStageStyles(deal.stage)}`}>
+                        {deal.stage}
                       </Badge>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-xs text-muted-foreground">
-                      {formatTimeAgo(deal.updatedAt)}
+                      {deal.updatedAt ? formatTimeAgo(deal.updatedAt) : 'N/A'}
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground transition-colors">

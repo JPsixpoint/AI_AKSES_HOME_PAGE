@@ -18,21 +18,20 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-// Deals table
+// Deals table (matches pipeline table structure)
 export const deals = pgTable("deals", {
-  id: serial("id").primaryKey(),
-  company: text("company").notNull(),
-  subSector: text("sub_sector").notNull(),
-  value: integer("value").notNull(), // Deal value in cents/smallest currency unit
-  region: text("region").notNull(),
-  sector: text("sector").notNull(),
-  status: text("status").notNull().default("Prescreening"), // Prescreening, Indicative Proposal, Due Diligence, Committed, Closed, Declined
-  leadInvestor: text("lead_investor"),
-  deadline: timestamp("deadline"), // Due diligence deadline
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  notes: text("notes"),
-  metadata: json("metadata").$type<Record<string, any>>(),
+  id: varchar("id", { length: 24 }).primaryKey(),
+  name: text("name"), // Company name
+  priority: text("priority"),
+  country: text("country"),
+  lead: text("lead"), // Lead person's email
+  creditHub: text("credit_hub"), // Credit hub region (LATAM, EMENA, SSA, APAC)
+  stage: text("stage").notNull().default("Pre-Screening"), // Deal stage (Pass, Re-Engage, Pre-Screening, etc.)
+  updates: json("updates").$type<any[]>().default([]), // Array of update objects
+  members: json("members").$type<string[]>().default([]), // Team members associated
+  preScreening: json("pre_screening").$type<Record<string, any>>().default({}), // Pre-screening data
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
   createdBy: integer("created_by").references(() => users.id),
 });
 
@@ -44,14 +43,15 @@ export const dealsRelations = relations(deals, ({ one }) => ({
 }));
 
 export const insertDealSchema = createInsertSchema(deals, {
-  company: (schema) => schema.min(2, "Company name must be at least 2 characters"),
-  value: (schema) => schema.positive("Deal value must be positive"),
-  region: (schema) => schema.min(2, "Region must be at least 2 characters"),
-  sector: (schema) => schema.min(2, "Sector must be at least 2 characters"),
-  status: (schema) => schema.refine(
-    val => ["Prescreening", "Indicative Proposal", "Due Diligence", "Committed", "Closed", "Declined"].includes(val),
-    "Invalid status"
+  name: (schema) => schema.min(2, "Company name must be at least 2 characters"),
+  stage: (schema) => schema.refine(
+    val => ["Pre-Screening", "Lead", "Due Diligence & U/W", "Term Sheet Negotiation", "Closed - Won", "Closed - Lost", "Pass", "Re-Engage"].includes(val),
+    "Invalid stage"
   ),
+  creditHub: (schema) => schema.refine(
+    val => ["LATAM", "EMENA", "SSA", "APAC"].includes(val),
+    "Invalid credit hub"
+  )
 }).omit({ 
   id: true, 
   createdAt: true, 

@@ -9,36 +9,36 @@ import { PlusIcon, SearchIcon } from "lucide-react";
 import { Input } from "../ui/input";
 
 interface DealsPipelineProps {
-  selectedDealId?: number | null;
-  onSelectedDealChange: (dealId: number | null) => void;
+  selectedDealId?: string | null;
+  onSelectedDealChange: (dealId: string | null) => void;
 }
 
 export function DealsPipeline({ selectedDealId, onSelectedDealChange }: DealsPipelineProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [stageFilter, setStageFilter] = useState<string | null>(null);
   
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ['/api/deals'],
   });
   
-  // Filter deals based on search term and status
+  // Filter deals based on search term and stage
   const filteredDeals = deals.filter((deal: Deal) => {
     const matchesSearch = searchTerm === "" ||
-      deal.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      deal.sector.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      deal.region.toLowerCase().includes(searchTerm.toLowerCase());
+      (deal.name && deal.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (deal.country && deal.country.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (deal.creditHub && deal.creditHub.toLowerCase().includes(searchTerm.toLowerCase()));
       
-    const matchesStatus = statusFilter === null || deal.status === statusFilter;
+    const matchesStage = stageFilter === null || deal.stage === stageFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStage;
   });
   
-  // Get deal counts by status
-  const getDealCountByStatus = (status: string | null) => {
-    if (status === null) {
+  // Get deal counts by stage
+  const getDealCountByStage = (stage: string | null) => {
+    if (stage === null) {
       return deals.length;
     }
-    return deals.filter((deal: Deal) => deal.status === status).length;
+    return deals.filter((deal: Deal) => deal.stage === stage).length;
   };
   
   return (
@@ -65,12 +65,12 @@ export function DealsPipeline({ selectedDealId, onSelectedDealChange }: DealsPip
       </div>
       
       <DealFilters
-        selectedStatus={statusFilter}
-        onStatusChange={setStatusFilter}
-        totalCount={getDealCountByStatus(null)}
-        dueDiligenceCount={getDealCountByStatus("Due Diligence")}
-        prescreeningCount={getDealCountByStatus("Prescreening")}
-        indicativeProposalCount={getDealCountByStatus("Indicative Proposal")}
+        selectedStatus={stageFilter}
+        onStatusChange={setStageFilter}
+        totalCount={getDealCountByStage(null)}
+        dueDiligenceCount={getDealCountByStage("Due Diligence & U/W")}
+        prescreeningCount={getDealCountByStage("Pre-Screening")}
+        indicativeProposalCount={getDealCountByStage("Term Sheet Negotiation")}
       />
       
       <DealsTable 
