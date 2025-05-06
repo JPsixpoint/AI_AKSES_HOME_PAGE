@@ -4,6 +4,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Activity,
   AlertCircle,
   Send,
   RefreshCw,
@@ -14,6 +15,8 @@ import {
   CheckCircle,
   ArrowUp,
   Mail,
+  MessageCircle,
+  Play,
   X
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
@@ -689,45 +692,143 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
 
       {/* Details Modal */}
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-        <DialogContent className="bg-dark-surface border-gray-700 text-white max-w-lg dialog-content-bg overflow-y-auto max-h-[85vh]">
+        <DialogContent className="bg-dark-surface border-gray-700 text-white max-w-4xl dialog-content-bg overflow-y-auto max-h-[85vh]">
           <DialogHeader>
-            <DialogTitle className="text-center">Pre-Screening Timeline</DialogTitle>
+            <DialogTitle className="text-center text-xl">Pre-Screening Timeline</DialogTitle>
             <DialogDescription className="text-center text-gray-400">
               {selectedDeal?.name || "Deal"} - Detailed progress tracking
             </DialogDescription>
           </DialogHeader>
           
           {selectedDeal && selectedScreening && (
-            <div className="space-y-4 mt-4">
-              <div className="flex justify-between items-start p-3 bg-gray-800/50 rounded-lg">
-                <div className="space-y-1">
-                  <h3 className="font-medium">{selectedDeal.name}</h3>
-                  <p className="text-sm text-gray-400">Recipient: {selectedScreening.recipientEmails[0]}</p>
+            <div className="space-y-6 mt-4">
+              {/* Deal Info Card */}
+              <div className="p-4 bg-gray-800/50 rounded-lg">
+                <div className="flex flex-col md:flex-row justify-between gap-4">
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium">{selectedDeal.name}</h3>
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <Mail className="h-4 w-4" />
+                      <p>Recipients: {selectedScreening.recipientEmails.join(", ")}</p>
+                    </div>
+                    {selectedScreening.additionalContext && (
+                      <div className="flex items-start gap-2 text-sm text-gray-400 mt-1">
+                        <MessageCircle className="h-4 w-4 mt-0.5" />
+                        <p>Context: {selectedScreening.additionalContext}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Send Follow-up Email Button */}
+                  <div className="flex items-center">
+                    <Button 
+                      size="sm" 
+                      className="ml-auto" 
+                      onClick={() => {
+                        // Pre-fill the form with the deal ID
+                        form.setValue("dealId", selectedDeal.id);
+                        form.setValue("recipientEmails", selectedScreening.recipientEmails.join(", "));
+                        
+                        // Close the details modal and show the new screening modal
+                        setShowDetailModal(false);
+                        setShowModal(true);
+                      }}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Follow-up Email
+                    </Button>
+                  </div>
                 </div>
-                <Badge variant="outline" className="ml-auto">
-                  {(() => {
-                    // Determine the current status based on available events
-                    const events = ["submitted", "progress", "started", "opened", "sent"];
-                    for (const eventType of events) {
-                      const event = getLatestTrackingEvent(selectedScreening, eventType as TrackingEventType);
-                      if (event) {
-                        if (eventType === "submitted") return "Completed";
-                        if (eventType === "progress") {
-                          const percent = event.metadata?.completionPercent || 0;
-                          return `${percent}% Complete`;
-                        }
-                        if (eventType === "started") return "Started";
-                        if (eventType === "opened") return "Viewed";
-                        if (eventType === "sent") return "Sent";
-                      }
-                    }
-                    return "Unknown";
-                  })()}
-                </Badge>
               </div>
               
+              {/* Status Indicators */}
+              <div className="bg-gray-800/30 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-400 mb-3">Current Status</h4>
+                <div className="flex flex-wrap gap-4">
+                  {/* Sent Status */}
+                  <div className="flex-1 min-w-[120px] p-3 bg-purple-900/20 rounded-lg border border-purple-900/30">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Send className="h-4 w-4 text-purple-400" />
+                      <span className="font-medium">Email Sent</span>
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      {(() => {
+                        const event = getLatestTrackingEvent(selectedScreening, "sent");
+                        return event ? new Date(event.timestamp).toLocaleString() : "Not sent";
+                      })()}
+                    </div>
+                  </div>
+                  
+                  {/* Opened Status */}
+                  <div className="flex-1 min-w-[120px] p-3 bg-blue-900/20 rounded-lg border border-blue-900/30">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Eye className="h-4 w-4 text-blue-400" />
+                      <span className="font-medium">Email Viewed</span>
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      {(() => {
+                        const event = getLatestTrackingEvent(selectedScreening, "opened");
+                        return event ? new Date(event.timestamp).toLocaleString() : "Not viewed";
+                      })()}
+                    </div>
+                  </div>
+                  
+                  {/* Started Status */}
+                  <div className="flex-1 min-w-[120px] p-3 bg-yellow-900/20 rounded-lg border border-yellow-900/30">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Play className="h-4 w-4 text-yellow-400" />
+                      <span className="font-medium">Process Started</span>
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      {(() => {
+                        const event = getLatestTrackingEvent(selectedScreening, "started");
+                        return event ? new Date(event.timestamp).toLocaleString() : "Not started";
+                      })()}
+                    </div>
+                  </div>
+                  
+                  {/* Progress Status */}
+                  <div className="flex-1 min-w-[120px] p-3 bg-orange-900/20 rounded-lg border border-orange-900/30">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Activity className="h-4 w-4 text-orange-400" />
+                      <span className="font-medium">Progress</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Progress 
+                        value={(() => {
+                          const event = getLatestTrackingEvent(selectedScreening, "progress");
+                          return event?.metadata?.completionPercent || 0;
+                        })()} 
+                        className="h-2 flex-1" 
+                      />
+                      <span className="text-sm">
+                        {(() => {
+                          const event = getLatestTrackingEvent(selectedScreening, "progress");
+                          return event?.metadata?.completionPercent || 0;
+                        })()}%
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Completed Status */}
+                  <div className="flex-1 min-w-[120px] p-3 bg-green-900/20 rounded-lg border border-green-900/30">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                      <span className="font-medium">Completed</span>
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      {(() => {
+                        const event = getLatestTrackingEvent(selectedScreening, "submitted");
+                        return event ? new Date(event.timestamp).toLocaleString() : "Not completed";
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Timeline Section */}
               <div className="space-y-3">
-                <h4 className="text-sm font-medium text-gray-400">Timeline</h4>
+                <h4 className="text-sm font-medium text-gray-400">Event Timeline</h4>
                 <div className="space-y-3 pl-4 border-l border-gray-700">
                   {(() => {
                     // Get all events sorted by timestamp
