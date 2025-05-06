@@ -66,6 +66,49 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     queryKey: ["/api/deals"],
   });
   
+  // Define types for the screening data
+  interface ScreeningData {
+    timestamp: string;
+    initiatingUser: string;
+    recipientEmails: string[];
+    emailContent: string;
+    additionalContext: string;
+    status: "sent" | "not_sent";
+    trackingData: {
+      status: "sent" | "opened" | "interacting" | "completed" | "abandoned";
+      progress: number;
+      lastInteraction: string;
+    };
+  }
+
+  // Helper function to handle both aiScreening and ai_screening properties
+  const getScreeningData = (deal: any): ScreeningData[] => {
+    // TypeScript workaround for dealing with both camelCase and snake_case properties
+    return deal.aiScreening || (deal as any).ai_screening || [];
+  };
+  
+  // Helper to check if a deal has screening data matching a specific status
+  const hasScreeningWithStatus = (deal: any, status: string | string[]): boolean => {
+    const screeningData = getScreeningData(deal);
+    if (!screeningData || screeningData.length === 0) return false;
+    
+    if (Array.isArray(status)) {
+      return screeningData.some((s: ScreeningData) => status.includes(s.trackingData.status));
+    }
+    return screeningData.some((s: ScreeningData) => s.trackingData.status === status);
+  };
+  
+  // Helper to get screening items with specific statuses
+  const getScreeningWithStatus = (deal: any, status: string | string[]): ScreeningData[] => {
+    const screeningData = getScreeningData(deal);
+    if (!screeningData || screeningData.length === 0) return [];
+    
+    if (Array.isArray(status)) {
+      return screeningData.filter((s: ScreeningData) => status.includes(s.trackingData.status));
+    }
+    return screeningData.filter((s: ScreeningData) => s.trackingData.status === status);
+  };
+  
   // Function to generate default email template when no deal is selected
   const generateDefaultEmailTemplate = () => {
     return `
@@ -213,10 +256,9 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
               {/* Debug info to see data structure */}
               <div className="text-xs text-white/50 mb-4">
                 Total deals: {deals.length}, 
-                Deals with aiScreening: {deals.filter(d => d.ai_screening || d.aiScreening).length}, 
-                Deals with non-empty aiScreening: {deals.filter(d => (d.ai_screening && d.ai_screening.length > 0) || (d.aiScreening && d.aiScreening.length > 0)).length}
+                Deals with screening data: {deals.filter(d => getScreeningData(d).length > 0).length} 
               </div>
-              {deals.some((deal) => (deal.ai_screening && deal.ai_screening.length > 0) || (deal.aiScreening && deal.aiScreening.length > 0)) ? (
+              {deals.some(deal => getScreeningData(deal).length > 0) ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Status Column: Email Sent */}
                   <div className="flex flex-col">
@@ -225,31 +267,26 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                         <Send className="h-4 w-4" />
                         <h3 className="font-semibold">Email Sent</h3>
                         <Badge variant="outline" className="ml-auto">
-                          {deals.filter(deal => 
-                            (deal.aiScreening?.some(s => s.trackingData.status === "sent")) ||
-                            (deal.ai_screening?.some(s => s.trackingData.status === "sent"))
-                          ).length}
+                          {deals.filter(deal => hasScreeningWithStatus(deal, "sent")).length}
                         </Badge>
                       </div>
                     </div>
                     <div className="bg-purple-900/10 rounded-b-lg p-3 min-h-[300px] space-y-3">
                       {deals
-                        .filter(deal => deal.aiScreening?.some(s => s.trackingData.status === "sent"))
+                        .filter(deal => hasScreeningWithStatus(deal, "sent"))
                         .map(deal => (
                           <div key={deal.id} className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-purple-500 transition-colors">
                             <div className="flex justify-between items-start">
                               <h4 className="font-medium text-sm truncate">{deal.name}</h4>
                               <Badge variant="outline" className="text-xs">
-                                {deal.aiScreening && deal.aiScreening
-                                    .filter(s => s.trackingData.status === "sent")
+                                {getScreeningWithStatus(deal, "sent")
                                     .sort((a, b) => new Date(b.trackingData.lastInteraction).getTime() - new Date(a.trackingData.lastInteraction).getTime())
                                     .map(item => new Date(item.trackingData.lastInteraction).toLocaleDateString())[0]
                                 }
                               </Badge>
                             </div>
                             <div className="mt-2 space-y-2">
-                              {deal.aiScreening && deal.aiScreening
-                                .filter(s => s.trackingData.status === "sent")
+                              {getScreeningWithStatus(deal, "sent")
                                 .map((screening, idx) => (
                                   <div key={idx} className="flex items-center gap-2 text-xs text-white/70">
                                     <Mail className="h-3 w-3" />
@@ -261,7 +298,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                           </div>
                         ))
                       }
-                      {!deals.some(deal => deal.aiScreening?.some(s => s.trackingData.status === "sent")) && (
+                      {!deals.some(deal => hasScreeningWithStatus(deal, "sent")) && (
                         <div className="flex flex-col items-center justify-center h-full text-white/50">
                           <Send className="h-8 w-8 mb-2 opacity-30" />
                           <p className="text-sm">No emails sent</p>
@@ -277,17 +314,13 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                         <Database className="h-4 w-4" />
                         <h3 className="font-semibold">Lead Enrichment</h3>
                         <Badge variant="outline" className="ml-auto">
-                          {deals.filter(deal => 
-                            deal.aiScreening?.some(s => 
-                              s.trackingData.status === "opened" || s.trackingData.status === "interacting"
-                            )
-                          ).length}
+                          {deals.filter(deal => hasScreeningWithStatus(deal, ["opened", "interacting"])).length}
                         </Badge>
                       </div>
                     </div>
                     <div className="bg-blue-900/10 rounded-b-lg p-3 min-h-[300px] space-y-3">
                       {deals
-                        .filter(deal => deal.aiScreening?.some(s => s.trackingData.status === "opened" || s.trackingData.status === "interacting"))
+                        .filter(deal => hasScreeningWithStatus(deal, ["opened", "interacting"]))
                         .map(deal => (
                           <div key={deal.id} className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-blue-500 transition-colors">
                             <div className="flex justify-between items-start">
