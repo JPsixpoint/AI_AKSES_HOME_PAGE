@@ -382,8 +382,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                               <Badge variant="default" className="text-xs bg-green-600 hover:bg-green-700">100%</Badge>
                             </div>
                             <div className="mt-2 space-y-2">
-                              {deal.aiScreening && deal.aiScreening
-                                .filter(s => s.trackingData.status === "completed")
+                              {getScreeningWithStatus(deal, "completed")
                                 .map((screening, idx) => (
                                   <div key={idx} className="flex items-center gap-2 text-xs text-white/70">
                                     <CheckSquare className="h-3 w-3 text-green-400" />
@@ -396,7 +395,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                           </div>
                         ))
                       }
-                      {!deals.some(deal => deal.aiScreening?.some(s => s.trackingData.status === "completed")) && (
+                      {!deals.some(deal => hasScreeningWithStatus(deal, "completed")) && (
                         <div className="flex flex-col items-center justify-center h-full text-white/50">
                           <CheckCircle className="h-8 w-8 mb-2 opacity-30" />
                           <p className="text-sm">No completed screenings</p>
