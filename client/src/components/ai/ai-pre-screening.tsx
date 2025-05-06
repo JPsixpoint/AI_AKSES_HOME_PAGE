@@ -169,6 +169,25 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   prescreeningRef.current.setEmails = (emails: string) => {
     form.setValue('recipientEmails', emails);
     console.log('Pre-screening emails set via ref:', emails);
+    
+    // Set showModal to true so the form appears
+    setShowModal(true);
+    
+    // Optional: Automatically submit the form if a deal is selected
+    if (form.getValues('dealId')) {
+      // We have both a deal and emails, let's submit automatically
+      const currentFormValues = form.getValues();
+      if (currentFormValues.dealId && emails) {
+        // Small delay to ensure state updates have been processed
+        setTimeout(() => {
+          sendPreScreeningMutation.mutate({
+            dealId: currentFormValues.dealId,
+            recipientEmails: emails,
+            additionalContext: currentFormValues.additionalContext || ''
+          });
+        }, 500);
+      }
+    }
   };
 
   // Expose the setEmails method to the window object for external components
@@ -322,6 +341,11 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                                   <div key={idx} className="flex items-center gap-2 text-xs text-white/70">
                                     <Mail className="h-3 w-3" />
                                     <span className="truncate">{screening.recipientEmails[0]}</span>
+                                    {screening.resendCount > 0 && (
+                                      <Badge variant="outline" className="ml-auto text-xs py-0 h-4">
+                                        Resent {screening.resendCount}x
+                                      </Badge>
+                                    )}
                                   </div>
                                 ))
                               }

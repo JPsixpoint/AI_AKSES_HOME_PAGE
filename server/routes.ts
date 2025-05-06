@@ -362,12 +362,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emailContent,
         additionalContext: additionalContext || "",
         status: "sending", // Will be updated to "sent" once emails are sent
+        resendCount: 0, // Initialize resend count at 0 for new entries
         trackingData: {
           status: "sent",
           progress: 0,
           lastInteraction: new Date().toISOString()
         }
       };
+      
+      // Check if this is a resend to the same recipients
+      if (deal.ai_screening) {
+        try {
+          const existingScreenings = JSON.parse(deal.ai_screening);
+          if (Array.isArray(existingScreenings)) {
+            // Check for existing entries with the same recipient emails
+            const matchingScreenings = existingScreenings.filter(s => {
+              // Compare recipient lists (check if they have the same emails regardless of order)
+              const currentEmailList = recipientEmails || [];
+              const existingEmailList = s.recipientEmails || [];
+              
+              // Convert to arrays for comparison since we have TypeScript compatibility issues with Set
+              if (currentEmailList.length !== existingEmailList.length) {
+                return false;
+              }
+              
+              // Check if every email in current list exists in the existing list
+              return currentEmailList.every(email => 
+                existingEmailList.some(existingEmail => existingEmail === email)
+              );
+            });
+            
+            if (matchingScreenings.length > 0) {
+              // This is a resend, set the resend count based on previous entries
+              const maxResendCount = Math.max(...matchingScreenings.map(s => s.resendCount || 0));
+              screeningEntry.resendCount = maxResendCount + 1;
+              console.log(`This is a resend (${maxResendCount + 1}) to the same recipients`);
+            }
+          }
+        } catch (e) {
+          // If parsing fails, treat as a new screening
+          console.error('Error parsing existing screenings:', e);
+        }
+      }
       
       // Get existing AI screening data or initialize empty array
       let aiScreeningData = [];
