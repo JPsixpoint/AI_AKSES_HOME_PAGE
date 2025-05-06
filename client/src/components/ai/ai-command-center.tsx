@@ -109,6 +109,14 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         content: m.content,
       }));
 
+      // Create a simplified list of deals to avoid token limit issues
+      // We only need names and IDs for most operations
+      const dealsSummary = deals.slice(0, 100).map(deal => ({ 
+        id: deal.id,
+        name: deal.name,
+        stage: deal.stage
+      }));
+
       // Add system message at the beginning
       const systemMessage = {
         role: "system" as const,
@@ -117,8 +125,12 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         When creating or updating deals, always respond in JSON format with the structure: { "type": "action_type", "data": {}, "message": "message to user", "followUpQuestions": [] }
         For example, to create a deal: { "type": "create_deal", "data": { company, value, region, sector, status }, "message": "Successfully created deal", "followUpQuestions": ["Would you like to view the deal details?", "Should I update any information?"] }
         For simple responses, use: { "type": "message", "message": "your response", "followUpQuestions": [] }
-        Current deals: ${JSON.stringify(deals)}
-        For any deal-related queries, refer to this deal data.
+        
+        Current deals summary (limited to 100): ${JSON.stringify(dealsSummary)}
+        
+        For pre-screening requests, look for a deal by name in the deals summary. If found, respond with:
+        { "type": "start_prescreening", "data": { "dealId": [deal_id], "dealName": [deal_name] } }
+        
         Always format currency values as numbers (e.g., 2500000 for $2.5M).
         Valid deal statuses are: "Prescreening", "Indicative Proposal", "Due Diligence", "Committed", "Closed", "Declined".
         Do not refer to yourself as an AI or assistant, just respond naturally.
