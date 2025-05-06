@@ -16,6 +16,8 @@ export function ConfirmationButtons({ onConfirm, onCancel, action }: Confirmatio
         return "Update Deal";
       case "delete_deal":
         return "Delete Deal";
+      case "start_prescreening":
+        return "Start Pre-Screening";
       default:
         return "Confirm";
     }

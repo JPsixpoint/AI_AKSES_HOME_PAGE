@@ -334,15 +334,14 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
       if (actionType === "create_deal") {
         // Clean up deal data to ensure it matches schema requirements
         const dealData = {
-          company: actionData.company,
-          value: actionData.value,
-          region: actionData.region,
-          sector: actionData.sector,
-          subSector: actionData.subSector || actionData.sector, // Use sector as fallback
-          status: actionData.status || "Prescreening", // Use default if not provided
-          leadInvestor: actionData.leadInvestor || "", // Convert null to empty string
-          deadline: actionData.deadline, // Keep as is (can be null)
-          notes: actionData.notes || "", // Convert null to empty string
+          name: actionData.company || actionData.name,
+          priority: actionData.priority || "medium",
+          country: actionData.country || actionData.region,
+          lead: actionData.lead || actionData.leadInvestor,
+          creditHub: actionData.creditHub || "Main",
+          stage: actionData.stage || actionData.status || "Pre-Screening",
+          updates: JSON.stringify([]),
+          members: JSON.stringify([])
         };
         
         console.log("Submitting deal data:", dealData);
@@ -353,7 +352,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
           {
             role: "assistant",
-            content: `Deal for ${newDeal.company} has been created successfully.`,
+            content: `Deal for ${newDeal.name} has been created successfully.`,
             data: {
               type: "deal_details",
               deal: newDeal,
@@ -364,7 +363,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         toast({
           title: "Deal Created",
-          description: `${newDeal.company} deal has been created.`,
+          description: `${newDeal.name} deal has been created.`,
         });
       } 
       else if (actionType === "update_deal") {

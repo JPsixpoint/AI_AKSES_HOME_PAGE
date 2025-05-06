@@ -26,28 +26,28 @@ export function AIMessage({ content, data, pendingAction, onSelect, onConfirm, o
     return (
       <div className="space-y-1 mt-2">
         <div className="flex justify-between items-center mb-2">
-          <p className="text-sm font-medium">{deal.company}</p>
+          <p className="text-sm font-medium">{deal.name}</p>
           <Badge
             variant="outline"
             className={`
               px-2 py-0.5 rounded text-xs
-              ${deal.status === "Due Diligence" ? "bg-info/20 text-info" : 
-                deal.status === "Prescreening" ? "bg-primary-lighter/20 text-primary-lighter" : 
-                deal.status === "Indicative Proposal" ? "bg-warning/20 text-warning" : 
-                deal.status === "Committed" ? "bg-success/20 text-success" : 
-                deal.status === "Closed" ? "bg-success/20 text-success" : 
+              ${deal.stage === "Due Diligence & U/W" ? "bg-info/20 text-info" : 
+                deal.stage === "Pre-Screening" ? "bg-primary-lighter/20 text-primary-lighter" : 
+                deal.stage === "Indicative Proposal" ? "bg-warning/20 text-warning" : 
+                deal.stage === "Committed" ? "bg-success/20 text-success" : 
+                deal.stage === "Closed - Won" || deal.stage === "Closed - Lost" ? "bg-success/20 text-success" : 
                 "bg-danger/20 text-danger"}
             `}
           >
-            {deal.status}
+            {deal.stage}
           </Badge>
         </div>
         <div className="space-y-1 text-xs">
-          <p><span className="text-muted-foreground">Deal Value:</span> {formatCurrency(deal.value)}</p>
-          <p><span className="text-muted-foreground">Region:</span> {deal.region}</p>
-          <p><span className="text-muted-foreground">Sector:</span> {deal.sector}</p>
-          <p><span className="text-muted-foreground">Lead Investor:</span> {deal.leadInvestor}</p>
-          {deal.deadline && <p><span className="text-muted-foreground">Due Diligence Deadline:</span> {new Date(deal.deadline).toLocaleDateString()}</p>}
+          <p><span className="text-muted-foreground">Country:</span> {deal.country || 'N/A'}</p>
+          <p><span className="text-muted-foreground">Credit Hub:</span> {deal.creditHub || 'N/A'}</p>
+          <p><span className="text-muted-foreground">Priority:</span> {deal.priority || 'N/A'}</p>
+          <p><span className="text-muted-foreground">Lead:</span> {deal.lead || 'N/A'}</p>
+          {deal.createdAt && <p><span className="text-muted-foreground">Created At:</span> {new Date(deal.createdAt).toLocaleDateString()}</p>}
         </div>
       </div>
     );

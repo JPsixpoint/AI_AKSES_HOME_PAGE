@@ -98,19 +98,17 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   // Submit handler
   const sendPreScreeningMutation = useMutation({
     mutationFn: async (data: PreScreeningForm) => {
-      const response = await apiRequest("/api/prescreening/send", {
+      const requestData = {
+        dealId: data.dealId,
+        recipientEmails: data.recipientEmails.split(",").map(email => email.trim()),
+        additionalContext: data.additionalContext,
+        emailContent: emailPreview
+      };
+      
+      return await apiRequest("/api/prescreening/send", {
         method: "POST",
-        body: JSON.stringify({
-          dealId: data.dealId,
-          recipientEmails: data.recipientEmails.split(",").map(email => email.trim()),
-          additionalContext: data.additionalContext,
-          emailContent: emailPreview
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
+        data: requestData
       });
-      return response.json();
     },
     onSuccess: () => {
       toast({

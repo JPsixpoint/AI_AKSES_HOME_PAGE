@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { DealsPipeline } from "@/components/deals/deals-pipeline";
+import { AIPreScreening } from "@/components/ai/ai-pre-screening";
 
 // Define the tab types
 type TabType = 
@@ -199,7 +200,10 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                   onSelectedDealChange={onSelectedDealChange} 
                 />
               )}
-              {tab.type !== "Pipeline" && (
+              {tab.type === "AI PreScreening" && (
+                <AIPreScreening initialDealId={selectedDealId || undefined} />
+              )}
+              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && (
                 <div className="h-full flex items-center justify-center p-6">
                   <div className="text-center max-w-md mx-auto">
                     <h2 className="text-2xl font-semibold mb-3">{tab.title}</h2>
