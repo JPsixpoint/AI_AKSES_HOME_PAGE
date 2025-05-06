@@ -567,6 +567,17 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           description: `Pre-Screening process initiated for ${dealName || 'selected deal'}.`,
         });
         
+        // Store deal info globally for access by future email commands
+        try {
+          window.prescreeningDealInfo = {
+            dealId,
+            dealName
+          };
+          console.log("Stored prescreening deal info in window object:", { dealId, dealName });
+        } catch (error) {
+          console.error("Error storing deal info on window:", error);
+        }
+        
         // Try to open the AI Pre-Screening tab via the exposed window method
         try {
           // This is a global method exposed by the TabsSystem component

@@ -36,16 +36,68 @@ export async function parseAIResponse(content: string): Promise<{
   message?: string;
   followUpQuestions?: string[];
 }> {
-  // Check for "send email to" pattern in the content
-  const emailRegex = /(?:send|forward|resend)\s*(?:that|this|an|the)?\s*(?:email|screening|pre-screening|prescreening)\s*(?:to|for)\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
-  const emailMatch = content.match(emailRegex);
+  // Check for "send email to" or "also send to" patterns in the content
+  const patterns = [
+    // Pattern 1: send/forward/resend email to someone@example.com
+    /(?:send|forward|resend)\s*(?:that|this|an|the)?\s*(?:email|screening|pre-screening|prescreening)\s*(?:to|for)\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i,
+    
+    // Pattern 2: also send/add/include someone@example.com
+    /(?:also|and)\s+(?:send|forward|add|include)\s+(?:to\s+)?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i,
+    
+    // Pattern 3: send it to someone@example.com as well
+    /(?:send|forward)\s+(?:it|that|this)\s+(?:to|for)\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i,
+    
+    // Pattern 4: plain email address with minimal context
+    /(?:email|send|to)\s*:?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i
+  ];
   
-  if (emailMatch && emailMatch[1]) {
-    return {
-      type: "send_additional_email",
-      data: { email: emailMatch[1].trim() },
-      message: `I'll send the pre-screening email to ${emailMatch[1].trim()}.`
-    };
+  // Try all patterns
+  for (const pattern of patterns) {
+    const match = content.match(pattern);
+    if (match && match[1]) {
+      // Check if there are multiple emails in the content (comma-separated)
+      const emailPart = match[1].trim();
+      const emails = emailPart.includes(',') ? 
+                     emailPart.split(',').map(e => e.trim()) : 
+                     [emailPart];
+      
+      // Filter out any invalid email-like strings
+      const validEmails = emails.filter(email => 
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
+      );
+      
+      if (validEmails.length > 0) {
+        const emailsText = validEmails.length > 1 ? 
+                          validEmails.slice(0, -1).join(', ') + ' and ' + validEmails[validEmails.length - 1] : 
+                          validEmails[0];
+                          
+        return {
+          type: "send_additional_email",
+          data: { email: validEmails.join(',') },
+          message: `I'll send the pre-screening email to ${emailsText}.`
+        };
+      }
+    }
+  }
+  
+  // Also try to extract any email addresses from the text
+  const allEmailsMatch = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+  if (allEmailsMatch && allEmailsMatch.length > 0) {
+    const validEmails = allEmailsMatch.filter(email => 
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
+    );
+    
+    if (validEmails.length > 0) {
+      const emailsText = validEmails.length > 1 ? 
+                        validEmails.slice(0, -1).join(', ') + ' and ' + validEmails[validEmails.length - 1] : 
+                        validEmails[0];
+                        
+      return {
+        type: "send_additional_email",
+        data: { email: validEmails.join(',') },
+        message: `I'll send the pre-screening email to ${emailsText}.`
+      };
+    }
   }
   
   try {
