@@ -176,9 +176,9 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
       
       {/* Tab content */}
       <div className="flex-1 overflow-auto">
-        {/* Always render tab content for single tab system */}
-        {tabs.length === 1 && tabs[0].type === "Pipeline" && (
-          <div className={isNewTabDialogOpen ? "absolute inset-0 -z-10" : "h-full"}>
+        {/* Always render tab content for single tab system when not in new tab dialog */}
+        {tabs.length === 1 && tabs[0].type === "Pipeline" && !isNewTabDialogOpen && (
+          <div className="h-full">
             <DealsPipeline 
               selectedDealId={selectedDealId} 
               onSelectedDealChange={onSelectedDealChange} 
@@ -302,7 +302,19 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                           <button
                             key={option.type}
                             className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
-                            onClick={() => addNewTab(option.type, option.title)}
+                            onClick={() => {
+                              // For Pipeline tab, close dialog and show pipeline if it exists
+                              if (option.type === "Pipeline") {
+                                const existingPipelineTab = tabs.find(tab => tab.type === "Pipeline");
+                                if (existingPipelineTab) {
+                                  setActiveTabId(existingPipelineTab.id);
+                                  setIsNewTabDialogOpen(false);
+                                  return;
+                                }
+                              }
+                              // Otherwise create a new tab
+                              addNewTab(option.type, option.title);
+                            }}
                           >
                             <div className="mr-3 text-primary">
                               {option.type === "Pipeline" && <PanelLeft className="h-5 w-5" />}
@@ -328,7 +340,15 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                           <button
                             key={option.type}
                             className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
-                            onClick={() => addNewTab(option.type, option.title)}
+                            onClick={() => {
+                              const existingTab = tabs.find(tab => tab.type === option.type);
+                              if (existingTab) {
+                                setActiveTabId(existingTab.id);
+                                setIsNewTabDialogOpen(false);
+                                return;
+                              }
+                              addNewTab(option.type, option.title);
+                            }}
                           >
                             <div className="mr-3 text-primary">
                               {option.type === "AI PreScreening" && <Brain className="h-5 w-5" />}
@@ -353,7 +373,15 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                           <button
                             key={option.type}
                             className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
-                            onClick={() => addNewTab(option.type, option.title)}
+                            onClick={() => {
+                              const existingTab = tabs.find(tab => tab.type === option.type);
+                              if (existingTab) {
+                                setActiveTabId(existingTab.id);
+                                setIsNewTabDialogOpen(false);
+                                return;
+                              }
+                              addNewTab(option.type, option.title);
+                            }}
                           >
                             <div className="mr-3 text-primary">
                               {option.type === "Pricer" && <BarChart4 className="h-5 w-5" />}
