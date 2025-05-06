@@ -3,7 +3,23 @@ import { useQuery } from "@tanstack/react-query";
 import { DealsTable } from "./deals-table";
 import { DealFilters } from "./deal-filters";
 import { DealStatistics } from "./deal-statistics";
-import { Deal } from "@shared/schema";
+
+// Define the pipeline deal type to match the pipeline table structure
+interface PipelineDeal {
+  id: string;
+  name: string | null;
+  priority: string | null;
+  country: string | null;
+  lead: string | null;
+  credit_hub: string | null;
+  stage: string;
+  updates: any[] | null;
+  members: string[] | null;
+  pre_screening: Record<string, any> | null;
+  created_at?: Date | null;
+  updated_at?: Date | null;
+  created_by?: number | null;
+}
 import { Button } from "../ui/button";
 import { PlusIcon, SearchIcon } from "lucide-react";
 import { Input } from "../ui/input";
@@ -17,16 +33,16 @@ export function DealsPipeline({ selectedDealId, onSelectedDealChange }: DealsPip
   const [searchTerm, setSearchTerm] = useState("");
   const [stageFilter, setStageFilter] = useState<string | null>(null);
   
-  const { data: deals = [], isLoading } = useQuery({
+  const { data: deals = [], isLoading } = useQuery<PipelineDeal[]>({
     queryKey: ['/api/deals'],
   });
   
   // Filter deals based on search term and stage
-  const filteredDeals = deals.filter((deal: Deal) => {
+  const filteredDeals = deals.filter((deal: PipelineDeal) => {
     const matchesSearch = searchTerm === "" ||
       (deal.name && deal.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (deal.country && deal.country.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (deal.creditHub && deal.creditHub.toLowerCase().includes(searchTerm.toLowerCase()));
+      (deal.credit_hub && deal.credit_hub.toLowerCase().includes(searchTerm.toLowerCase()));
       
     const matchesStage = stageFilter === null || deal.stage === stageFilter;
     
@@ -38,7 +54,7 @@ export function DealsPipeline({ selectedDealId, onSelectedDealChange }: DealsPip
     if (stage === null) {
       return deals.length;
     }
-    return deals.filter((deal: Deal) => deal.stage === stage).length;
+    return deals.filter((deal: PipelineDeal) => deal.stage === stage).length;
   };
   
   return (

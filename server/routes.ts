@@ -55,6 +55,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Deals CRUD routes
   
+  // Get deal statistics (from pipeline table) - must be before :id route
+  app.get(`${apiPrefix}/deals/statistics`, async (req, res) => {
+    try {
+      // Using raw SQL to get statistics from pipeline table
+      const totalResult = await pool.query('SELECT COUNT(*) as count FROM pipeline');
+      const totalDeals = parseInt(totalResult.rows[0].count);
+      
+      // Get stage counts
+      const stageResult = await pool.query(`
+        SELECT stage, COUNT(*) as count 
+        FROM pipeline 
+        GROUP BY stage
+      `);
+      
+      const stageStats = stageResult.rows.reduce((acc, row) => {
+        acc[row.stage || 'Unknown'] = parseInt(row.count);
+        return acc;
+      }, {});
+      
+      // Get credit hub counts
+      const creditHubResult = await pool.query(`
+        SELECT credit_hub, COUNT(*) as count 
+        FROM pipeline 
+        GROUP BY credit_hub
+      `);
+      
+      const creditHubStats = creditHubResult.rows.reduce((acc, row) => {
+        acc[row.credit_hub || 'Unknown'] = parseInt(row.count);
+        return acc;
+      }, {});
+      
+      // Get counts for specific stages we're interested in
+      const dueDiligenceCount = stageStats['Due Diligence & U/W'] || 0;
+      const prescreeningCount = stageStats['Pre-Screening'] || 0;
+      const leadCount = stageStats['Lead'] || 0;
+      const closedCount = (stageStats['Closed - Won'] || 0) + (stageStats['Closed - Lost'] || 0);
+      
+      // Mock statistic changes for demonstration
+      const valueChangePercent = 12;
+      const newDealsThisMonth = 3;
+      const dueDiligenceChangeWeekly = 0;
+      const completedThisQuarter = 2;
+      
+      return res.status(200).json({
+        totalDeals,
+        stageStats,
+        creditHubStats,
+        dueDiligenceCount,
+        prescreeningCount,
+        leadCount,
+        closedCount,
+        valueChangePercent,
+        newDealsThisMonth,
+        dueDiligenceChangeWeekly,
+        completedThisQuarter
+      });
+    } catch (error) {
+      console.error("Error fetching deal statistics:", error);
+      return res.status(500).json({ message: "Failed to fetch deal statistics" });
+    }
+  });
+  
   // Get all deals (from pipeline table)
   app.get(`${apiPrefix}/deals`, async (req, res) => {
     try {
@@ -207,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name, stage, priority, country, lead, creditHub } = req.body;
       
       // Build the SET clause and values array for SQL update
-      const updates = {};
+      const updates: Record<string, any> = {};
       if (name !== undefined) updates.name = name;
       if (stage !== undefined) updates.stage = stage;
       if (priority !== undefined) updates.priority = priority;
@@ -265,67 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get deal statistics (from pipeline table)
-  app.get(`${apiPrefix}/deals/statistics`, async (req, res) => {
-    try {
-      // Using raw SQL to get statistics from pipeline table
-      const totalResult = await pool.query('SELECT COUNT(*) as count FROM pipeline');
-      const totalDeals = parseInt(totalResult.rows[0].count);
-      
-      // Get stage counts
-      const stageResult = await pool.query(`
-        SELECT stage, COUNT(*) as count 
-        FROM pipeline 
-        GROUP BY stage
-      `);
-      
-      const stageStats = stageResult.rows.reduce((acc, row) => {
-        acc[row.stage || 'Unknown'] = parseInt(row.count);
-        return acc;
-      }, {});
-      
-      // Get credit hub counts
-      const creditHubResult = await pool.query(`
-        SELECT credit_hub, COUNT(*) as count 
-        FROM pipeline 
-        GROUP BY credit_hub
-      `);
-      
-      const creditHubStats = creditHubResult.rows.reduce((acc, row) => {
-        acc[row.credit_hub || 'Unknown'] = parseInt(row.count);
-        return acc;
-      }, {});
-      
-      // Get counts for specific stages we're interested in
-      const dueDiligenceCount = stageStats['Due Diligence & U/W'] || 0;
-      const prescreeningCount = stageStats['Pre-Screening'] || 0;
-      const leadCount = stageStats['Lead'] || 0;
-      const closedCount = (stageStats['Closed - Won'] || 0) + (stageStats['Closed - Lost'] || 0);
-      
-      // Mock statistic changes for demonstration
-      const valueChangePercent = 12;
-      const newDealsThisMonth = 3;
-      const dueDiligenceChangeWeekly = 0;
-      const completedThisQuarter = 2;
-      
-      return res.status(200).json({
-        totalDeals,
-        stageStats,
-        creditHubStats,
-        dueDiligenceCount,
-        prescreeningCount,
-        leadCount,
-        closedCount,
-        valueChangePercent,
-        newDealsThisMonth,
-        dueDiligenceChangeWeekly,
-        completedThisQuarter
-      });
-    } catch (error) {
-      console.error("Error fetching deal statistics:", error);
-      return res.status(500).json({ message: "Failed to fetch deal statistics" });
-    }
-  });
+
 
   // SixPoint Deals API Endpoints
   
