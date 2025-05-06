@@ -692,7 +692,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
 
       {/* Details Modal */}
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-        <DialogContent className="bg-dark-surface border-gray-700 text-white max-w-4xl dialog-content-bg overflow-y-auto max-h-[85vh]">
+        <DialogContent className="bg-dark-surface border-gray-700 text-white max-w-5xl dialog-content-bg overflow-y-auto max-h-[95vh]">
           <DialogHeader>
             <DialogTitle className="text-center text-xl">Pre-Screening Timeline</DialogTitle>
             <DialogDescription className="text-center text-gray-400">
@@ -701,135 +701,150 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
           </DialogHeader>
           
           {selectedDeal && selectedScreening && (
-            <div className="space-y-6 mt-4">
+            <div className="space-y-8 mt-4">
               {/* Deal Info Card */}
-              <div className="p-4 bg-gray-800/50 rounded-lg">
-                <div className="flex flex-col md:flex-row justify-between gap-4">
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-medium">{selectedDeal.name}</h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                      <Mail className="h-4 w-4" />
-                      <p>Recipients: {selectedScreening.recipientEmails.join(", ")}</p>
-                    </div>
-                    {selectedScreening.additionalContext && (
-                      <div className="flex items-start gap-2 text-sm text-gray-400 mt-1">
-                        <MessageCircle className="h-4 w-4 mt-0.5" />
-                        <p>Context: {selectedScreening.additionalContext}</p>
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">{selectedDeal.name}</h2>
+                <div className="flex items-center gap-2 text-gray-400">
+                  <Mail className="h-4 w-4" />
+                  <span>Recipients: {selectedScreening.recipientEmails.join(", ")}</span>
+                </div>
+                {selectedScreening.additionalContext && (
+                  <div className="flex items-start gap-2 text-gray-400 mt-1">
+                    <MessageCircle className="h-4 w-4 mt-0.5" />
+                    <span>Context: {selectedScreening.additionalContext}</span>
+                  </div>
+                )}
+                
+                {/* Send Follow-up Email Button */}
+                <div className="flex justify-end mt-4">
+                  <Button 
+                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={() => {
+                      // Pre-fill the form with the deal ID
+                      form.setValue("dealId", selectedDeal.id);
+                      form.setValue("recipientEmails", selectedScreening.recipientEmails.join(", "));
+                      
+                      // Close the details modal and show the new screening modal
+                      setShowDetailModal(false);
+                      setShowModal(true);
+                    }}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Follow-up Email
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Status Indicators - Horizontal Timeline */}
+              <div className="mt-8">
+                <h3 className="text-lg font-medium mb-4">Current Status</h3>
+                
+                <div className="grid grid-cols-5 gap-4">
+                  {/* Email Sent */}
+                  <div className="bg-gray-800/50 rounded-lg p-4 border border-purple-900/30">
+                    <div className="flex flex-col items-center">
+                      <div className="p-2 rounded-full bg-purple-900/50 mb-3">
+                        <Send className="h-6 w-6 text-purple-400" />
                       </div>
-                    )}
-                  </div>
-                  
-                  {/* Send Follow-up Email Button */}
-                  <div className="flex items-center">
-                    <Button 
-                      size="sm" 
-                      className="ml-auto" 
-                      onClick={() => {
-                        // Pre-fill the form with the deal ID
-                        form.setValue("dealId", selectedDeal.id);
-                        form.setValue("recipientEmails", selectedScreening.recipientEmails.join(", "));
-                        
-                        // Close the details modal and show the new screening modal
-                        setShowDetailModal(false);
-                        setShowModal(true);
-                      }}
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      Send Follow-up Email
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Status Indicators */}
-              <div className="bg-gray-800/30 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-400 mb-3">Current Status</h4>
-                <div className="flex flex-wrap gap-4">
-                  {/* Sent Status */}
-                  <div className="flex-1 min-w-[120px] p-3 bg-purple-900/20 rounded-lg border border-purple-900/30">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Send className="h-4 w-4 text-purple-400" />
-                      <span className="font-medium">Email Sent</span>
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      {(() => {
-                        const event = getLatestTrackingEvent(selectedScreening, "sent");
-                        return event ? new Date(event.timestamp).toLocaleString() : "Not sent";
-                      })()}
-                    </div>
-                  </div>
-                  
-                  {/* Opened Status */}
-                  <div className="flex-1 min-w-[120px] p-3 bg-blue-900/20 rounded-lg border border-blue-900/30">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Eye className="h-4 w-4 text-blue-400" />
-                      <span className="font-medium">Email Viewed</span>
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      {(() => {
-                        const event = getLatestTrackingEvent(selectedScreening, "opened");
-                        return event ? new Date(event.timestamp).toLocaleString() : "Not viewed";
-                      })()}
-                    </div>
-                  </div>
-                  
-                  {/* Started Status */}
-                  <div className="flex-1 min-w-[120px] p-3 bg-yellow-900/20 rounded-lg border border-yellow-900/30">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Play className="h-4 w-4 text-yellow-400" />
-                      <span className="font-medium">Process Started</span>
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      {(() => {
-                        const event = getLatestTrackingEvent(selectedScreening, "started");
-                        return event ? new Date(event.timestamp).toLocaleString() : "Not started";
-                      })()}
-                    </div>
-                  </div>
-                  
-                  {/* Progress Status */}
-                  <div className="flex-1 min-w-[120px] p-3 bg-orange-900/20 rounded-lg border border-orange-900/30">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Activity className="h-4 w-4 text-orange-400" />
-                      <span className="font-medium">Progress</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Progress 
-                        value={(() => {
-                          const event = getLatestTrackingEvent(selectedScreening, "progress");
-                          return event?.metadata?.completionPercent || 0;
-                        })()} 
-                        className="h-2 flex-1" 
-                      />
-                      <span className="text-sm">
+                      <h4 className="font-medium text-center">Email Sent</h4>
+                      <p className="text-sm text-gray-400 mt-2 text-center">
                         {(() => {
-                          const event = getLatestTrackingEvent(selectedScreening, "progress");
-                          return event?.metadata?.completionPercent || 0;
-                        })()}%
-                      </span>
+                          const event = getLatestTrackingEvent(selectedScreening, "sent");
+                          if (!event) return "Not sent";
+                          const date = new Date(event.timestamp);
+                          return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                        })()}
+                      </p>
                     </div>
                   </div>
                   
-                  {/* Completed Status */}
-                  <div className="flex-1 min-w-[120px] p-3 bg-green-900/20 rounded-lg border border-green-900/30">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CheckCircle className="h-4 w-4 text-green-400" />
-                      <span className="font-medium">Completed</span>
+                  {/* Email Viewed */}
+                  <div className="bg-gray-800/50 rounded-lg p-4 border border-blue-900/30">
+                    <div className="flex flex-col items-center">
+                      <div className="p-2 rounded-full bg-blue-900/50 mb-3">
+                        <Eye className="h-6 w-6 text-blue-400" />
+                      </div>
+                      <h4 className="font-medium text-center">Email Viewed</h4>
+                      <p className="text-sm text-gray-400 mt-2 text-center">
+                        {(() => {
+                          const event = getLatestTrackingEvent(selectedScreening, "opened");
+                          if (!event) return "Not viewed";
+                          const date = new Date(event.timestamp);
+                          return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                        })()}
+                      </p>
                     </div>
-                    <div className="text-sm text-gray-400">
-                      {(() => {
-                        const event = getLatestTrackingEvent(selectedScreening, "submitted");
-                        return event ? new Date(event.timestamp).toLocaleString() : "Not completed";
-                      })()}
+                  </div>
+                  
+                  {/* Process Started */}
+                  <div className="bg-gray-800/50 rounded-lg p-4 border border-yellow-900/30">
+                    <div className="flex flex-col items-center">
+                      <div className="p-2 rounded-full bg-yellow-900/50 mb-3">
+                        <Play className="h-6 w-6 text-yellow-400" />
+                      </div>
+                      <h4 className="font-medium text-center">Process Started</h4>
+                      <p className="text-sm text-gray-400 mt-2 text-center">
+                        {(() => {
+                          const event = getLatestTrackingEvent(selectedScreening, "started");
+                          if (!event) return "Not started";
+                          const date = new Date(event.timestamp);
+                          return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Progress */}
+                  <div className="bg-gray-800/50 rounded-lg p-4 border border-orange-900/30">
+                    <div className="flex flex-col items-center">
+                      <div className="p-2 rounded-full bg-orange-900/50 mb-3">
+                        <Activity className="h-6 w-6 text-orange-400" />
+                      </div>
+                      <h4 className="font-medium text-center">Progress</h4>
+                      <div className="w-full mt-3">
+                        <Progress 
+                          value={(() => {
+                            const event = getLatestTrackingEvent(selectedScreening, "progress");
+                            return event?.metadata?.completionPercent || 0;
+                          })()} 
+                          className="h-2 w-full mb-1" 
+                        />
+                        <p className="text-sm text-center mt-1">
+                          {(() => {
+                            const event = getLatestTrackingEvent(selectedScreening, "progress");
+                            return event?.metadata?.completionPercent || 0;
+                          })()}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Completed */}
+                  <div className="bg-gray-800/50 rounded-lg p-4 border border-green-900/30">
+                    <div className="flex flex-col items-center">
+                      <div className="p-2 rounded-full bg-green-900/50 mb-3">
+                        <CheckCircle className="h-6 w-6 text-green-400" />
+                      </div>
+                      <h4 className="font-medium text-center">Completed</h4>
+                      <p className="text-sm text-gray-400 mt-2 text-center">
+                        {(() => {
+                          const event = getLatestTrackingEvent(selectedScreening, "submitted");
+                          if (!event) return "Not completed";
+                          const date = new Date(event.timestamp);
+                          return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                        })()}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
               
-              {/* Timeline Section */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-gray-400">Event Timeline</h4>
-                <div className="space-y-3 pl-4 border-l border-gray-700">
+              {/* Event Timeline */}
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-4">Event Timeline</h3>
+                
+                <div className="space-y-0">
                   {(() => {
                     // Get all events sorted by timestamp
                     let events: TrackingEvent[] = [];
@@ -876,44 +891,83 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
                     );
                     
-                    return events.map((event, idx) => (
-                      <div key={idx} className="relative pb-4">
-                        <div className="absolute -left-[22px] mt-1 h-3 w-3 rounded-full bg-blue-500 border-4 border-gray-800"></div>
-                        <div className="flex flex-col">
-                          <div className="text-xs text-gray-400">
-                            {new Date(event.timestamp).toLocaleString()}
+                    return (
+                      <div className="bg-gray-800/30 rounded-lg overflow-hidden">
+                        {events.map((event, idx) => (
+                          <div 
+                            key={idx} 
+                            className={`flex items-center p-4 ${idx % 2 === 0 ? 'bg-gray-800/20' : 'bg-gray-800/40'}`}
+                          >
+                            <div className="w-40 text-sm text-gray-400">
+                              {new Date(event.timestamp).toLocaleString([], {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                              })}
+                            </div>
+                            <div className="flex items-center gap-2 flex-1">
+                              {event.type === "sent" && (
+                                <>
+                                  <Send className="h-4 w-4 text-purple-400" />
+                                  <span className="font-medium">Email Sent</span>
+                                </>
+                              )}
+                              {event.type === "opened" && (
+                                <>
+                                  <Eye className="h-4 w-4 text-blue-400" />
+                                  <span className="font-medium">Email Opened</span>
+                                </>
+                              )}
+                              {event.type === "started" && (
+                                <>
+                                  <Play className="h-4 w-4 text-yellow-400" />
+                                  <span className="font-medium">Pre-Screening Started</span>
+                                </>
+                              )}
+                              {event.type === "progress" && (
+                                <>
+                                  <Activity className="h-4 w-4 text-orange-400" />
+                                  <span className="font-medium">Progress Update: {event.metadata?.completionPercent || 0}%</span>
+                                  <Progress value={event.metadata?.completionPercent || 0} className="h-1 w-16 ml-2" />
+                                </>
+                              )}
+                              {event.type === "submitted" && (
+                                <>
+                                  <CheckCircle className="h-4 w-4 text-green-400" />
+                                  <span className="font-medium">Pre-Screening Completed</span>
+                                </>
+                              )}
+                              {event.type === "done" && (
+                                <>
+                                  <CheckSquare className="h-4 w-4 text-green-400" />
+                                  <span className="font-medium">Process Finalized</span>
+                                </>
+                              )}
+                              {event.type === "error" && (
+                                <>
+                                  <AlertCircle className="h-4 w-4 text-red-400" />
+                                  <span className="font-medium">Error Occurred</span>
+                                  {event.metadata && event.metadata.error && (
+                                    <span className="text-sm text-red-400 ml-2">{event.metadata.error}</span>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
-                          <div className="font-medium capitalize">
-                            {event.type === "sent" && "Email Sent"}
-                            {event.type === "opened" && "Email Opened"}
-                            {event.type === "started" && "Pre-Screening Started"}
-                            {event.type === "progress" && (
-                              <div className="flex items-center gap-2">
-                                <span>Progress Update: {event.metadata?.completionPercent || 0}%</span>
-                                <Progress value={event.metadata?.completionPercent || 0} className="h-1 w-16" />
-                              </div>
-                            )}
-                            {event.type === "submitted" && "Pre-Screening Completed"}
-                            {event.type === "done" && "Process Finalized"}
-                            {event.type === "error" && "Error Occurred"}
-                          </div>
-                          {event.metadata && event.metadata.message && (
-                            <div className="text-sm text-gray-400 mt-1">{event.metadata.message}</div>
-                          )}
-                          {event.type === "error" && event.metadata && event.metadata.error && (
-                            <div className="text-sm text-red-400 mt-1">{event.metadata.error}</div>
-                          )}
-                        </div>
+                        ))}
                       </div>
-                    ));
+                    );
                   })()}
                 </div>
               </div>
             </div>
           )}
           
-          <div className="flex justify-end mt-4">
-            <Button variant="outline" size="sm" onClick={() => setShowDetailModal(false)}>
+          <div className="flex justify-end mt-6">
+            <Button size="sm" variant="outline" onClick={() => setShowDetailModal(false)}>
               Close
             </Button>
           </div>
