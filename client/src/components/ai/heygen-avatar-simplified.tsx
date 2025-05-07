@@ -587,21 +587,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
           </div>
         )}
         
-        {/* Speech Animation Overlay */}
-        {isSpeaking && !isMuted && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-            <div className="absolute inset-0 bg-black/20 rounded-xl"></div>
-            <div className="flex flex-col items-center justify-center">
-              <div className="flex space-x-1 mb-3">
-                <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '0ms'}}></div>
-                <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '200ms'}}></div>
-                <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '400ms'}}></div>
-                <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '600ms'}}></div>
-                <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '800ms'}}></div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Removed Speech Animation Overlay */}
         
         {/* Mute Control */}
         <div className="absolute top-2 right-2 z-20">
