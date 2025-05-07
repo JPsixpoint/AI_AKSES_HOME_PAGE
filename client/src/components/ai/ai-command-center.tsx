@@ -62,7 +62,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const [input, setInput] = useState("");
   const [aiStatus, setAIStatus] = useState<AIStatus>("listening");
   const [lastAIMessage, setLastAIMessage] = useState<string | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(false); // Default is unmuted
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
