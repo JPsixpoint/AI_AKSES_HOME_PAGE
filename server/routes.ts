@@ -6,6 +6,7 @@ import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import OpenAI from "openai";
 import { Resend } from "resend";
+import { heygenController } from "./heygen";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up OpenAI client
