@@ -1,18 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Room,
-  RoomEvent,
-  RemoteParticipant,
-  RemoteTrackPublication,
-  RemoteTrack,
-  Track,
-  ConnectionState,
-  RoomOptions,
-  VideoPresets,
-  RemoteVideoTrack,
-  createLocalVideoTrack,
-  RemoteAudioTrack,
-} from 'livekit-client';
+import StreamingAvatar from '@heygen/streaming-avatar';
+
+// Define missing types for the StreamingAvatar package
+interface HeyGenError {
+  message: string;
+  [key: string]: any;
+}
+
+interface HeyGenSession {
+  session_id: string;
+  [key: string]: any;
+}
+
+interface TalkOptions {
+  text: string;
+  mode?: 'sync' | 'async';
+}
 
 // Interface for component props
 interface HeyGenAvatarV2Props {
@@ -28,86 +31,80 @@ const VOICE_ID = 'c8e176c17f814004885fd590e03ff99f';
 export function HeyGenAvatarV2({ text, isVisible }: HeyGenAvatarV2Props) {
   // References
   const videoRef = useRef<HTMLVideoElement>(null);
-  const roomRef = useRef<Room | null>(null);
-  const sessionIdRef = useRef<string | null>(null);
+  const avatarRef = useRef<StreamingAvatar | null>(null);
   
   // States for UI rendering
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [usingFallback, setUsingFallback] = useState(true);
+  const [usingFallback, setUsingFallback] = useState(false);
   
-  // Initialize LiveKit room and connect to HeyGen streaming
+  // Initialize HeyGen Streaming Avatar
   useEffect(() => {
     if (!isVisible) return;
+    
+    // Initialize SDK with API key
+    const options = {
+      apiKey: HEYGEN_API_KEY,
+      avatarId: AVATAR_ID,
+      voiceId: VOICE_ID,
+      videoElId: 'heygen-video', // ID of the video element
+      debug: true
+    };
     
     const initializeAvatar = async () => {
       try {
         setIsLoading(true);
         setError(null);
+        setUsingFallback(false);
         
-        const apiUrl = 'https://api.heygen.com/v1/streaming/room';
+        console.log('Initializing HeyGen Streaming Avatar SDK...');
         
-        // Step 1: Create a session via API
-        console.log('Creating HeyGen streaming session...');
-        const sessionResponse = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Api-Key': HEYGEN_API_KEY,
-          },
-          body: JSON.stringify({
-            avatar_id: AVATAR_ID,
-            voice_id: VOICE_ID,
-          }),
+        // Create new instance
+        const avatar = new StreamingAvatar(options);
+        avatarRef.current = avatar;
+        
+        // Add event listeners
+        avatar.on('error', (err) => {
+          console.error('HeyGen Streaming Avatar error:', err);
+          const errorMessage = err.message || 'Unknown error occurred';
+          setError(`Avatar error: ${errorMessage}`);
+          setUsingFallback(true);
         });
         
-        if (!sessionResponse.ok) {
-          const errorData = await sessionResponse.json();
-          throw new Error(`Failed to create session: ${errorData.message || sessionResponse.statusText}`);
-        }
+        avatar.on('talk-started', () => {
+          console.log('HeyGen avatar talk started');
+          setIsSpeaking(true);
+        });
         
-        const sessionData = await sessionResponse.json();
-        console.log('Session created:', sessionData);
+        avatar.on('talk-completed', () => {
+          console.log('HeyGen avatar talk completed');
+          setIsSpeaking(false);
+        });
         
-        if (!sessionData.data || !sessionData.data.session_id || !sessionData.data.room_token) {
-          throw new Error('Invalid session data returned from HeyGen API');
-        }
+        avatar.on('closed', () => {
+          console.log('HeyGen avatar session closed');
+          setUsingFallback(true);
+        });
         
-        // Store session ID for later use
-        sessionIdRef.current = sessionData.data.session_id;
+        avatar.on('session-created', (session) => {
+          console.log('HeyGen avatar session created:', session);
+        });
         
-        // Step 2: Connect to LiveKit room with the token
-        const roomOptions: RoomOptions = {
-          adaptiveStream: true,
-          dynacast: true,
-          videoCaptureDefaults: {
-            resolution: VideoPresets.h720.resolution,
-          },
-        };
+        avatar.on('connected', () => {
+          console.log('HeyGen avatar connected');
+          setIsLoading(false);
+        });
         
-        // Create and configure room
-        const room = new Room(roomOptions);
-        roomRef.current = room;
+        // Initialize the SDK (creates room, establishes connection)
+        await avatar.init();
         
-        // Set up room event handlers
-        room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
-        room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
-        room.on(RoomEvent.ConnectionStateChanged, handleConnectionStateChanged);
+        console.log('HeyGen Streaming Avatar SDK initialized successfully');
         
-        // Connect to LiveKit room
-        console.log('Connecting to LiveKit room...');
-        await room.connect('wss://streaming.heygen.com', sessionData.data.room_token);
-        console.log('Connected to LiveKit room');
-        
-        setIsConnected(true);
-        setIsLoading(false);
-        setUsingFallback(false);
       } catch (err: any) {
-        console.error('Failed to initialize avatar:', err);
-        const errorMessage = err.message || "Unknown error occurred";
+        console.error('Failed to initialize HeyGen avatar:', err);
+        const errorMessage = err.message || 'Unknown error occurred';
         setError(`Failed to initialize HeyGen avatar: ${errorMessage}`);
         setUsingFallback(true);
         setIsLoading(false);
@@ -118,114 +115,13 @@ export function HeyGenAvatarV2({ text, isVisible }: HeyGenAvatarV2Props) {
     
     // Cleanup on unmount
     return () => {
-      if (roomRef.current) {
-        console.log('Disconnecting from LiveKit room');
-        roomRef.current.disconnect();
-        roomRef.current = null;
-      }
-      
-      if (sessionIdRef.current) {
-        // Clean up session (can be done via API if needed)
-        console.log('Cleaning up HeyGen session');
-        sessionIdRef.current = null;
+      if (avatarRef.current) {
+        console.log('Closing HeyGen avatar session');
+        avatarRef.current.close();
+        avatarRef.current = null;
       }
     };
   }, [isVisible]);
-  
-  // Handle LiveKit room events
-  const handleTrackSubscribed = (
-    track: RemoteTrack,
-    publication: RemoteTrackPublication,
-    participant: RemoteParticipant
-  ) => {
-    console.log('Track subscribed:', track.kind);
-    
-    if (track.kind === Track.Kind.Video && videoRef.current) {
-      const videoTrack = track as RemoteVideoTrack;
-      videoTrack.attach(videoRef.current);
-      console.log('Video track attached to element');
-    }
-    
-    if (track.kind === Track.Kind.Audio) {
-      const audioTrack = track as RemoteAudioTrack;
-      audioTrack.attach();
-      console.log('Audio track attached');
-    }
-  };
-  
-  const handleTrackUnsubscribed = (
-    track: RemoteTrack,
-    publication: RemoteTrackPublication,
-    participant: RemoteParticipant
-  ) => {
-    console.log('Track unsubscribed:', track.kind);
-    
-    if (track.kind === Track.Kind.Video) {
-      track.detach();
-    }
-    
-    if (track.kind === Track.Kind.Audio) {
-      track.detach();
-    }
-  };
-  
-  const handleConnectionStateChanged = (state: ConnectionState) => {
-    console.log('Connection state changed:', state);
-    
-    if (state === ConnectionState.Connected) {
-      setIsConnected(true);
-      setIsLoading(false);
-    } else if (state === ConnectionState.Disconnected) {
-      setIsConnected(false);
-    }
-  };
-  
-  // Function to make avatar speak using HeyGen API
-  const speakWithHeyGen = async (text: string) => {
-    if (!sessionIdRef.current || !isConnected) {
-      console.error('No active HeyGen session or not connected');
-      setUsingFallback(true);
-      speakWithBrowser(text);
-      return;
-    }
-    
-    try {
-      setIsSpeaking(true);
-      
-      const talkResponse = await fetch('https://api.heygen.com/v1/streaming/talk', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Api-Key': HEYGEN_API_KEY,
-        },
-        body: JSON.stringify({
-          session_id: sessionIdRef.current,
-          text: text,
-          mode: 'sync'  // Use sync mode to wait for completion
-        }),
-      });
-      
-      if (!talkResponse.ok) {
-        const errorData = await talkResponse.json();
-        throw new Error(`Failed to talk: ${errorData.message || talkResponse.statusText}`);
-      }
-      
-      const talkData = await talkResponse.json();
-      console.log('Talk response:', talkData);
-      
-      // Wait for animation to complete
-      setTimeout(() => {
-        setIsSpeaking(false);
-      }, calculateSpeechTime(text));
-      
-    } catch (err: any) {
-      console.error('Failed to speak with HeyGen:', err);
-      const errorMessage = err.message || "Unknown error occurred";
-      setError(`Failed to speak: ${errorMessage}`);
-      setUsingFallback(true);
-      speakWithBrowser(text);
-    }
-  };
   
   // Fallback speech synthesis using browser API
   const speakWithBrowser = (text: string) => {
@@ -314,8 +210,9 @@ export function HeyGenAvatarV2({ text, isVisible }: HeyGenAvatarV2Props) {
   
   // Apply mute/unmute to video element
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = isMuted;
+    const videoElement = document.getElementById('heygen-video') as HTMLVideoElement;
+    if (videoElement) {
+      videoElement.muted = isMuted;
     }
     
     if (isMuted && window.speechSynthesis) {
@@ -346,29 +243,35 @@ export function HeyGenAvatarV2({ text, isVisible }: HeyGenAvatarV2Props) {
       return;
     }
 
-    if (!usingFallback && isConnected && sessionIdRef.current) {
-      console.log('Using HeyGen avatar for speech');
-      speakWithHeyGen(text);
+    if (!usingFallback && avatarRef.current) {
+      console.log('Making HeyGen avatar speak:', text);
+      
+      avatarRef.current.talk({
+        text: text,
+        mode: 'sync' // Wait for completion before returning
+      }).catch(err => {
+        console.error('Failed to speak with HeyGen avatar:', err);
+        setUsingFallback(true);
+        speakWithBrowser(text);
+      });
+      
     } else {
       console.log('Using browser speech synthesis fallback');
       setUsingFallback(true);
       speakWithBrowser(text);
     }
-  }, [text, isMuted, isVisible, isConnected, usingFallback]);
+  }, [text, isMuted, isVisible, usingFallback]);
 
   // Function to retry connection
   const handleRetry = () => {
     setError(null);
     setUsingFallback(false);
-    setIsConnected(false);
-    sessionIdRef.current = null;
-    
-    if (roomRef.current) {
-      roomRef.current.disconnect();
-      roomRef.current = null;
-    }
-    
     setIsLoading(true);
+    
+    if (avatarRef.current) {
+      avatarRef.current.close();
+      avatarRef.current = null;
+    }
   };
 
   if (!isVisible) {
@@ -408,9 +311,9 @@ export function HeyGenAvatarV2({ text, isVisible }: HeyGenAvatarV2Props) {
         </div>
       ) : (
         <div className="relative">
-          {!usingFallback && isConnected ? (
+          {!usingFallback ? (
             <video 
-              ref={videoRef}
+              id="heygen-video"
               autoPlay
               playsInline
               muted={isMuted}
