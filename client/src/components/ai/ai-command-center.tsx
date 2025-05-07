@@ -88,32 +88,165 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     },
   });
 
-  // Scroll to bottom of messages
+  // Speech synthesis setup
+  const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+
+  // Function to speak text using the Web Speech API
+  const speakText = (text: string) => {
+    if (isMuted) return;
+    
+    // Cancel any existing speech
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    
+    try {
+      // Clean up text for speech (remove markdown, code blocks, etc.)
+      const cleanText = text
+        .replace(/```[\s\S]*?```/g, "")  // Remove code blocks
+        .replace(/\*\*(.*?)\*\*/g, "$1")  // Remove bold markers
+        .replace(/\*(.*?)\*/g, "$1")      // Remove italic markers
+        .replace(/\[(.*?)\]\(.*?\)/g, "$1") // Convert links to just text
+        .replace(/(\d{1,3}(?:,\d{3})+(\.\d+)?|\d{1,3}(\.\d+)?)/g, (match) => {
+          // Make currency and large numbers sound better
+          return match.replace(/,/g, "").replace(/\$/g, "dollars ");
+        });
+      
+      // Create speech utterance
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      
+      // Get available voices
+      let voices = window.speechSynthesis.getVoices();
+      
+      // If voices array is empty, try to load voices
+      if (voices.length === 0) {
+        // This is needed for Chrome sometimes
+        window.speechSynthesis.onvoiceschanged = () => {
+          voices = window.speechSynthesis.getVoices();
+          console.log("Voices loaded:", voices.length);
+          console.log("Available voices:", voices.map(v => `${v.name} (${v.lang})`));
+        };
+        
+        // Trigger voice loading
+        window.speechSynthesis.getVoices();
+      }
+      
+      // Try to find a good quality female voice
+      const preferredVoices = [
+        // US English voices - preferred
+        "Google US English Female", "Samantha", "Victoria", 
+        // UK English voices - fallback
+        "Google UK English Female", "Daniel",
+        // Other English voices
+        "Microsoft Zira", "Karen"
+      ];
+      
+      // Find first matching voice from our preference list
+      for (const voiceName of preferredVoices) {
+        const voice = voices.find(v => v.name.includes(voiceName));
+        if (voice) {
+          utterance.voice = voice;
+          break;
+        }
+      }
+      
+      // If no preferred voice found, use the first English voice available
+      if (!utterance.voice) {
+        const englishVoice = voices.find(v => v.lang.startsWith('en-'));
+        if (englishVoice) utterance.voice = englishVoice;
+      }
+      
+      // Adjust speech parameters
+      utterance.rate = 1.0;  // Normal speech rate
+      utterance.pitch = 1.0; // Normal pitch
+      utterance.volume = 1.0; // Full volume
+      
+      // Save reference to speech utterance
+      speechSynthesisRef.current = utterance;
+      
+      // Event handlers
+      utterance.onstart = () => {
+        console.log("Speech started");
+        setAIStatus("speaking");
+      };
+      
+      utterance.onend = () => {
+        console.log("Speech ended");
+        setAIStatus("listening");
+        speechSynthesisRef.current = null;
+      };
+      
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error:", event);
+        setAIStatus("error");
+        speechSynthesisRef.current = null;
+        
+        // Fallback to timer-based approach if speech fails
+        const words = text.split(/\s+/).length;
+        const speakingTimeMs = Math.max(4000, words * 400); // Min 4 seconds, then 400ms per word
+        setTimeout(() => setAIStatus("listening"), speakingTimeMs);
+      };
+      
+      // Start speaking
+      window.speechSynthesis.speak(utterance);
+      
+      // Fallback timer in case speech synthesis fails silently
+      const fallbackTimer = setTimeout(() => {
+        if (speechSynthesisRef.current && aiStatus === "speaking") {
+          console.log("Fallback timer triggered - speech may have failed silently");
+          setAIStatus("listening");
+          speechSynthesisRef.current = null;
+        }
+      }, 30000); // 30 second max timeout
+      
+      return () => clearTimeout(fallbackTimer);
+    } catch (error) {
+      console.error("Speech synthesis error:", error);
+      
+      // Fallback to timer-based approach
+      const words = text.split(/\s+/).length;
+      const speakingTimeMs = Math.max(4000, words * 400); // Min 4 seconds, then 400ms per word
+      console.log(`Fallback speaking time: ${speakingTimeMs}ms for ${words} words`);
+      
+      setAIStatus("speaking");
+      const timer = setTimeout(() => {
+        setAIStatus("listening");
+      }, speakingTimeMs);
+      
+      return () => clearTimeout(timer);
+    }
+  };
+  
+  // Toggle mute function
+  const toggleMute = () => {
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
+    
+    if (newMutedState) {
+      // Cancel current speech if muting
+      if (window.speechSynthesis && speechSynthesisRef.current) {
+        window.speechSynthesis.cancel();
+        setAIStatus("listening");
+      }
+    } else if (lastAIMessage) {
+      // Restart speech if unmuting and we have a message
+      speakText(lastAIMessage);
+    }
+  };
+
+  // Scroll to bottom of messages and handle speech
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     
     // Update lastAIMessage when a new assistant message is added
     const lastMessage = messages[messages.length - 1];
     if (lastMessage && lastMessage.role === "assistant") {
-      setLastAIMessage(lastMessage.content);
-      // Also set speech status
-      setAIStatus("speaking");
+      const messageText = lastMessage.content;
+      setLastAIMessage(messageText);
       
-      // Calculate a reasonable speaking time based on message length
-      // Average human speaking rate is about 150 words per minute, or 2.5 words per second
-      const words = lastMessage.content.split(/\s+/).length;
-      const speakingTimeMs = Math.max(4000, words * 400); // Min 4 seconds, then 400ms per word
-      
-      console.log(`Speaking time: ${speakingTimeMs}ms for ${words} words`);
-      
-      // Reset to listening after the calculated delay
-      const timer = setTimeout(() => {
-        setAIStatus("listening");
-        // Clear the lastAIMessage after speaking is complete
-        setLastAIMessage(null);
-      }, speakingTimeMs);
-      
-      return () => clearTimeout(timer);
+      // Speak the message
+      speakText(messageText);
     }
   }, [messages]);
 
