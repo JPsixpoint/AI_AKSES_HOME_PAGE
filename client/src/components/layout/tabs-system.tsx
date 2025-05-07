@@ -1,0 +1,448 @@
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { 
+  Search, 
+  Plus, 
+  X, 
+  PanelLeft, 
+  MoveRight, 
+  Database, 
+  Settings, 
+  BarChart4, 
+  FileSpreadsheet, 
+  Brain, 
+  Folder, 
+  Files
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { DealsPipeline } from "@/components/deals/deals-pipeline";
+import { AIPreScreening } from "@/components/ai/ai-pre-screening";
+
+// Define the tab types
+type TabType = 
+  | "Pipeline"
+  | "AI PreScreening"
+  | "Deal Information"
+  | "Pricer"
+  | "Due Diligence"
+  | "Org Settings"
+  | "Rag Databases";
+
+interface Tab {
+  id: string;
+  type: TabType;
+  title: string;
+  data?: any;
+}
+
+interface TabsSystemProps {
+  selectedDealId?: string | null;
+  onSelectedDealChange: (dealId: string | null) => void;
+}
+
+export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemProps) {
+  // Ref for imperative tab opening
+  const tabsRef = useRef<{
+    openPrescreeningTab: (dealId?: string) => void;
+  }>({openPrescreeningTab: () => {}});
+  // Track open tabs
+  const [tabs, setTabs] = useState<Tab[]>([
+    { id: "default-pipeline", type: "Pipeline", title: "Pipeline" }
+  ]);
+  
+  // Track active tab
+  const [activeTabId, setActiveTabId] = useState<string>("default-pipeline");
+  
+  // State for new tab dialog
+  const [isNewTabDialogOpen, setIsNewTabDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Tab options for the new tab dialog
+  const tabOptions: Array<{type: TabType, title: string, description: string}> = [
+    { type: "Pipeline", title: "Pipeline", description: "View and manage the deal pipeline" },
+    { type: "AI PreScreening", title: "AI PreScreening", description: "AI-assisted pre-screening of potential deals" },
+    { type: "Deal Information", title: "Deal Information", description: "View and edit detailed deal information" },
+    { type: "Pricer", title: "Pricer", description: "Deal pricing and financial modeling tools" },
+    { type: "Due Diligence", title: "Due Diligence", description: "Manage due diligence process and documents" },
+    { type: "Org Settings", title: "Org Settings", description: "Organization settings and configuration" },
+    { type: "Rag Databases", title: "Rag Databases", description: "Manage and explore RAG knowledge databases" },
+  ];
+  
+  // Handle tab switching
+  const switchToTab = (tabId: string) => {
+    setActiveTabId(tabId);
+  };
+
+  // Add a new tab
+  const addNewTab = (tabType: TabType, title: string, data?: any) => {
+    // Special case for Pipeline tab - use the existing one if it exists
+    if (tabType === "Pipeline") {
+      const existingPipelineTab = tabs.find(tab => tab.type === "Pipeline");
+      if (existingPipelineTab) {
+        setActiveTabId(existingPipelineTab.id);
+        setIsNewTabDialogOpen(false);
+        setSearchTerm("");
+        return;
+      }
+    }
+    
+    // For all other tabs or if Pipeline tab doesn't exist yet
+    const newTab: Tab = {
+      id: `${tabType}-${Date.now()}`,
+      type: tabType,
+      title: title,
+      data: data
+    };
+    
+    setTabs([...tabs, newTab]);
+    setActiveTabId(newTab.id);
+    setIsNewTabDialogOpen(false);
+    setSearchTerm("");
+  };
+
+  // Close a tab
+  const closeTab = (tabId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const tabIndex = tabs.findIndex(tab => tab.id === tabId);
+    if (tabIndex === -1) return;
+    
+    // Create a new array without the closed tab
+    const newTabs = tabs.filter(tab => tab.id !== tabId);
+    
+    // If we're closing the active tab, switch to another tab
+    if (tabId === activeTabId) {
+      // If possible, select the tab to the left
+      if (tabIndex > 0) {
+        setActiveTabId(newTabs[tabIndex - 1].id);
+      } else if (newTabs.length > 0) {
+        // Otherwise select the first tab
+        setActiveTabId(newTabs[0].id);
+      }
+    }
+    
+    setTabs(newTabs);
+  };
+
+  // Filter tab options based on search term
+  const filteredTabOptions = tabOptions.filter(option =>
+    option.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    option.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // If new tab dialog is open but we only have one tab, make sure we show content
+  // for that tab rather than an empty state
+  useEffect(() => {
+    if (isNewTabDialogOpen && tabs.length === 1) {
+      // Make sure the default Pipeline tab is selected
+      setActiveTabId(tabs[0].id); 
+    }
+  }, [isNewTabDialogOpen, tabs]);
+
+  // Method to open pre-screening tab with a specific deal
+  const openPrescreeningTab = useCallback((dealId?: string) => {
+    // Find existing pre-screening tab
+    const existingTab = tabs.find(tab => tab.type === "AI PreScreening");
+    if (existingTab) {
+      // Update the tab data if needed
+      if (dealId) {
+        const updatedTabs = tabs.map(tab => {
+          if (tab.id === existingTab.id) {
+            return { ...tab, data: { dealId } };
+          }
+          return tab;
+        });
+        setTabs(updatedTabs);
+      }
+      setActiveTabId(existingTab.id);
+    } else {
+      // Create a new tab
+      addNewTab("AI PreScreening", "AI PreScreening", dealId ? { dealId } : undefined);
+    }
+  }, [tabs]);
+
+  // Update the ref
+  useEffect(() => {
+    tabsRef.current.openPrescreeningTab = openPrescreeningTab;
+  }, [openPrescreeningTab]);
+  
+  // Expose the method to the parent component via props
+  useEffect(() => {
+    // Expose the tab opening methods via window for easy access from anywhere
+    (window as any).openPrescreeningTab = openPrescreeningTab;
+  }, [openPrescreeningTab]);
+  
+  return (
+    <div className="flex flex-col h-full relative">
+      {/* Tabs bar - more prominent and separated from content */}
+      <div className="sticky top-0 z-10 flex items-center bg-dark-lighter border-b border-dark overflow-x-auto shadow-sm mb-4">
+        {tabs.map((tab) => (
+          <div 
+            key={tab.id}
+            className={cn(
+              "flex items-center min-w-fit px-4 py-2.5 text-sm border-r border-dark cursor-pointer relative",
+              activeTabId === tab.id 
+                ? "bg-dark text-foreground before:absolute before:bottom-0 before:left-0 before:right-0 before:h-0.5 before:bg-primary" 
+                : "text-muted-foreground hover:bg-dark/60"
+            )}
+            onClick={() => switchToTab(tab.id)}
+          >
+            <span className="truncate max-w-[150px] mr-2">{tab.title}</span>
+            
+            {/* Always show close button */}
+            <button 
+              className="ml-1 p-0.5 rounded-sm opacity-70 hover:opacity-100 hover:bg-dark-surface"
+              onClick={(e) => closeTab(tab.id, e)}
+              aria-label={`Close ${tab.title} tab`}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+        
+        {/* New tab button */}
+        <button 
+          className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-dark/60 flex items-center"
+          onClick={() => setIsNewTabDialogOpen(true)}
+          aria-label="Add new tab"
+        >
+          <Plus size={16} className="mr-1" />
+          <span className="text-xs font-medium">New Tab</span>
+        </button>
+      </div>
+      
+      {/* Tab content */}
+      <div className="flex-1 overflow-auto">
+        {/* Always render tab content for single tab system when not in new tab dialog */}
+        {tabs.length === 1 && tabs[0].type === "Pipeline" && !isNewTabDialogOpen && (
+          <div className="h-full">
+            <DealsPipeline 
+              selectedDealId={selectedDealId} 
+              onSelectedDealChange={onSelectedDealChange} 
+            />
+          </div>
+        )}
+        
+        {!isNewTabDialogOpen ? (
+          // Normal tab content when not in new tab selection mode and more than one tab
+          tabs.length > 1 && tabs.map((tab) => (
+            <div 
+              key={tab.id} 
+              className={cn("h-full", activeTabId === tab.id ? "block" : "hidden")}
+            >
+              {tab.type === "Pipeline" && (
+                <DealsPipeline 
+                  selectedDealId={selectedDealId} 
+                  onSelectedDealChange={onSelectedDealChange} 
+                />
+              )}
+              {tab.type === "AI PreScreening" && (
+                <AIPreScreening initialDealId={(tab.data?.dealId as string) || selectedDealId || undefined} />
+              )}
+              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && (
+                <div className="h-full flex items-center justify-center p-6">
+                  <div className="text-center max-w-md mx-auto">
+                    <h2 className="text-2xl font-semibold mb-3">{tab.title}</h2>
+                    <p className="text-muted-foreground mb-4">
+                      This section is currently under development. Check back later for full functionality.
+                    </p>
+                    <Button 
+                      variant="outline"
+                      onClick={() => closeTab(tab.id, { stopPropagation: () => {} } as React.MouseEvent)}
+                    >
+                      Close This Tab
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          // New tab selection interface
+          <div className="h-full bg-dark-surface border-t border-dark flex flex-col overflow-hidden">
+            <div className="p-3 border-b border-dark flex justify-between items-center">
+              <h2 className="text-base font-medium">New tab</h2>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setIsNewTabDialogOpen(false);
+                  // Make sure the active tab is displayed
+                  setActiveTabId(activeTabId);
+                }}
+                className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+              >
+                <X size={16} />
+              </Button>
+            </div>
+            
+            <div className="p-4 flex-1 overflow-auto">
+              <div className="max-w-3xl mx-auto">
+                {/* Search input */}
+                <div className="relative mb-6">
+                  <div className="flex items-center bg-dark-surface rounded-lg border border-dark px-3 focus-within:border-primary">
+                    <Search className="h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Ask AI, search for tabs & open tools"
+                      className="border-0 bg-transparent pl-2 shadow-none focus-visible:ring-0 text-foreground"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                {/* Available tab sections */}
+                <div className="space-y-8">
+                  {/* Files section */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Files</h3>
+                    <div className="space-y-1">
+                      <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                        <Folder className="h-4 w-4 text-muted-foreground mr-2" />
+                        <span className="text-sm">Find a file</span>
+                        <span className="ml-auto text-xs text-muted-foreground">→</span>
+                      </button>
+                      <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                        <Search className="h-4 w-4 text-muted-foreground mr-2" />
+                        <span className="text-sm">Search through your files</span>
+                        <span className="ml-auto text-xs text-muted-foreground">→</span>
+                      </button>
+                      <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                        <Plus className="h-4 w-4 text-muted-foreground mr-2" />
+                        <span className="text-sm">Create a new file</span>
+                        <span className="ml-auto text-xs text-muted-foreground">→</span>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Tools section */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Tools</h3>
+                    <div className="space-y-1">
+                      <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                        <Settings className="h-4 w-4 text-muted-foreground mr-2" />
+                        <span className="text-sm">Settings</span>
+                        <span className="ml-auto text-xs text-muted-foreground">→</span>
+                      </button>
+                      <button className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center">
+                        <Database className="h-4 w-4 text-muted-foreground mr-2" />
+                        <span className="text-sm">Database</span>
+                        <span className="ml-auto text-xs text-muted-foreground">→</span>
+                      </button>
+                    </div>
+                  </div>
+                  {/* Main modules section */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Deal Management</h3>
+                    <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {filteredTabOptions
+                        .filter(option => ["Pipeline", "Deal Information", "Due Diligence"].includes(option.type))
+                        .map((option) => (
+                          <button
+                            key={option.type}
+                            className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                            onClick={() => {
+                              // For Pipeline tab, close dialog and show pipeline if it exists
+                              if (option.type === "Pipeline") {
+                                const existingPipelineTab = tabs.find(tab => tab.type === "Pipeline");
+                                if (existingPipelineTab) {
+                                  setActiveTabId(existingPipelineTab.id);
+                                  setIsNewTabDialogOpen(false);
+                                  return;
+                                }
+                              }
+                              // Otherwise create a new tab
+                              addNewTab(option.type, option.title);
+                            }}
+                          >
+                            <div className="mr-3 text-primary">
+                              {option.type === "Pipeline" && <PanelLeft className="h-5 w-5" />}
+                              {option.type === "Deal Information" && <Files className="h-5 w-5" />}
+                              {option.type === "Due Diligence" && <FileSpreadsheet className="h-5 w-5" />}
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{option.title}</div>
+                              <div className="text-xs text-muted-foreground">{option.description}</div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                  
+                  {/* AI Tools section */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">AI Tools</h3>
+                    <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {filteredTabOptions
+                        .filter(option => ["AI PreScreening", "Rag Databases"].includes(option.type))
+                        .map((option) => (
+                          <button
+                            key={option.type}
+                            className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                            onClick={() => {
+                              const existingTab = tabs.find(tab => tab.type === option.type);
+                              if (existingTab) {
+                                setActiveTabId(existingTab.id);
+                                setIsNewTabDialogOpen(false);
+                                return;
+                              }
+                              addNewTab(option.type, option.title);
+                            }}
+                          >
+                            <div className="mr-3 text-primary">
+                              {option.type === "AI PreScreening" && <Brain className="h-5 w-5" />}
+                              {option.type === "Rag Databases" && <Database className="h-5 w-5" />}
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{option.title}</div>
+                              <div className="text-xs text-muted-foreground">{option.description}</div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                  
+                  {/* Analysis Tools section */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Analysis Tools</h3>
+                    <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {filteredTabOptions
+                        .filter(option => ["Pricer", "Org Settings"].includes(option.type))
+                        .map((option) => (
+                          <button
+                            key={option.type}
+                            className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                            onClick={() => {
+                              const existingTab = tabs.find(tab => tab.type === option.type);
+                              if (existingTab) {
+                                setActiveTabId(existingTab.id);
+                                setIsNewTabDialogOpen(false);
+                                return;
+                              }
+                              addNewTab(option.type, option.title);
+                            }}
+                          >
+                            <div className="mr-3 text-primary">
+                              {option.type === "Pricer" && <BarChart4 className="h-5 w-5" />}
+                              {option.type === "Org Settings" && <Settings className="h-5 w-5" />}
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{option.title}</div>
+                              <div className="text-xs text-muted-foreground">{option.description}</div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

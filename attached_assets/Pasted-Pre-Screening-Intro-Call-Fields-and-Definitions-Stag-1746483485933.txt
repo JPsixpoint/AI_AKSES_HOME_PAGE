@@ -1,0 +1,109 @@
+Pre-Screening Intro Call Fields and Definitions
+----------------------------------------------
+
+Stage: Intro Call (part of Pre-Screening Phase)
+Purpose: Gather initial qualitative and quantitative data to assess fit, trigger SC1 ScoreCard and Quick Pricer.
+
+Fields:
+-------
+
+1. company_name
+   - Type: text
+   - Description: Legal or trade name of the fintech platform.
+
+2. country
+   - Type: text
+   - Description: Country of incorporation or main operations.
+
+3. platform_overview
+   - Type: text
+   - Description: Summary of what the company does and its target customers.
+
+4. loan_products
+   - Type: text (list)
+   - Description: Description of loan types (e.g., BNPL, working capital, consumer, SME).
+
+5. loan_category
+   - Type: text (enum)
+   - Description: Classification such as secured/unsecured, asset-backed, etc.
+
+6. avg_loan_size_usd
+   - Type: number
+   - Description: Average loan disbursed, expressed in USD.
+
+7. total_loans_disbursed_usd
+   - Type: number
+   - Description: Lifetime value of loans originated, in USD.
+
+8. aum_usd
+   - Type: number
+   - Description: Current assets under management (outstanding loan balance).
+
+9. historical_default_rate
+   - Type: number (percentage)
+   - Description: Overall default rate (cumulative or trailing).
+
+10. write_off_rate
+    - Type: number (percentage)
+    - Description: Cumulative write-offs as a % of total disbursements.
+
+11. apr_or_yield_to_borrower
+    - Type: number (percentage)
+    - Description: Average APR or interest charged to the borrower.
+
+12. borrower_profile
+    - Type: text
+    - Description: Description of target borrowers (e.g., gig workers, micro-SMEs).
+
+13. existing_debt_investors
+    - Type: text
+    - Description: Names or types of current lenders/investors, if any.
+
+14. local_bank_partner
+    - Type: boolean
+    - Description: Whether the platform has a local banking partner.
+
+15. fx_exposure
+    - Type: text
+    - Description: Currency risk exposure and hedging practices.
+
+16. credit_policy_maturity
+    - Type: text (enum)
+    - Description: Internal credit policy state (e.g., early-stage, well-documented, automated).
+
+17. founding_team_background
+    - Type: text
+    - Description: Background of the founders, especially in finance/tech.
+
+18. tech_stack_description
+    - Type: text
+    - Description: Overview of the core tech systems (e.g., LMS, CRM, custom platforms).
+
+19. data_reporting_capability
+    - Type: text
+    - Description: Internal reporting ability (frequency, granularity, investor-facing dashboards).
+
+20. regulatory_status
+    - Type: text
+    - Description: Licenses held and whether regulatory requirements are met (e.g., KYC, AML).
+
+21. deal_size_estimate_usd
+    - Type: number
+    - Description: Approximate size of the credit facility sought.
+
+22. timeline_to_close
+    - Type: text
+    - Description: Estimated timing to execute a facility (e.g., Q3 2025, 2 months).
+
+23. strategic_fit_summary
+    - Type: text
+    - Description: Why this deal is interesting and fits SixPoint’s mandate.
+
+24. recommendation
+    - Type: text (enum)
+    - Description: Move forward, request more info, or pass.
+
+25. notes
+    - Type: text
+    - Description: Freeform analyst notes based on the call.
+26.Last Contact Date

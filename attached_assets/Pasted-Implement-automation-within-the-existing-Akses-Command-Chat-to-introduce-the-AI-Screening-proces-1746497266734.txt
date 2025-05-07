@@ -1,0 +1,75 @@
+Implement automation within the existing 'Akses Command Chat' to introduce the 'AI Screening' process, aimed at initiating professional outreach emails containing links to the originator portal (portal implementation is out of scope for this task). Detailed technical specification and step-by-step implementation plan:
+
+### Step-by-Step Implementation:
+
+**Step 1: Natural Language Command Interpretation**
+
+* Integrate OpenAI LLM to interpret user commands like "Start Pre-Screening on \[Deal]."
+* Implement confirmation dialogues (e.g., "Did you mean \[Deal]?") for accuracy.
+
+**Step 2: Database Deal Verification and Management**
+
+* Check existence of deal in the "deals" database table.
+* Implement logic:
+
+  * If exists, prompt for recipient emails and additional context.
+  * If not, automatically create a new entry in the "deals" table.
+
+**Step 3: Email Composition Automation**
+
+* Fetch necessary company data from the database.
+* Design and generate a professional outreach email:
+
+  * Embed SixPoint logo: "[https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/purple+logo+new+2025.png](https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/purple+logo+new+2025.png)"
+  * Include welcoming message:
+    "Akses welcomes you to our AI AVATAR Pre-Screening. We will guide you through the entire process. Click the link below to start your deal with us."
+  * Insert a unique originator portal link.
+* Display email to the user for review and confirmation.
+
+**Step 4: Email Dispatch using Resend API**
+
+* Integrate Resend API for sending emails.
+* Prompt the administrator securely for Resend API key configuration.
+* Handle email send events, confirmations, and errors.
+
+**Step 5: Database Logging and Tracking**
+
+* Log each interaction in the "ai\_screening" column within the "pipeline" table using structured JSON format:
+
+  * Timestamp
+  * Initiating user
+  * Recipient emails
+  * HTML content of the sent email
+  * Additional context from user
+  * Email sending status (sent / not sent)
+
+**Step 6: AI Screening Tab (Right Panel Integration)**
+
+* Upon identifying a user action in chat:
+
+  * Display a new tab titled "AI Pre Screening" in the right-panel tabs view, adjacent to the chat window.
+  * Auto-populate a dropdown selection with the specified deal from the user's natural language command.
+  * Allow real-time updates from chat interactions (e.g., recipient emails added via chat).
+  * Allow manual entry of recipient emails within the interface.
+  * Display the transaction email content (not editable).
+  * Support uploading and attaching supporting documents.
+  * Provide an explicit confirmation button to send emails.
+
+**Step 7: Pre-Screening Tracker View Implementation**
+
+* Automatically generate or update "Pre-Screening Tracker" view post email dispatch:
+
+  * Display active AI Pre-Screening processes.
+  * Visually track each deal's progress through stages:
+
+    1. Sent
+    2. Opened
+    3. Interacting
+    4. Progress of questions
+    5. Other relevant statuses
+
+### General Requirements:
+
+* Implement thorough error handling and data validation.
+* Ensure secure handling and management of API keys.
+* Provide detailed logs for audit and operational transparency.
