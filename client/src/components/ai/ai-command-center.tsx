@@ -667,11 +667,11 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         <h2 className="text-xl font-semibold mb-4">AI Command Center</h2>
         
         <div className="flex flex-col items-center mb-6">
-          {/* HeyGen Avatar integration */}
+          {/* Avatar integration */}
           <div className="w-full mb-2">
             <HeyGenAvatar 
-              text={lastAIMessage}
-              isVisible={aiStatus === "speaking"}
+              text={aiStatus === "speaking" ? lastAIMessage : null}
+              isVisible={true}
             />
           </div>
           
@@ -681,17 +681,23 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
               aiStatus === "listening" 
                 ? "bg-green-500 animate-pulse" 
                 : "bg-gray-500"
-            }`}></div>
+            }`}>
+              <span className="sr-only">Listening</span>
+            </div>
             <div className={`rounded-full h-2 w-2 ${
               aiStatus === "processing" 
                 ? "bg-yellow-500 animate-pulse" 
                 : "bg-gray-500"
-            }`}></div>
+            }`}>
+              <span className="sr-only">Processing</span>
+            </div>
             <div className={`rounded-full h-2 w-2 ${
               aiStatus === "speaking" 
                 ? "bg-blue-500 animate-pulse" 
                 : "bg-gray-500"
-            }`}></div>
+            }`}>
+              <span className="sr-only">Speaking</span>
+            </div>
           </div>
         </div>
       </div>

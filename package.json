@@ -12,6 +12,7 @@
     "db:seed": "tsx db/seed.ts"
   },
   "dependencies": {
+    "@heygen/streaming-avatar": "^2.0.14",
     "@hookform/resolvers": "^3.9.1",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",
@@ -62,6 +63,7 @@
     "framer-motion": "^11.18.2",
     "fs": "^0.0.1-security",
     "input-otp": "^1.2.4",
+    "livekit-client": "^2.11.4",
     "lucide-react": "^0.453.0",
     "openai": "^4.96.2",
     "passport": "^0.7.0",
