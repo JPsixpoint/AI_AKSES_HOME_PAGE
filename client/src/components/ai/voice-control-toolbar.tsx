@@ -252,8 +252,23 @@ export function VoiceControlToolbar({
   return (
     <div className="flex items-center justify-between p-2 border-b border-dark-surface">
       <div className="flex items-center gap-3">
-        {/* Voice input button removed as requested */}
+        {/* Voice input microphone button - for user to speak to the AI */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`rounded-full ${isListening ? 'bg-green-500/20 text-green-400' : 'opacity-70'}`}
+          onClick={toggleListening}
+          disabled={isProcessing}
+          title={isListening ? "Stop listening" : "Start listening"}
+        >
+          {isListening ? (
+            <Mic className="h-5 w-5 text-green-400 animate-pulse" />
+          ) : (
+            <Mic className="h-5 w-5" />
+          )}
+        </Button>
         
+        {/* AI output speaker button - controls if AI responses are spoken */}
         <Button
           variant="ghost"
           size="sm"
