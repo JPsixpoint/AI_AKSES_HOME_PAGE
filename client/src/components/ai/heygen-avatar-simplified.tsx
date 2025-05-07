@@ -4,15 +4,20 @@ import React, { useEffect, useRef, useState } from 'react';
 interface HeyGenAvatarSimplifiedProps {
   text: string | null;
   isVisible: boolean;
+  isMuted?: boolean;
+  onMuteToggle?: () => void;
 }
 
 /**
  * Simplified Avatar component with Web Speech API fallback
  */
-export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifiedProps) {
+export function HeyGenAvatarSimplified({ text, isVisible, isMuted: externalMuted, onMuteToggle }: HeyGenAvatarSimplifiedProps) {
   // States
-  const [isMuted, setIsMuted] = useState(false);
+  const [internalMuted, setInternalMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  
+  // Use external mute state if provided, otherwise use internal state
+  const isMuted = externalMuted !== undefined ? externalMuted : internalMuted;
   
   // Refs
   const backgroundVideoRef = useRef<HTMLVideoElement>(null);
@@ -205,7 +210,15 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         <div className="absolute top-2 right-2 z-20">
           <button 
             onClick={() => {
-              setIsMuted(!isMuted);
+              if (onMuteToggle) {
+                // Use external mute toggle if provided
+                onMuteToggle();
+              } else {
+                // Otherwise use internal state
+                setInternalMuted(!internalMuted);
+              }
+              
+              // Cancel any ongoing speech if muting
               if (!isMuted && window.speechSynthesis) {
                 window.speechSynthesis.cancel();
               }

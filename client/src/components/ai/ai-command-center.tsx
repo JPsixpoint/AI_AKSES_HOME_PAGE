@@ -805,6 +805,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             <HeyGenAvatarSimplified 
               text={aiStatus === "speaking" ? lastAIMessage : null}
               isVisible={true}
+              isMuted={isMuted}
+              onMuteToggle={toggleMute}
             />
           </div>
           

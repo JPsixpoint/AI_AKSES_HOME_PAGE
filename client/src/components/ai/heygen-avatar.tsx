@@ -4,14 +4,19 @@ import { useEffect, useRef, useState } from 'react';
 interface HeyGenAvatarProps {
   text: string | null;
   isVisible: boolean;
+  isMuted?: boolean;
+  onMuteToggle?: () => void;
 }
 
-export function HeyGenAvatar({ text, isVisible }: HeyGenAvatarProps) {
+export function HeyGenAvatar({ text, isVisible, isMuted: externalMuted, onMuteToggle }: HeyGenAvatarProps) {
   // States
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
+  const [internalMuted, setInternalMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  
+  // Use external mute state if provided, otherwise use internal state
+  const isMuted = externalMuted !== undefined ? externalMuted : internalMuted;
   
   // Text-to-speech using browser's Speech Synthesis API
   const speakWithBrowser = (text: string) => {
@@ -201,7 +206,15 @@ export function HeyGenAvatar({ text, isVisible }: HeyGenAvatarProps) {
         {/* Audio controls */}
         <div className="absolute top-2 right-2">
           <button 
-            onClick={() => setIsMuted(!isMuted)}
+            onClick={() => {
+              if (onMuteToggle) {
+                // Use external mute toggle if provided
+                onMuteToggle();
+              } else {
+                // Otherwise use internal state
+                setInternalMuted(!internalMuted);
+              }
+            }}
             className="bg-black/70 hover:bg-black/90 rounded-full p-2 transition-colors"
             aria-label={isMuted ? "Unmute" : "Mute"}
           >
