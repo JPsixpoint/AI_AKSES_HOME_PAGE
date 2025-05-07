@@ -143,9 +143,12 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
 
   // Method to open pre-screening tab with a specific deal
   const openPrescreeningTab = useCallback((dealId?: string) => {
+    console.log("Opening Pre-Screening tab with dealId:", dealId);
+    
     // Find existing pre-screening tab
     const existingTab = tabs.find(tab => tab.type === "AI PreScreening");
     if (existingTab) {
+      console.log("Found existing AI PreScreening tab:", existingTab.id);
       // Update the tab data if needed
       if (dealId) {
         const updatedTabs = tabs.map(tab => {
@@ -158,6 +161,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
       }
       setActiveTabId(existingTab.id);
     } else {
+      console.log("Creating new AI PreScreening tab");
       // Create a new tab
       addNewTab("AI PreScreening", "AI PreScreening", dealId ? { dealId } : undefined);
     }

@@ -1,0 +1,55 @@
+/* Global Select Component Overrides */
+.select-content,
+.SelectContent {
+  background-color: #121220 !important;
+  border: 1px solid #3a3a4a !important;
+  color: white !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.select-item,
+.SelectItem {
+  background-color: #121220 !important;
+  color: white !important;
+}
+
+.select-item:hover, .select-item:focus,
+.SelectItem:hover, .SelectItem:focus,
+.SelectItem[data-highlighted] {
+  background-color: #4a2b87 !important;
+  color: white !important;
+}
+
+/* Fix transparent dropdown background issue */
+[cmdk-list],
+[cmdk-input-wrapper],
+[cmdk-root] {
+  background-color: #121220 !important;
+  color: white !important;
+}
+
+[cmdk-item] {
+  background-color: #121220 !important;
+  color: white !important;
+}
+
+[cmdk-item][data-selected=true] {
+  background-color: #4a2b87 !important;
+}
+
+/* Fix dialog menu options */
+.dialog-content-bg {
+  background-color: #121220 !important;
+}
+
+/* Override any transparency */
+.radix-select-content,
+.select-dropdown,
+.dropdown-menu,
+.select-menu,
+.popover-content,
+.command-menu {
+  background-color: #121220 !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.8) !important;
+}

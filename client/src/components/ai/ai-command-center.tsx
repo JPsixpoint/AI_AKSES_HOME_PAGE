@@ -12,6 +12,7 @@ import { AIMessage } from "./ai-message";
 import { UserMessage } from "./user-message";
 import { ConfirmationButtons } from "./confirmation-buttons";
 import { VoiceControlToolbar } from "./voice-control-toolbar";
+import { HeyGenAvatarSimplified } from "./heygen-avatar-simplified";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ConcentricPattern } from "../ui/concentric-pattern";
@@ -36,6 +37,18 @@ type AIStatus = "listening" | "processing" | "speaking" | "error";
 
 interface AICommandCenterProps {
   onDealSelect?: (dealId: string | number) => void;
+}
+
+// Extend the Window interface to include our custom properties
+declare global {
+  interface Window {
+    openPrescreeningTab?: (dealId?: string) => void;
+    setPreScreeningEmails?: (emails: string) => void;
+    prescreeningDealInfo?: {
+      dealId: string;
+      dealName?: string;
+    };
+  }
 }
 
 export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
@@ -85,10 +98,21 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
       setLastAIMessage(lastMessage.content);
       // Also set speech status
       setAIStatus("speaking");
-      // Reset to listening after a short delay to simulate speaking
+      
+      // Calculate a reasonable speaking time based on message length
+      // Average human speaking rate is about 150 words per minute, or 2.5 words per second
+      const words = lastMessage.content.split(/\s+/).length;
+      const speakingTimeMs = Math.max(4000, words * 400); // Min 4 seconds, then 400ms per word
+      
+      console.log(`Speaking time: ${speakingTimeMs}ms for ${words} words`);
+      
+      // Reset to listening after the calculated delay
       const timer = setTimeout(() => {
         setAIStatus("listening");
-      }, 1000);
+        // Clear the lastAIMessage after speaking is complete
+        setLastAIMessage(null);
+      }, speakingTimeMs);
+      
       return () => clearTimeout(timer);
     }
   }, [messages]);
@@ -96,6 +120,49 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const handleSendMessage = async () => {
     if (!input.trim()) return;
 
+    // Check if the previous assistant message was about prescreening emails
+    const prevMessage = messages[messages.length - 1];
+    if (prevMessage && 
+        prevMessage.role === 'assistant' && 
+        prevMessage.data?.type === 'prescreening_started' &&
+        input.includes('@')) {
+          
+      // User has provided emails after being prompted for prescreening
+      const dealId = prevMessage.data.dealId;
+      const dealName = prevMessage.data.dealName;
+      const emails = input.split(',').map(email => email.trim());
+      
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: input },
+        { 
+          role: 'assistant', 
+          content: `Thank you! I'll send the pre-screening emails to ${emails.join(', ')}. You can follow the progress in the AI Pre-Screening tab.` 
+        }
+      ]);
+      
+      setInput('');
+      
+      // Now, let's update the form in the AI Pre-Screening tab with these emails
+      try {
+        // First ensure the pre-screening tab is open
+        if (window.openPrescreeningTab) {
+          window.openPrescreeningTab(dealId);
+        }
+        
+        // Set the emails in the form (window method will be added to AIPreScreening)
+        if (window.setPreScreeningEmails) {
+          window.setPreScreeningEmails(emails.join(', '));
+        }
+        
+        console.log('Set pre-screening emails:', emails);
+      } catch (error) {
+        console.error('Error setting pre-screening emails:', error);
+      }
+      
+      return;
+    }
+    
     try {
       // Add user message
       const userMessage = { role: "user" as const, content: input };
@@ -207,15 +274,101 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         setAIStatus("listening");
         return;
-      } else if (
-        parsedResponse.type === "start_prescreening" &&
-        parsedResponse.data?.dealId
-      ) {
-        // Handle starting pre-screening process
-        const dealId = parsedResponse.data.dealId.toString().replace("#", "");
-        const deal = deals.find(d => d.id === dealId);
+      } else if (parsedResponse.type === "send_additional_email") {
+        // Handle request to send additional email
+        const additionalEmail = parsedResponse.data?.email;
+        
+        if (additionalEmail) {
+          console.log("Sending additional email to:", additionalEmail);
+          
+          // Extract just the email addresses from the text to avoid including previous emails
+          const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+          const extractedEmails = additionalEmail.match(emailRegex);
+          
+          // Make sure we have extracted email addresses
+          if (extractedEmails && extractedEmails.length > 0) {
+            // Check if we have deal info stored in window
+            if (window.prescreeningDealInfo?.dealId) {
+              const dealId = window.prescreeningDealInfo.dealId;
+              const dealName = window.prescreeningDealInfo.dealName;
+              
+              // Open pre-screening tab and set email
+              try {
+                if (window.openPrescreeningTab) {
+                  window.openPrescreeningTab(dealId);
+                  // Set the email after a short delay to ensure the tab is open
+                  setTimeout(() => {
+                    if (window.setPreScreeningEmails) {
+                      // Send just the new email(s), not combined with previous ones
+                      const newEmailsString = extractedEmails.join(',');
+                      console.log("Raw additional email string being sent:", newEmailsString);
+                      window.setPreScreeningEmails(newEmailsString);
+                      console.log("Set additional pre-screening email:", newEmailsString);
+                    }
+                  }, 500);
+                }
+                
+                // Add message to confirm
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    role: "assistant",
+                    content: parsedResponse.message || `I'm sending the pre-screening email to ${extractedEmails.join(', ')}. You can track this in the AI Pre-Screening tab.`,
+                  },
+                ]);
+              } catch (error) {
+                console.error("Error setting additional email:", error);
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    role: "assistant",
+                    content: "I couldn't send the additional email. Please try opening the AI Pre-Screening tab manually and entering the email address there.",
+                  },
+                ]);
+              }
+            }
+          } else {
+            // No deal info stored
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: "I need to know which deal you want to send the pre-screening email for. Please start by saying 'Start AI Pre-Screening on [Deal Name]'.",
+              },
+            ]);
+          }
+          
+          setAIStatus("listening");
+          return;
+        }
+      } else if (parsedResponse.type === "start_prescreening") {
+        console.log("Handling start_prescreening request:", parsedResponse.data);
+        
+        // Check if we have a dealId or dealName in the parsed response
+        let deal;
+        
+        if (parsedResponse.data?.dealId) {
+          // Try to find by ID first
+          const dealId = parsedResponse.data.dealId.toString().replace("#", "");
+          deal = deals.find(d => d.id === dealId);
+          console.log("Looking for deal by ID:", dealId, deal ? "found" : "not found");
+        } 
+        
+        // If no deal found by ID and we have a name, try to find by name
+        if (!deal && parsedResponse.data?.dealName) {
+          const dealName = parsedResponse.data.dealName.toLowerCase();
+          deal = deals.find(d => d.name?.toLowerCase().includes(dealName));
+          console.log("Looking for deal by name:", parsedResponse.data.dealName, deal ? "found" : "not found");
+        }
+        
+        // Try to find deal containing 'monet' in the name if all else fails
+        if (!deal && (parsedResponse.data?.dealName || '').toLowerCase().includes('monet')) {
+          deal = deals.find(d => d.name?.toLowerCase().includes('monet'));
+          console.log("Fallback search for 'monet':", deal ? "found" : "not found");
+        }
         
         if (deal) {
+          console.log("Found deal for pre-screening:", deal.id, deal.name);
           const confirmationMessage = `Do you want to start the Pre-Screening process for ${deal.name || 'this deal'}?`;
           
           setMessages((prev) => [
@@ -225,17 +378,19 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
               content: "I need your confirmation before starting the Pre-Screening process.",
               pendingAction: {
                 type: "start_prescreening",
-                data: { dealId, dealName: deal.name },
+                data: { dealId: deal.id, dealName: deal.name },
                 confirmationMessage
               }
             }
           ]);
         } else {
+          // If we have a search term but couldn't find a match
+          const searchTerm = parsedResponse.data?.dealName || parsedResponse.data?.dealId || "the specified deal";
           setMessages((prev) => [
             ...prev,
             {
               role: "assistant",
-              content: `I couldn't find a deal with ID ${dealId}. Please check the ID and try again.`,
+              content: `I couldn't find a deal with the name ${searchTerm}. Please check the name and try again, or create a new deal first.`,
             }
           ]);
         }
@@ -412,18 +567,19 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         // Show AI Pre-Screening in a new tab
         const { dealId, dealName } = actionData;
         
+        console.log("Confirming pre-screening action for deal:", dealId, dealName);
+        console.log("Window openPrescreeningTab function exists:", !!window.openPrescreeningTab);
+        
         // Here we would typically communicate with the TabsSystem to open a new tab
-        // For this prototype, we'll inform the user that they need to open the AI Pre-Screening tab manually
         setMessages((prev) => [
           ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
           {
             role: "assistant",
-            content: `I've started the Pre-Screening process for ${dealName || 'the selected deal'}. To continue, please use the "AI Pre-Screening" tab interface that will open automatically.`,
+            content: `I've started the Pre-Screening process for ${dealName || 'the selected deal'}. Please provide the email addresses for the recipients (separated by commas).`,
             data: {
               type: "prescreening_started",
               dealId,
-              dealName,
-              followUpQuestions: ["How do I complete the pre-screening?", "What happens after pre-screening?"]
+              dealName
             }
           }
         ]);
@@ -433,13 +589,34 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           description: `Pre-Screening process initiated for ${dealName || 'selected deal'}.`,
         });
         
-        // Open the AI Pre-Screening tab via the exposed window method
-        // This is a global method exposed by the TabsSystem component
-        if ((window as any).openPrescreeningTab) {
-          (window as any).openPrescreeningTab(dealId);
-        } else if (onDealSelect) {
-          // Fallback to just selecting the deal if the tab function isn't available
-          onDealSelect(dealId);
+        // Store deal info globally for access by future email commands
+        try {
+          window.prescreeningDealInfo = {
+            dealId,
+            dealName
+          };
+          console.log("Stored prescreening deal info in window object:", { dealId, dealName });
+        } catch (error) {
+          console.error("Error storing deal info on window:", error);
+        }
+        
+        // Try to open the AI Pre-Screening tab via the exposed window method
+        try {
+          // This is a global method exposed by the TabsSystem component
+          console.log("Attempting to open pre-screening tab for deal:", dealId);
+          if (window.openPrescreeningTab) {
+            window.openPrescreeningTab(dealId);
+            console.log("Called openPrescreeningTab successfully");
+          } else {
+            console.error("openPrescreeningTab method not found on window object");
+            // Fallback to just selecting the deal if the tab function isn't available
+            if (onDealSelect) {
+              onDealSelect(dealId);
+              console.log("Used onDealSelect fallback");
+            }
+          }
+        } catch (error) {
+          console.error("Error opening prescreening tab:", error);
         }
       }
       
@@ -488,7 +665,41 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
 
       <div className="z-10">
         <h2 className="text-xl font-semibold mb-4">AI Command Center</h2>
-        <AIAvatar status={aiStatus} />
+        
+        <div className="flex flex-col items-center mb-6">
+          {/* Avatar integration */}
+          <div className="w-full mb-2">
+            <HeyGenAvatarSimplified 
+              text={aiStatus === "speaking" ? lastAIMessage : null}
+              isVisible={true}
+            />
+          </div>
+          
+          {/* Status indicators */}
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <div className={`rounded-full h-2 w-2 ${
+              aiStatus === "listening" 
+                ? "bg-green-500 animate-pulse" 
+                : "bg-gray-500"
+            }`}>
+              <span className="sr-only">Listening</span>
+            </div>
+            <div className={`rounded-full h-2 w-2 ${
+              aiStatus === "processing" 
+                ? "bg-yellow-500 animate-pulse" 
+                : "bg-gray-500"
+            }`}>
+              <span className="sr-only">Processing</span>
+            </div>
+            <div className={`rounded-full h-2 w-2 ${
+              aiStatus === "speaking" 
+                ? "bg-blue-500 animate-pulse" 
+                : "bg-gray-500"
+            }`}>
+              <span className="sr-only">Speaking</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="gradient-border bg-dark-lighter flex-1 overflow-hidden flex flex-col mb-4 z-10">

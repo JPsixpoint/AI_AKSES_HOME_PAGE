@@ -23,12 +23,16 @@ const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
   
   next();
 };
-
+import { Resend } from "resend";
+import { heygenController } from "./heygen";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up OpenAI client
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY || "mock_key_for_development",
   });
+  
+  // Set up Resend client
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   // TEMPORARY: Backdoor route to make a user an admin (REMOVE AFTER TESTING)
   app.get('/make-admin/:username', async (req, res) => {
@@ -118,7 +122,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // API Routes
   const apiPrefix = "/api";
-
   // Authentication routes
   app.post(`${apiPrefix}/auth/login`, (req, res, next) => {
     // First, check if credentials were provided
@@ -327,6 +330,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     res.json({ authenticated: false });
   });
+  // HeyGen Avatar token endpoint
+  app.get(`${apiPrefix}/heygen/token`, heygenController.getToken);
 
   // AI Chat route
   app.post(`${apiPrefix}/ai/chat`, async (req, res) => {
@@ -663,20 +668,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the deal
       const deal = checkResult.rows[0];
       
-      // Create a new AI screening entry
+      // Create a new AI screening entry with the new format
+      const currentTimestamp = new Date().toISOString();
       const screeningEntry = {
-        timestamp: new Date().toISOString(),
+        timestamp: currentTimestamp,
         initiatingUser: "Admin", // In a real app, this would come from authentication
         recipientEmails,
         emailContent,
         additionalContext: additionalContext || "",
-        status: "not_sent", // Will be updated to "sent" once emails are sent
-        trackingData: {
-          status: "sent",
-          progress: 0,
-          lastInteraction: new Date().toISOString()
-        }
+        status: "sending", // Will be updated to "sent" once emails are sent
+        resendCount: 0, // Initialize resend count at 0 for new entries
+        trackingData: [
+          {
+            type: "sent",
+            timestamp: currentTimestamp,
+            metadata: {
+              initiatedBy: "Admin",
+              email: recipientEmails.join(", ")
+            }
+          }
+        ]
       };
+      
+      // Check if this is a resend to the same recipients
+      if (deal.ai_screening) {
+        try {
+          const existingScreenings = JSON.parse(deal.ai_screening);
+          if (Array.isArray(existingScreenings)) {
+            // Check for existing entries with the same recipient emails
+            const matchingScreenings = existingScreenings.filter(s => {
+              // Compare recipient lists (check if they have the same emails regardless of order)
+              const currentEmailList = recipientEmails || [];
+              const existingEmailList = s.recipientEmails || [];
+              
+              // Convert to arrays for comparison since we have TypeScript compatibility issues with Set
+              if (currentEmailList.length !== existingEmailList.length) {
+                return false;
+              }
+              
+              // Check if every email in current list exists in the existing list
+              return currentEmailList.every((email: string) => 
+                existingEmailList.some((existingEmail: string) => existingEmail === email)
+              );
+            });
+            
+            if (matchingScreenings.length > 0) {
+              // This is a resend, set the resend count based on previous entries
+              const resendCounts = matchingScreenings.map(s => typeof s.resendCount === 'number' ? s.resendCount : 0);
+              const maxResendCount = resendCounts.length > 0 ? Math.max(...resendCounts) : 0;
+              screeningEntry.resendCount = maxResendCount + 1;
+              console.log(`This is a resend (${maxResendCount + 1}) to the same recipients`);
+            }
+          }
+        } catch (e) {
+          // If parsing fails, treat as a new screening
+          console.error('Error parsing existing screenings:', e);
+        }
+      }
       
       // Get existing AI screening data or initialize empty array
       let aiScreeningData = [];
@@ -704,22 +752,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedDeal = updateResult.rows[0];
       
-      // In a real implementation, this would integrate with an email service like Resend
-      // For now, we'll simulate a successful email send
-      
-      // For the purposes of this prototype, we'll assume emails are sent successfully
-      // In production, you would use the Resend API here and update the status based on the response
-      
-      // Return success response
-      return res.status(200).json({
-        message: "Pre-screening process started",
-        recipients: recipientEmails,
-        dealId,
-        dealName: deal.name
-      });
-    } catch (error) {
-      console.error("Error sending pre-screening email:", error);
-      return res.status(500).json({ message: "Failed to send pre-screening email" });
+      // Use Resend to actually send the email
+      try {
+        console.log('Sending email using Resend API...');
+        
+        // Extract recipient emails and convert to string if needed
+        const toEmails = recipientEmails.join(',');
+        
+        // Clean up email addresses to ensure they're valid
+        const cleanedEmails = recipientEmails
+          .filter(email => typeof email === 'string')
+          .map(email => {
+            // Extract just the email if it contains text like "send to xyz@example.com"
+            const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/;
+            const match = email.match(emailRegex);
+            return match ? match[1] : email.trim();
+          })
+          .filter(email => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email));
+          
+        if (cleanedEmails.length === 0) {
+          throw new Error('No valid email addresses provided');
+        }
+        
+        // Send email using Resend with the provided domain and email
+        console.log('Attempting to send email with Resend API:', {
+          from: 'Akses AI <info@rsvp.emfintechconference.com>',
+          to: cleanedEmails,
+          subject: `Pre-Screening Invitation: ${deal.name || 'Deal'}`,
+        });
+        
+        const emailResult = await resend.emails.send({
+          from: 'Akses AI <info@rsvp.emfintechconference.com>',
+          to: cleanedEmails,  // Send to actual recipients
+          subject: `Pre-Screening Invitation: ${deal.name || 'Deal'}`,
+          html: emailContent,
+          text: emailContent.replace(/<[^>]*>/g, ''), // Strip HTML for plain text version
+        });
+        
+        console.log('Email sent successfully:', emailResult);
+        
+        // Update the screening entry status to sent
+        const index = aiScreeningData.length - 1;
+        aiScreeningData[index].status = 'sent';
+        
+        // No need to add another tracking entry as we already added one when creating the screening entry
+        
+        // Update the deal with the new status
+        await pool.query(updateQuery, [JSON.stringify(aiScreeningData), dealId]);
+        
+        // Return success response with the email result
+        return res.status(200).json({
+          message: "Pre-screening email sent successfully",
+          recipients: recipientEmails,
+          dealId,
+          dealName: deal.name,
+          emailResult
+        });
+      } catch (emailError: any) {
+        console.error('Error sending email with Resend:', emailError);
+        
+        // Update the screening entry status to error
+        const index = aiScreeningData.length - 1;
+        aiScreeningData[index].status = 'error';
+        aiScreeningData[index].error = emailError?.message || 'Email sending failed';
+        
+        // Add an error entry to the trackingData array
+        if (Array.isArray(aiScreeningData[index].trackingData)) {
+          aiScreeningData[index].trackingData.push({
+            type: "error",
+            timestamp: new Date().toISOString(),
+            metadata: {
+              errorMessage: emailError?.message || 'Email sending failed',
+              errorDetails: JSON.stringify(emailError)
+            }
+          });
+        }
+        
+        // Update the deal with the error status
+        await pool.query(updateQuery, [JSON.stringify(aiScreeningData), dealId]);
+        
+        // Return error response
+        return res.status(500).json({
+          message: "Failed to send pre-screening email",
+          error: emailError?.message || 'Unknown error',
+          dealId,
+          dealName: deal.name
+        });
+      }
+    } catch (error: any) {
+      console.error("Error in pre-screening process:", error);
+      return res.status(500).json({ message: "Failed to process pre-screening request", error: error?.message || 'Unknown error' });
     }
   });
   

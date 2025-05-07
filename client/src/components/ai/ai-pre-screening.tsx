@@ -1,32 +1,37 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Activity,
   AlertCircle,
   Send,
-  Upload,
-  Check,
-  X,
-  FileText,
-  Clock,
   RefreshCw,
-  Activity,
-  CheckSquare
+  CheckSquare,
+  Eye,
+  EyeOff,
+  Database,
+  CheckCircle,
+  ArrowUp,
+  Mail,
+  MessageCircle,
+  Play,
+  X
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Deal } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { ConcentricPattern } from "@/components/ui/concentric-pattern";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 // Schema for the form data
 const preScreeningSchema = z.object({
@@ -37,14 +42,39 @@ const preScreeningSchema = z.object({
 
 type PreScreeningForm = z.infer<typeof preScreeningSchema>;
 
+// Extend Window interface for external communication
+declare global {
+  interface Window {
+    setPreScreeningEmails?: (emails: string) => void;
+    openPrescreeningTab?: (dealId?: string) => void;
+  }
+}
+
 interface AIPreScreeningProps {
   initialDealId?: string;
 }
 
 export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
+  // Ref for external access to component methods
+  const prescreeningRef = useRef<{
+    setEmails: (emails: string) => void;
+  }>({ setEmails: () => {} });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [emailPreview, setEmailPreview] = useState<string>("");
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  
+  // State for deal details modal
+  const [selectedDeal, setSelectedDeal] = useState<any>(null);
+  const [selectedScreening, setSelectedScreening] = useState<ScreeningData | null>(null);
+  const [preScreeningData, setPreScreeningData] = useState<any>(null);
+  const [showDetailModal, setShowDetailModal] = useState({
+    open: false,
+    showTimeline: false, // Timeline collapsed by default
+    showPreScreening: false // Pre-Screening data collapsed by default
+  });
 
   // Form handling
   const form = useForm<PreScreeningForm>({
@@ -61,20 +91,179 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     queryKey: ["/api/deals"],
   });
   
-  // Update email preview when deal changes
-  useEffect(() => {
-    const dealId = form.watch("dealId");
-    if (dealId) {
-      const selectedDeal = deals.find((d) => d.id === dealId);
-      if (selectedDeal) {
-        generateEmailPreview(selectedDeal);
-      }
-    }
-  }, [form.watch("dealId"), deals]);
+  // Define types for the screening data
+  // Define tracking event types
+  type TrackingEventType = "sent" | "opened" | "started" | "progress" | "submitted" | "done" | "error";
+  
+  // Define tracking event
+  interface TrackingEvent {
+    type: TrackingEventType;
+    timestamp: string;
+    metadata: Record<string, any>;
+  }
+  
+  // ScreeningData with the updated trackingData structure
+  interface ScreeningData {
+    timestamp: string;
+    initiatingUser: string;
+    recipientEmails: string[];
+    emailContent: string;
+    additionalContext: string;
+    status: "sent" | "not_sent" | "error" | "viewing";
+    resendCount?: number; // Track how many times this email has been resent
+    error?: string; // Track email sending errors
+    trackingData: TrackingEvent[];
+  }
 
-  // Generate HTML email preview
-  const generateEmailPreview = (deal: Deal) => {
-    const emailHtml = `
+  // Helper function to handle both aiScreening and ai_screening properties
+  const getScreeningData = (deal: any): ScreeningData[] => {
+    // TypeScript workaround for dealing with both camelCase and snake_case properties
+    const data = deal.aiScreening || (deal as any).ai_screening;
+    
+    // Make sure we always return an array
+    if (!data) return [];
+    
+    // Handle case where it's a single object instead of an array
+    if (!Array.isArray(data)) {
+      return [data];
+    }
+    
+    return data;
+  };
+  
+  // Helper function to get the latest tracking event of a certain type
+  const getLatestTrackingEvent = (screeningData: ScreeningData, type: TrackingEventType | TrackingEventType[]): TrackingEvent | undefined => {
+    if (!screeningData.trackingData) {
+      return undefined;
+    }
+    
+    // Handle old format (where trackingData might be an object with properties)
+    if (!Array.isArray(screeningData.trackingData)) {
+      // For backward compatibility with the old format
+      const typesToFind = Array.isArray(type) ? type : [type];
+      const oldStatus = (screeningData.trackingData as any).status;
+      
+      // Only handle specific key mappings from old format
+      if (typesToFind.includes("sent" as TrackingEventType) && oldStatus === "sent") {
+        return {
+          type: "sent" as TrackingEventType,
+          timestamp: (screeningData.trackingData as any).lastInteraction || new Date().toISOString(),
+          metadata: {}
+        };
+      } else if (typesToFind.includes("opened" as TrackingEventType) && oldStatus === "opened") {
+        return {
+          type: "opened" as TrackingEventType,
+          timestamp: (screeningData.trackingData as any).lastInteraction || new Date().toISOString(),
+          metadata: {}
+        };
+      } else if (typesToFind.includes("progress" as TrackingEventType)) {
+        return {
+          type: "progress" as TrackingEventType,
+          timestamp: (screeningData.trackingData as any).lastInteraction || new Date().toISOString(),
+          metadata: {
+            completionPercent: (screeningData.trackingData as any).progress || 0
+          }
+        };
+      } else if (typesToFind.includes("submitted" as TrackingEventType) && oldStatus === "completed") {
+        return {
+          type: "submitted" as TrackingEventType,
+          timestamp: (screeningData.trackingData as any).lastInteraction || new Date().toISOString(),
+          metadata: {}
+        };
+      }
+      
+      return undefined;
+    }
+    
+    // New format with array of tracking events
+    if (screeningData.trackingData.length === 0) {
+      return undefined;
+    }
+    
+    // Filter events by type(s)
+    let filteredEvents = screeningData.trackingData;
+    if (Array.isArray(type)) {
+      filteredEvents = screeningData.trackingData.filter(event => type.includes(event.type));
+    } else {
+      filteredEvents = screeningData.trackingData.filter(event => event.type === type);
+    }
+    
+    // Sort by timestamp descending to get the most recent first
+    if (filteredEvents.length === 0) {
+      return undefined;
+    }
+    
+    return filteredEvents.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )[0];
+  };
+  
+  // Helper to safely access tracking data, handling both old and new formats
+  const matchesTrackingType = (screening: any, type: string | string[]): boolean => {
+    // If trackingData doesn't exist or is not properly formatted, return false
+    if (!screening || !screening.trackingData) return false;
+    
+    // Handle old format (object with status property)
+    if (!Array.isArray(screening.trackingData) && typeof screening.trackingData === 'object') {
+      const oldStatus = screening.trackingData.status;
+      if (Array.isArray(type)) {
+        return type.includes(oldStatus);
+      }
+      return oldStatus === type;
+    }
+    
+    // Handle new format (array of tracking events)
+    if (Array.isArray(screening.trackingData)) {
+      if (Array.isArray(type)) {
+        return type.some(t => screening.trackingData.some((event: any) => event.type === t));
+      }
+      return screening.trackingData.some((event: any) => event.type === type);
+    }
+    
+    return false;
+  };
+
+  // Helper to check if a deal has screening data matching a specific status
+  const hasScreeningWithStatus = (deal: any, status: string | string[]): boolean => {
+    const screeningData = getScreeningData(deal);
+    if (!screeningData || screeningData.length === 0) return false;
+    
+    return screeningData.some(screening => matchesTrackingType(screening, status));
+  };
+  
+  // Helper to get screening items with specific statuses
+  const getScreeningWithStatus = (deal: any, status: string | string[]): ScreeningData[] => {
+    const screeningData = getScreeningData(deal);
+    if (!screeningData || screeningData.length === 0) return [];
+    
+    return screeningData.filter(screening => matchesTrackingType(screening, status));
+  };
+  
+  // Function to generate default email template when no deal is selected
+  const generateDefaultEmailTemplate = () => {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/purple+logo+new+2025.png" alt="SixPoint Logo" style="width: 150px;">
+        </div>
+        <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
+          <h2 style="color: #4a2b87; margin-bottom: 15px;">Pre-Screening for [Deal]</h2>
+          <p style="margin-bottom: 20px;">Akses welcomes you to our AI AVATAR Pre-Screening. We will guide you through the entire process. Click the link below to start your deal with us.</p>
+          <div style="text-align: center;">
+            <a href="https://originator.akses.ai/prescreening/deal-id" style="display: inline-block; background-color: #4a2b87; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Start Pre-Screening Process</a>
+          </div>
+          <p style="margin-top: 20px; font-size: 14px; color: #666;">If you have any questions, please don't hesitate to contact us at support@sixpoint.com</p>
+        </div>
+        <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
+          <p>© 2025 SixPoint Partners. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+  };
+
+  // Function to generate email template for a specific deal
+  const generateDealEmailTemplate = (deal: Deal) => {
+    return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="text-align: center; margin-bottom: 20px;">
           <img src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/purple+logo+new+2025.png" alt="SixPoint Logo" style="width: 150px;">
@@ -92,7 +281,111 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
         </div>
       </div>
     `;
-    setEmailPreview(emailHtml);
+  };
+  
+  // Set emails method for external access (from AI Command Center)
+  prescreeningRef.current.setEmails = (emails: string) => {
+    console.log('Pre-screening emails set via ref:', emails);
+    
+    // Extract just the email addresses from the text
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const extractedEmails = emails.match(emailRegex);
+    
+    if (extractedEmails && extractedEmails.length > 0) {
+      // Join multiple emails with commas
+      const cleanedEmails = extractedEmails.join(',');
+      console.log("Extracted clean emails:", extractedEmails);
+      
+      // Set the form value with cleaned emails
+      form.setValue('recipientEmails', cleanedEmails);
+      
+      // Set showModal to true so the form appears
+      setShowModal(true);
+      
+      // Optional: Automatically submit the form if a deal is selected
+      if (form.getValues('dealId')) {
+        // We have both a deal and emails, let's submit automatically
+        const currentFormValues = form.getValues();
+        if (currentFormValues.dealId && cleanedEmails) {
+          const requestData = {
+            dealId: currentFormValues.dealId,
+            // Convert the cleaned emails string to an array
+            recipientEmails: cleanedEmails.split(',').map(email => email.trim()),
+            additionalContext: currentFormValues.additionalContext || '',
+            emailContent: emailPreview
+          };
+          
+          // Small delay to ensure state updates have been processed
+          setTimeout(() => {
+            // Make direct API request instead of using the mutation to bypass recipientEmails processing
+            apiRequest("POST", "/api/prescreening/send", requestData)
+              .then(data => {
+                toast({
+                  title: "Pre-Screening Email Sent",
+                  description: `The pre-screening email has been sent to the specified recipients.`,
+                });
+                queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
+                setShowModal(false);
+              })
+              .catch(error => {
+                toast({
+                  title: "Error",
+                  description: `Failed to send pre-screening email: ${error.toString()}`,
+                  variant: "destructive",
+                });
+              });
+          }, 500);
+        }
+      }
+    } else {
+      console.log("No valid emails found in input:", emails);
+      toast({
+        title: "Invalid Email Format",
+        description: "Please provide a valid email address.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Expose the setEmails method to the window object for external components
+  useEffect(() => {
+    window.setPreScreeningEmails = (emails: string) => {
+      prescreeningRef.current.setEmails(emails);
+    };
+
+    // Cleanup
+    return () => {
+      window.setPreScreeningEmails = undefined;
+    };
+  }, []);
+  
+  // Initialize email preview with default or deal-specific template
+  useEffect(() => {
+    if (deals.length > 0) {
+      // If we have an initialDealId, try to find that deal
+      if (initialDealId) {
+        const selectedDeal = deals.find(d => d.id === initialDealId);
+        if (selectedDeal) {
+          setEmailPreview(generateDealEmailTemplate(selectedDeal));
+          form.setValue('dealId', initialDealId); // Set the form's dealId
+          return;
+        }
+      }
+    }
+    
+    // If no match or no initialDealId, use default template
+    setEmailPreview(generateDefaultEmailTemplate());
+  }, [initialDealId, deals, form]);
+  
+  // Update email template when deal selection changes
+  const handleDealChange = (dealId: string) => {
+    form.setValue("dealId", dealId);
+    const selectedDeal = deals.find(d => d.id === dealId);
+    if (selectedDeal) {
+      setEmailPreview(generateDealEmailTemplate(selectedDeal));
+    } else {
+      setEmailPreview(generateDefaultEmailTemplate());
+    }
   };
 
   // Submit handler
@@ -107,13 +400,14 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
       
       return await apiRequest("POST", "/api/prescreening/send", requestData);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Pre-Screening Email Sent",
-        description: "The pre-screening email has been sent successfully.",
+        description: `The pre-screening email has been sent to the specified recipients using info@rsvp.emfintechconference.com as the sender.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
       form.reset();
+      setShowModal(false);
     },
     onError: (error) => {
       toast({
@@ -127,196 +421,1241 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   const onSubmit = (data: PreScreeningForm) => {
     sendPreScreeningMutation.mutate(data);
   };
+  
+  // Function to handle opening the deal details modal
+  const handleDealClick = (deal: any, screening: ScreeningData) => {
+    setSelectedDeal(deal);
+    setSelectedScreening(screening);
+    
+    // Get pre_screening data if it exists
+    const preScreening = deal.pre_screening || deal.preScreening;
+    setPreScreeningData(preScreening);
+    
+    setShowDetailModal({ 
+      open: true, 
+      showTimeline: false,
+      showPreScreening: false
+    });
+  };
 
   return (
     <div className="flex flex-col h-full">
       <ConcentricPattern />
       <div className="flex-1 z-10 overflow-auto">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-8 p-4">
-          <div className="col-span-1 lg:col-span-2">
-            <Card className="bg-dark-surface">
-              <CardHeader>
-                <CardTitle>AI Pre-Screening</CardTitle>
-                <CardDescription>
-                  Start the AI AVATAR Pre-Screening process for a deal.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="dealId">Select Deal</Label>
-                    <Select 
-                      onValueChange={(value) => form.setValue("dealId", value)}
-                      defaultValue={form.getValues("dealId")}
-                    >
-                      <SelectTrigger className="text-white bg-dark-surface border-gray-700">
-                        <SelectValue placeholder="Select a deal" className="text-white" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-dark-lighter text-white">
-                        {deals.map((deal) => (
-                          <SelectItem key={deal.id} value={deal.id} className="text-white hover:bg-dark-surface">
-                            {deal.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.dealId && (
-                      <p className="text-sm text-red-500">{form.formState.errors.dealId.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="recipientEmails">Recipient Emails</Label>
-                    <Input
-                      placeholder="Enter emails separated by commas"
-                      className="text-white bg-dark-surface border-gray-700"
-                      {...form.register("recipientEmails")}
-                    />
-                    {form.formState.errors.recipientEmails && (
-                      <p className="text-sm text-red-500">{form.formState.errors.recipientEmails.message}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">Enter multiple emails separated by commas</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="additionalContext">Additional Context (Optional)</Label>
-                    <Textarea
-                      placeholder="Add any additional information or context for the recipient..."
-                      className="text-white bg-dark-surface border-gray-700"
-                      {...form.register("additionalContext")}
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="pt-4">
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={sendPreScreeningMutation.isPending}
-                    >
-                      {sendPreScreeningMutation.isPending ? (
-                        <>
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="mr-2 h-4 w-4" />
-                          Send Pre-Screening Email
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="col-span-1 lg:col-span-3">
-            <Card className="bg-dark-surface">
-              <CardHeader>
-                <CardTitle>Email Preview</CardTitle>
-                <CardDescription>
-                  Preview of the pre-screening email that will be sent
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="border border-white/10 rounded-md p-4 bg-white text-black h-[600px] overflow-auto">
-                {emailPreview ? (
-                  <div dangerouslySetInnerHTML={{ __html: emailPreview }} />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-dark">
-                    <div className="text-center">
-                      <AlertCircle className="mx-auto h-12 w-12 mb-2 opacity-30" />
-                      <p>Select a deal to preview the email</p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Active Pre-Screening Processes */}
-        <div className="max-w-4xl mx-auto mt-8 p-4">
+        <div className="max-w-5xl mx-auto p-4">
           <Card className="bg-dark-surface">
             <CardHeader>
-              <CardTitle>Active Pre-Screening Processes</CardTitle>
-              <CardDescription>
-                Monitor the progress of ongoing pre-screening processes
-              </CardDescription>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <CardTitle>AI-Driven Pre-Screening</CardTitle>
+                  <CardDescription>
+                    Visual overview of all pre-screening processes and their current status
+                  </CardDescription>
+                </div>
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                  <Select defaultValue="all" onValueChange={(value) => setStatusFilter(value)}>
+                    <SelectTrigger className="w-full sm:w-[180px] text-white bg-dark-surface border-gray-700">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#121220] text-white border border-gray-700 shadow-lg" style={{ backgroundColor: '#121220', backdropFilter: 'none' }}>
+                      <SelectItem value="all" className="text-white hover:bg-purple-700 focus:bg-purple-700">All Statuses</SelectItem>
+                      <SelectItem value="sent" className="text-white hover:bg-purple-700 focus:bg-purple-700">Email Sent</SelectItem>
+                      <SelectItem value="opened" className="text-white hover:bg-purple-700 focus:bg-purple-700">Email Opened</SelectItem>
+                      <SelectItem value="interacting" className="text-white hover:bg-purple-700 focus:bg-purple-700">In Progress</SelectItem>
+                      <SelectItem value="completed" className="text-white hover:bg-purple-700 focus:bg-purple-700">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={() => setShowModal(true)} 
+                    className="w-full sm:w-auto"
+                    size="sm"
+                  >
+                    <Send className="h-4 w-4 mr-2" /> New Pre-Screening
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {deals
-                  .filter((deal) => deal.aiScreening && deal.aiScreening.length > 0)
-                  .map((deal) => (
-                    <div key={deal.id} className="border border-white/10 rounded-md p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-lg font-semibold">{deal.name}</h3>
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {deal.aiScreening && deal.aiScreening.map((screening: any, index: number) => {
-                              let badgeVariant: "default" | "secondary" | "outline" | "destructive" = "outline";
-                              let icon = <Clock className="h-3 w-3 mr-1" />;
-                              
-                              if (screening.trackingData.status === "sent") {
-                                badgeVariant = "outline";
-                                icon = <Clock className="h-3 w-3 mr-1" />;
-                              } else if (screening.trackingData.status === "opened") {
-                                badgeVariant = "secondary";
-                                icon = <Activity className="h-3 w-3 mr-1" />;
-                              } else if (screening.trackingData.status === "interacting") {
-                                badgeVariant = "default";
-                                icon = <RefreshCw className="h-3 w-3 mr-1" />;
-                              } else if (screening.trackingData.status === "completed") {
-                                badgeVariant = "default";
-                                icon = <CheckSquare className="h-3 w-3 mr-1" />;
-                              }
-                              
-                              return (
-                                <Badge key={index} variant={badgeVariant} className="flex items-center">
-                                  {icon}
-                                  {screening.recipientEmails[0]}
-                                  <span className="ml-1 text-xs">({screening.trackingData.status})</span>
-                                </Badge>
-                              );
-                            })}
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4 mr-1" /> View Details
-                        </Button>
-                      </div>
-                      
-                      {/* Progress bars for each screening */}
-                      <div className="mt-4 space-y-3">
-                        {deal.aiScreening && deal.aiScreening.map((screening: any, index: number) => (
-                          <div key={index} className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span>{screening.recipientEmails[0]}</span>
-                              <span>{screening.trackingData.progress}% complete</span>
-                            </div>
-                            <Progress value={screening.trackingData.progress} className="h-2" />
-                            <div className="text-xs text-muted-foreground">
-                              Last activity: {new Date(screening.trackingData.lastInteraction).toLocaleString()}
-                            </div>
-                          </div>
-                        ))}
+            <CardContent className="p-6">
+              {/* Debug info to see data structure */}
+              <div className="text-xs text-white/50 mb-4">
+                Total deals: {deals.length}, 
+                Deals with screening data: {deals.filter(d => getScreeningData(d).length > 0).length} 
+              </div>
+              {deals.some(deal => getScreeningData(deal).length > 0) ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Status Column: Email Sent */}
+                  <div className="flex flex-col">
+                    <div className="bg-purple-900/20 rounded-t-lg p-3 border-b border-white/10">
+                      <div className="flex items-center gap-2">
+                        <Send className="h-4 w-4" />
+                        <h3 className="font-semibold">Email Sent</h3>
+                        <Badge variant="outline" className="ml-auto">
+                          {deals.filter(deal => hasScreeningWithStatus(deal, "sent")).length}
+                        </Badge>
                       </div>
                     </div>
-                  ))}
-                  
-                {(!deals.some((deal) => deal.aiScreening && deal.aiScreening.length > 0)) && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <AlertCircle className="mx-auto h-12 w-12 mb-2 opacity-30" />
-                    <p>No active pre-screening processes found</p>
+                    <div className="bg-purple-900/10 rounded-b-lg p-3 min-h-[300px] space-y-3">
+                      {deals
+                        .filter(deal => hasScreeningWithStatus(deal, "sent"))
+                        .map(deal => (
+                          <div 
+                            key={deal.id} 
+                            className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-purple-500 transition-colors cursor-pointer"
+                            onClick={() => {
+                              const screenings = getScreeningWithStatus(deal, "sent");
+                              if (screenings.length > 0) {
+                                handleDealClick(deal, screenings[0]);
+                              }
+                            }}
+                          >
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-medium text-sm truncate">{deal.name}</h4>
+                              <Badge variant="outline" className="text-xs">
+                                {getScreeningWithStatus(deal, "sent")
+                                    .sort((a, b) => {
+                                      const aEvent = getLatestTrackingEvent(a, "sent");
+                                      const bEvent = getLatestTrackingEvent(b, "sent");
+                                      return new Date(bEvent?.timestamp || "").getTime() - 
+                                             new Date(aEvent?.timestamp || "").getTime();
+                                    })
+                                    .map(item => {
+                                      const event = getLatestTrackingEvent(item, "sent");
+                                      return event ? new Date(event.timestamp).toLocaleDateString() : "";
+                                    })[0]
+                                }
+                              </Badge>
+                            </div>
+                            <div className="mt-2 space-y-2">
+                              {getScreeningWithStatus(deal, "sent")
+                                .map((screening, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 text-xs text-white/70">
+                                    <Mail className="h-3 w-3" />
+                                    <span className="truncate">{screening.recipientEmails[0]}</span>
+                                    {typeof screening.resendCount === 'number' && screening.resendCount > 0 && (
+                                      <Badge variant="outline" className="ml-auto text-xs py-0 h-4">
+                                        Resent {screening.resendCount}x
+                                      </Badge>
+                                    )}
+                                  </div>
+                                ))
+                              }
+                            </div>
+                          </div>
+                        ))
+                      }
+                      {!deals.some(deal => hasScreeningWithStatus(deal, "sent")) && (
+                        <div className="flex flex-col items-center justify-center h-full text-white/50">
+                          <Send className="h-8 w-8 mb-2 opacity-30" />
+                          <p className="text-sm">No emails sent</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
+                  
+                  {/* Status Column: Lead Enrichment */}
+                  <div className="flex flex-col">
+                    <div className="bg-blue-900/20 rounded-t-lg p-3 border-b border-white/10">
+                      <div className="flex items-center gap-2">
+                        <Database className="h-4 w-4" />
+                        <h3 className="font-semibold">Lead Enrichment</h3>
+                        <Badge variant="outline" className="ml-auto">
+                          {deals.filter(deal => hasScreeningWithStatus(deal, ["opened", "interacting"])).length}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="bg-blue-900/10 rounded-b-lg p-3 min-h-[300px] space-y-3">
+                      {deals
+                        .filter(deal => hasScreeningWithStatus(deal, ["opened", "interacting"]))
+                        .map(deal => (
+                          <div 
+                            key={deal.id} 
+                            className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-blue-500 transition-colors cursor-pointer"
+                            onClick={() => {
+                              const screenings = getScreeningWithStatus(deal, ["opened", "interacting"]);
+                              if (screenings.length > 0) {
+                                handleDealClick(deal, screenings[0]);
+                              }
+                            }}
+                          >
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-medium text-sm truncate">{deal.name}</h4>
+                              <Badge variant="secondary" className="text-xs">
+                                {(() => {
+                                  const screenings = getScreeningWithStatus(deal, ["opened", "interacting"]);
+                                  const progressValues = screenings.map(s => {
+                                    const latestProgress = getLatestTrackingEvent(s, "progress");
+                                    return latestProgress?.metadata?.completionPercent || 0;
+                                  });
+                                  return progressValues.length > 0 ? Math.max(...progressValues) : 0;
+                                })()}%
+                              </Badge>
+                            </div>
+                            <div className="mt-2 space-y-2">
+                              {getScreeningWithStatus(deal, ["opened", "interacting"])
+                                .map((screening, idx) => (
+                                  <div key={idx} className="space-y-1">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-white/70 truncate">{screening.recipientEmails[0]}</span>
+                                      <span className="text-white/70">
+                                        {(() => {
+                                          // Show the latest status based on tracking events
+                                          const events = ["progress", "started", "opened"];
+                                          for (const eventType of events) {
+                                            const event = getLatestTrackingEvent(screening, eventType as TrackingEventType);
+                                            if (event) return eventType;
+                                          }
+                                          return "in progress";
+                                        })()}
+                                      </span>
+                                    </div>
+                                    <Progress 
+                                      value={(() => {
+                                        const progressEvent = getLatestTrackingEvent(screening, "progress");
+                                        return progressEvent?.metadata?.completionPercent || 0;
+                                      })()} 
+                                      className="h-1" 
+                                    />
+                                  </div>
+                                ))
+                              }
+                            </div>
+                          </div>
+                        ))
+                      }
+                      {!deals.some(deal => hasScreeningWithStatus(deal, ["opened", "interacting"])) && (
+                        <div className="flex flex-col items-center justify-center h-full text-white/50">
+                          <Database className="h-8 w-8 mb-2 opacity-30" />
+                          <p className="text-sm">No leads in progress</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Status Column: Completed */}
+                  <div className="flex flex-col">
+                    <div className="bg-green-900/20 rounded-t-lg p-3 border-b border-white/10">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        <h3 className="font-semibold">Completed</h3>
+                        <Badge variant="outline" className="ml-auto">
+                          {deals.filter(deal => hasScreeningWithStatus(deal, "completed")).length}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="bg-green-900/10 rounded-b-lg p-3 min-h-[300px] space-y-3">
+                      {deals
+                        .filter(deal => hasScreeningWithStatus(deal, "completed"))
+                        .map(deal => (
+                          <div 
+                            key={deal.id} 
+                            className="bg-dark-surface p-3 rounded-lg border border-white/10 hover:border-green-500 transition-colors cursor-pointer"
+                            onClick={() => {
+                              const screenings = getScreeningWithStatus(deal, "completed");
+                              if (screenings.length > 0) {
+                                handleDealClick(deal, screenings[0]);
+                              }
+                            }}
+                          >
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-medium text-sm truncate">{deal.name}</h4>
+                              <Badge variant="default" className="text-xs bg-green-600 hover:bg-green-700">100%</Badge>
+                            </div>
+                            <div className="mt-2 space-y-2">
+                              {getScreeningWithStatus(deal, "completed")
+                                .map((screening, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 text-xs text-white/70">
+                                    <CheckSquare className="h-3 w-3 text-green-400" />
+                                    <span className="truncate">{screening.recipientEmails[0]}</span>
+                                    <span className="text-xs ml-auto">
+                                      {(() => {
+                                        const submittedEvent = getLatestTrackingEvent(screening, "submitted");
+                                        return submittedEvent ? new Date(submittedEvent.timestamp).toLocaleDateString() : "";
+                                      })()}
+                                    </span>
+                                  </div>
+                                ))
+                              }
+                            </div>
+                          </div>
+                        ))
+                      }
+                      {!deals.some(deal => hasScreeningWithStatus(deal, "completed")) && (
+                        <div className="flex flex-col items-center justify-center h-full text-white/50">
+                          <CheckCircle className="h-8 w-8 mb-2 opacity-30" />
+                          <p className="text-sm">No completed screenings</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-white/60">
+                  <CheckSquare className="h-16 w-16 mb-4 opacity-20" />
+                  <h3 className="text-lg font-medium mb-2">No Pre-Screening Processes Found</h3>
+                  <p className="max-w-md text-center mb-6">Start a new pre-screening process by selecting a deal and entering recipient emails.</p>
+                  <Button variant="outline" size="sm" onClick={() => setShowModal(true)}>
+                    <Send className="h-4 w-4 mr-2" />
+                    Create Pre-Screening
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Details Modal */}
+      <Dialog open={showDetailModal.open} onOpenChange={(open) => setShowDetailModal(prev => ({ ...prev, open }))}>
+        <DialogContent className="bg-dark-surface border-gray-700 text-white max-w-5xl dialog-content-bg overflow-y-auto max-h-[95vh]">
+          <div className="flex justify-end absolute top-2 right-2">
+            <Button 
+              variant="ghost" 
+              className="h-6 w-6 p-0 rounded-full" 
+              onClick={() => setShowDetailModal(prev => ({ ...prev, open: false }))}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Pre-Screening Timeline</DialogTitle>
+            <DialogDescription className="text-center text-gray-400">
+              {selectedDeal?.name || "Deal"} - Detailed progress tracking
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedDeal && selectedScreening && (
+            <div className="space-y-8 mt-6">
+              {/* Deal Info Card */}
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">{selectedDeal.name}</h2>
+                <div className="flex items-center gap-2 text-gray-400">
+                  <Mail className="h-4 w-4" />
+                  <span>Recipients: {selectedScreening.recipientEmails.join(", ")}</span>
+                </div>
+                {selectedScreening.additionalContext && (
+                  <div className="flex items-start gap-2 text-gray-400 mt-1">
+                    <MessageCircle className="h-4 w-4 mt-0.5" />
+                    <span>Context: {selectedScreening.additionalContext}</span>
+                  </div>
+                )}
+                
+                {/* Send Follow-up Email Button */}
+                <div className="flex justify-end mt-4">
+                  <Button 
+                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={() => {
+                      // Pre-fill the form with the deal ID
+                      form.setValue("dealId", selectedDeal.id);
+                      form.setValue("recipientEmails", selectedScreening.recipientEmails.join(", "));
+                      
+                      // Close the details modal and show the new screening modal
+                      setShowDetailModal(prev => ({ ...prev, open: false }));
+                      setShowModal(true);
+                    }}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Follow-up Email
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Current Status */}
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-4">Current Status</h3>
+                
+                {/* Status Cards */}
+                <div className="grid grid-cols-5 gap-4">
+                  {/* Email Sent */}
+                  <div className="bg-gray-900/60 rounded-lg p-4">
+                    <div className="flex flex-col items-center">
+                      <div className="bg-purple-900/20 rounded-full p-3 mb-2">
+                        <Send className="h-5 w-5 text-purple-400" />
+                      </div>
+                      <h4 className="font-medium text-center">Email Sent</h4>
+                      <p className="text-sm text-gray-400 mt-1 text-center">
+                        {(() => {
+                          const event = getLatestTrackingEvent(selectedScreening, "sent");
+                          if (!event) return "Not sent";
+                          const date = new Date(event.timestamp);
+                          return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Email Viewed */}
+                  <div className="bg-gray-900/60 rounded-lg p-4">
+                    <div className="flex flex-col items-center">
+                      <div className="bg-blue-900/20 rounded-full p-3 mb-2">
+                        <Eye className="h-5 w-5 text-blue-400" />
+                      </div>
+                      <h4 className="font-medium text-center">Email Viewed</h4>
+                      <p className="text-sm text-gray-400 mt-1 text-center">
+                        {(() => {
+                          const event = getLatestTrackingEvent(selectedScreening, "opened");
+                          if (!event) return "Not viewed";
+                          const date = new Date(event.timestamp);
+                          return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Process Started */}
+                  <div className="bg-gray-900/60 rounded-lg p-4">
+                    <div className="flex flex-col items-center">
+                      <div className="bg-yellow-900/20 rounded-full p-3 mb-2">
+                        <Play className="h-5 w-5 text-yellow-400" />
+                      </div>
+                      <h4 className="font-medium text-center">Process Started</h4>
+                      <p className="text-sm text-gray-400 mt-1 text-center">
+                        {(() => {
+                          const event = getLatestTrackingEvent(selectedScreening, "started");
+                          if (!event) return "Not started";
+                          const date = new Date(event.timestamp);
+                          return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Progress */}
+                  <div className="bg-gray-900/60 rounded-lg p-4">
+                    <div className="flex flex-col items-center">
+                      <div className="bg-orange-900/20 rounded-full p-3 mb-2">
+                        <Activity className="h-5 w-5 text-orange-400" />
+                      </div>
+                      <h4 className="font-medium text-center">Progress</h4>
+                      <div className="w-full mt-2">
+                        <div className="h-2 w-full bg-gray-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-orange-700 to-orange-500"
+                            style={{ 
+                              width: `${(() => {
+                                const event = getLatestTrackingEvent(selectedScreening, "progress");
+                                return event?.metadata?.completionPercent || 0;
+                              })()}%` 
+                            }}
+                          ></div>
+                        </div>
+                        <p className="text-sm text-center mt-1">
+                          {(() => {
+                            const event = getLatestTrackingEvent(selectedScreening, "progress");
+                            return event?.metadata?.completionPercent || 0;
+                          })()}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Completed */}
+                  <div className="bg-gray-900/60 rounded-lg p-4">
+                    <div className="flex flex-col items-center">
+                      <div className="bg-green-900/20 rounded-full p-3 mb-2">
+                        <CheckCircle className="h-5 w-5 text-green-400" />
+                      </div>
+                      <h4 className="font-medium text-center">Completed</h4>
+                      <p className="text-sm text-gray-400 mt-1 text-center">
+                        {(() => {
+                          const event = getLatestTrackingEvent(selectedScreening, "submitted");
+                          if (!event) return "Not completed";
+                          const date = new Date(event.timestamp);
+                          return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Pre-Screening Data - Collapsible */}
+              {preScreeningData && (
+                <div className="mt-8">
+                  {/* Pre-Screening Toggle Button */}
+                  <div 
+                    className="flex justify-between items-center cursor-pointer mb-2" 
+                    onClick={() => setShowDetailModal(prev => ({ ...prev, showPreScreening: !prev.showPreScreening }))}
+                  >
+                    <h3 className="text-lg font-medium">Pre-Screening Form Data</h3>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                      {showDetailModal.showPreScreening ? (
+                        <ArrowUp className="h-4 w-4" />
+                      ) : (
+                        <div className="rotate-180">
+                          <ArrowUp className="h-4 w-4" />
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {/* Pre-Screening Content - Only shown when expanded */}
+                  {showDetailModal.showPreScreening && (
+                    <div className="rounded-lg overflow-hidden mt-4">
+                      <div className="bg-gray-800/30 p-4 rounded-lg">
+                        {(() => {
+                          // Extract intro_call data if it exists
+                          const introCall = preScreeningData?.intro_call || {};
+                          const sc0 = preScreeningData?.sc0 || {};
+                          
+                          return (
+                            <div className="space-y-4">
+                              {/* Intro Call Section */}
+                              {Object.keys(introCall).length > 0 && (
+                                <div>
+                                  <h4 className="text-md font-medium mb-2 text-purple-400">Intro Call Information</h4>
+                                  {/* Categorized sections following requested structure */}
+                                  
+                                  {/* 1. Business Information */}
+                                  <div className="mb-6">
+                                    <h5 className="text-md font-semibold mb-3 text-blue-400 border-b border-blue-900/40 pb-1">1. Business Information</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {['company_name', 'url', 'business_start_date', 'lending_start_date', 'country', 'credit_hub'].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // For date fields
+                                        if (fieldKey.includes('date') && introCall[fieldKey]) {
+                                          try {
+                                            const date = new Date(introCall[fieldKey]);
+                                            if (!isNaN(date.getTime())) {
+                                              formattedValue = date.toLocaleDateString();
+                                            }
+                                          } catch (e) {
+                                            // Keep original format if date parsing fails
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">{formattedValue}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* 2. Financing */}
+                                  <div className="mb-6">
+                                    <h5 className="text-md font-semibold mb-3 text-purple-400 border-b border-purple-900/40 pb-1">2. Financing</h5>
+                                    
+                                    {/* Equity */}
+                                    <h6 className="text-sm font-medium mb-2 ml-2 text-purple-300">Equity</h6>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                      {[
+                                        'loan_financing_capital_source', 
+                                        'total_capital_raised_since_inception', 
+                                        'stage_of_last_round',
+                                        'last_round',
+                                        'post_money_valuation',
+                                        'pre_money_valuation',
+                                        'date_of_equity_last_round'
+                                      ].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // Format currency values
+                                        if (
+                                          fieldKey.includes('capital') || 
+                                          fieldKey.includes('valuation') ||
+                                          fieldKey.includes('round') && !fieldKey.includes('stage') && !fieldKey.includes('date')
+                                        ) {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            formattedValue = `$${numValue.toLocaleString()}`;
+                                          }
+                                        }
+                                        
+                                        // For date fields
+                                        if (fieldKey.includes('date') && introCall[fieldKey]) {
+                                          try {
+                                            const date = new Date(introCall[fieldKey]);
+                                            if (!isNaN(date.getTime())) {
+                                              formattedValue = date.toLocaleDateString();
+                                            }
+                                          } catch (e) {
+                                            // Keep original format if date parsing fails
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">{formattedValue}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    
+                                    {/* Debt */}
+                                    <h6 className="text-sm font-medium mb-2 ml-2 text-purple-300">Debt</h6>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {[
+                                        'institutional_debt_investor', 
+                                        'debt_raised_since_inception', 
+                                        'date_of_last_debt_round'
+                                      ].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // Format currency values
+                                        if (fieldKey.includes('debt_raised')) {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            formattedValue = `$${numValue.toLocaleString()}`;
+                                          }
+                                        }
+                                        
+                                        // For date fields
+                                        if (fieldKey.includes('date') && introCall[fieldKey]) {
+                                          try {
+                                            const date = new Date(introCall[fieldKey]);
+                                            if (!isNaN(date.getTime())) {
+                                              formattedValue = date.toLocaleDateString();
+                                            }
+                                          } catch (e) {
+                                            // Keep original format if date parsing fails
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">{formattedValue}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* 3. Portfolio and Originations */}
+                                  <div className="mb-6">
+                                    <h5 className="text-md font-semibold mb-3 text-green-400 border-b border-green-900/40 pb-1">3. Portfolio and Originations</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {[
+                                        'sixpoint_initial_facility_size', 
+                                        'historical_origination_volume', 
+                                        'portfolio_size',
+                                        'last_6_month_origination_volume',
+                                        'target_closing_date',
+                                        'first_sp_drawdown_start_date',
+                                        'accordion_exercised_date'
+                                      ].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // Format currency values
+                                        if (
+                                          fieldKey.includes('size') || 
+                                          fieldKey.includes('volume')
+                                        ) {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            formattedValue = `$${numValue.toLocaleString()}`;
+                                          }
+                                        }
+                                        
+                                        // For date fields
+                                        if (fieldKey.includes('date') && introCall[fieldKey]) {
+                                          try {
+                                            const date = new Date(introCall[fieldKey]);
+                                            if (!isNaN(date.getTime())) {
+                                              formattedValue = date.toLocaleDateString();
+                                            }
+                                          } catch (e) {
+                                            // Keep original format if date parsing fails
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">{formattedValue}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* 4. Profitability, OPEX and Cash */}
+                                  <div className="mb-6">
+                                    <h5 className="text-md font-semibold mb-3 text-amber-400 border-b border-amber-900/40 pb-1">4. Profitability, OPEX and Cash</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {[
+                                        'profitability_status', 
+                                        'months_to_profitability', 
+                                        'cash_balance',
+                                        'monthly_burn',
+                                        'opex_per_month',
+                                        'runway',
+                                        'automatic_collection'
+                                      ].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // Format currency values
+                                        if (
+                                          fieldKey.includes('cash') || 
+                                          fieldKey.includes('burn') ||
+                                          fieldKey.includes('opex')
+                                        ) {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            formattedValue = `$${numValue.toLocaleString()}`;
+                                          }
+                                        }
+                                        
+                                        // Format month values
+                                        if (fieldKey.includes('months') || fieldKey === 'runway') {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            formattedValue = `${numValue.toLocaleString()} ${numValue === 1 ? 'month' : 'months'}`;
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">{formattedValue}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* 5. Platform Experience */}
+                                  <div className="mb-4">
+                                    <h5 className="text-md font-semibold mb-3 text-indigo-400 border-b border-indigo-900/40 pb-1">5. Platform Experience</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {[
+                                        'financial_and_credit_experience_of_the_team', 
+                                        'technological_experience_of_the_team', 
+                                        'brand_or_potential',
+                                        'management_team'
+                                      ].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // Format rating values
+                                        if (
+                                          fieldKey.includes('experience') || 
+                                          fieldKey.includes('potential') ||
+                                          fieldKey.includes('management')
+                                        ) {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            const maxRating = 5; // Assuming ratings are out of 5
+                                            
+                                            // Create a visual rating representation
+                                            formattedValue = (
+                                              <div className="flex items-center">
+                                                <span className="mr-2">{numValue.toFixed(1)}</span>
+                                                <div className="flex">
+                                                  {Array.from({ length: 5 }).map((_, i) => (
+                                                    <div 
+                                                      key={i} 
+                                                      className={`w-4 h-4 rounded-full mr-1 ${
+                                                        i < Math.floor(numValue) 
+                                                          ? 'bg-indigo-500' 
+                                                          : i < numValue 
+                                                            ? 'bg-gradient-to-r from-indigo-500 to-transparent' 
+                                                            : 'bg-gray-700'
+                                                      }`}
+                                                    />
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            );
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">
+                                              {typeof formattedValue === 'string' ? formattedValue : formattedValue}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Any remaining fields that don't fit into the categories */}
+                                  {Object.entries(introCall).filter(([key]) => {
+                                    const allCategorizedFields = [
+                                      // Business Information
+                                      'company_name', 'url', 'business_start_date', 'lending_start_date', 'country', 'credit_hub',
+                                      // Financing - Equity
+                                      'loan_financing_capital_source', 'total_capital_raised_since_inception', 'stage_of_last_round',
+                                      'last_round', 'post_money_valuation', 'pre_money_valuation', 'date_of_equity_last_round',
+                                      // Financing - Debt
+                                      'institutional_debt_investor', 'debt_raised_since_inception', 'date_of_last_debt_round',
+                                      // Portfolio and Originations
+                                      'sixpoint_initial_facility_size', 'historical_origination_volume', 'portfolio_size',
+                                      'last_6_month_origination_volume', 'target_closing_date', 'first_sp_drawdown_start_date', 
+                                      'accordion_exercised_date',
+                                      // Profitability, OPEX and Cash
+                                      'profitability_status', 'months_to_profitability', 'cash_balance', 'monthly_burn', 
+                                      'opex_per_month', 'runway', 'automatic_collection',
+                                      // Platform Experience
+                                      'financial_and_credit_experience_of_the_team', 'technological_experience_of_the_team', 
+                                      'brand_or_potential', 'management_team'
+                                    ];
+                                    
+                                    return !allCategorizedFields.includes(key);
+                                  }).length > 0 && (
+                                    <div className="mt-6">
+                                      <h5 className="text-md font-semibold mb-3 text-gray-400 border-b border-gray-700 pb-1">Additional Information</h5>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {Object.entries(introCall)
+                                          .filter(([key]) => {
+                                            const allCategorizedFields = [
+                                              // Business Information
+                                              'company_name', 'url', 'business_start_date', 'lending_start_date', 'country', 'credit_hub',
+                                              // Financing - Equity
+                                              'loan_financing_capital_source', 'total_capital_raised_since_inception', 'stage_of_last_round',
+                                              'last_round', 'post_money_valuation', 'pre_money_valuation', 'date_of_equity_last_round',
+                                              // Financing - Debt
+                                              'institutional_debt_investor', 'debt_raised_since_inception', 'date_of_last_debt_round',
+                                              // Portfolio and Originations
+                                              'sixpoint_initial_facility_size', 'historical_origination_volume', 'portfolio_size',
+                                              'last_6_month_origination_volume', 'target_closing_date', 'first_sp_drawdown_start_date', 
+                                              'accordion_exercised_date',
+                                              // Profitability, OPEX and Cash
+                                              'profitability_status', 'months_to_profitability', 'cash_balance', 'monthly_burn', 
+                                              'opex_per_month', 'runway', 'automatic_collection',
+                                              // Platform Experience
+                                              'financial_and_credit_experience_of_the_team', 'technological_experience_of_the_team', 
+                                              'brand_or_potential', 'management_team'
+                                            ];
+                                            
+                                            return !allCategorizedFields.includes(key);
+                                          })
+                                          .map(([key, value]: [string, any]) => {
+                                            // Format the field name to be properly capitalized
+                                            const formattedKey = key
+                                              .split('_')
+                                              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                              .join(' ');
+                                            
+                                            // Format the value based on type
+                                            let formattedValue = value?.toString() || "—";
+                                            
+                                            // Format numbers with commas and currency symbols where appropriate
+                                            if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                              // If the key indicates it's currency-related
+                                              if (
+                                                key.includes('capital') || 
+                                                key.includes('revenue') || 
+                                                key.includes('amount') || 
+                                                key.includes('budget') || 
+                                                key.includes('fee') ||
+                                                key.includes('asset') ||
+                                                key.includes('aum') ||
+                                                key.includes('valuation')
+                                              ) {
+                                                const numValue = typeof value === 'string' ? Number(value) : value;
+                                                formattedValue = `$${numValue.toLocaleString()}`;
+                                              } 
+                                              // For percentage values
+                                              else if (key.includes('percentage') || key.includes('rate') || key.includes('percent')) {
+                                                const numValue = typeof value === 'string' ? Number(value) : value;
+                                                formattedValue = `${numValue.toLocaleString()}%`;
+                                              }
+                                              // For other numeric values
+                                              else if (!isNaN(Number(value))) {
+                                                const numValue = typeof value === 'string' ? Number(value) : value;
+                                                formattedValue = numValue.toLocaleString();
+                                              }
+                                            }
+
+                                            return (
+                                              <div key={key} className="bg-gray-900/40 p-3 rounded-lg">
+                                                <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                                <div className="font-medium">{formattedValue}</div>
+                                              </div>
+                                            );
+                                          })
+                                        }
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Screening Results */}
+                              {sc0.completed && (
+                                <div>
+                                  <h4 className="text-md font-medium mb-2 text-green-400">Pre-Screening Results</h4>
+                                  <div className="bg-gray-900/40 p-4 rounded-lg">
+                                    <div className="flex items-center mb-3">
+                                      <div className="font-medium mr-2">Score:</div>
+                                      <div className="text-lg font-semibold">
+                                        {sc0.score} / {sc0.max_score}
+                                      </div>
+                                      <div className="ml-auto">
+                                        {sc0.recommendation && (
+                                          <Badge 
+                                            className={
+                                              sc0.recommendation.toLowerCase().includes('proceed') 
+                                                ? "bg-green-600" 
+                                                : "bg-amber-600"
+                                            }
+                                          >
+                                            {sc0.recommendation}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {sc0.outcomes && (
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                                        {Object.entries(sc0.outcomes)
+                                          .filter(([key]) => key !== 'inputs') // Filter out inputs as we'll display them separately
+                                          .map(([category, data]: [string, any]) => {
+                                            // Format the category name with proper capitalization
+                                            const formattedCategory = category
+                                              .split('_')
+                                              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                              .join(' ');
+                                            
+                                            return (
+                                              <div key={category} className="bg-gray-800/40 p-3 rounded">
+                                                <div className="flex justify-between items-center mb-2">
+                                                  <div className="text-sm font-semibold">{formattedCategory}</div>
+                                                  <Badge variant="outline">
+                                                    {data.cat_score?.toFixed(1) || 0} / {data.max_cat_score?.toFixed(1) || 0}
+                                                  </Badge>
+                                                </div>
+                                                <Progress 
+                                                  value={(data.cat_score / data.max_cat_score) * 100} 
+                                                  className="h-1.5" 
+                                                />
+                                              </div>
+                                            );
+                                          })}
+                                      </div>
+                                    )}
+                                    
+                                    {sc0.completed_at && (
+                                      <div className="text-xs text-gray-400 mt-4">
+                                        Completed on {new Date(sc0.completed_at).toLocaleDateString()} at {new Date(sc0.completed_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} by {sc0.completed_by || "System"}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Event Timeline - Collapsible */}
+              <div className="mt-8">
+                {/* Timeline Toggle Button */}
+                <div 
+                  className="flex justify-between items-center cursor-pointer mb-2" 
+                  onClick={() => setShowDetailModal(prev => ({ ...prev, showTimeline: !prev.showTimeline }))}
+                >
+                  <h3 className="text-lg font-medium">Event Timeline</h3>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                    {showDetailModal.showTimeline ? (
+                      <ArrowUp className="h-4 w-4" />
+                    ) : (
+                      <div className="rotate-180">
+                        <ArrowUp className="h-4 w-4" />
+                      </div>
+                    )}
+                  </Button>
+                </div>
+                
+                {/* Timeline Content - Only shown when expanded */}
+                {showDetailModal.showTimeline && (
+                  <div className="rounded-lg overflow-hidden">
+                    {(() => {
+                      // Get all events sorted by timestamp
+                      let events: TrackingEvent[] = [];
+                      
+                      // Handle old format (object with properties)
+                      if (!Array.isArray(selectedScreening.trackingData)) {
+                        // Convert old format to events array
+                        const oldData = selectedScreening.trackingData as any;
+                        if (oldData.status === "sent") {
+                          events.push({
+                            type: "sent",
+                            timestamp: oldData.timestamp || oldData.lastInteraction || selectedScreening.timestamp,
+                            metadata: { status: "sent" }
+                          });
+                        }
+                        if (oldData.status === "opened" || oldData.status === "viewing") {
+                          events.push({
+                            type: "opened",
+                            timestamp: oldData.openedAt || oldData.lastInteraction || new Date().toISOString(),
+                            metadata: { status: oldData.status }
+                          });
+                        }
+                        if (oldData.progress && oldData.progress > 0) {
+                          events.push({
+                            type: "progress",
+                            timestamp: oldData.lastInteraction || new Date().toISOString(),
+                            metadata: { completionPercent: oldData.progress }
+                          });
+                        }
+                        if (oldData.status === "completed") {
+                          events.push({
+                            type: "submitted",
+                            timestamp: oldData.completedAt || oldData.lastInteraction || new Date().toISOString(),
+                            metadata: { status: "completed" }
+                          });
+                        }
+                      } else {
+                        // New format
+                        events = [...selectedScreening.trackingData];
+                      }
+                      
+                      // Sort events chronologically (oldest first)
+                      events.sort((a, b) => 
+                        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                      );
+                      
+                      return events.map((event, idx) => {
+                        const date = new Date(event.timestamp);
+                        const formattedDate = `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}`;
+                        
+                        return (
+                          <div 
+                            key={idx} 
+                            className={`flex p-4 ${idx % 2 === 0 ? 'bg-gray-800/20' : 'bg-gray-800/40'}`}
+                          >
+                            <div className="w-44 text-sm text-gray-400 shrink-0">
+                              {formattedDate}
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              {event.type === "sent" && (
+                                <>
+                                  <div className="text-purple-500 bg-purple-900/20 p-1 rounded-full">
+                                    <Send className="h-4 w-4" />
+                                  </div>
+                                  <span className="font-medium">Email Sent</span>
+                                </>
+                              )}
+                              {event.type === "opened" && (
+                                <>
+                                  <div className="text-blue-500 bg-blue-900/20 p-1 rounded-full">
+                                    <Eye className="h-4 w-4" />
+                                  </div>
+                                  <span className="font-medium">Email Opened</span>
+                                </>
+                              )}
+                              {event.type === "started" && (
+                                <>
+                                  <div className="text-yellow-500 bg-yellow-900/20 p-1 rounded-full">
+                                    <Play className="h-4 w-4" />
+                                  </div>
+                                  <span className="font-medium">Pre-Screening Started</span>
+                                </>
+                              )}
+                              {event.type === "progress" && (
+                                <>
+                                  <div className="text-orange-500 bg-orange-900/20 p-1 rounded-full">
+                                    <Activity className="h-4 w-4" />
+                                  </div>
+                                  <span className="font-medium">Progress Update: {event.metadata?.completionPercent || 0}%</span>
+                                  <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden ml-2">
+                                    <div 
+                                      className="h-full bg-gradient-to-r from-orange-700 to-orange-500"
+                                      style={{ width: `${event.metadata?.completionPercent || 0}%` }}
+                                    ></div>
+                                  </div>
+                                </>
+                              )}
+                              {event.type === "submitted" && (
+                                <>
+                                  <div className="text-green-500 bg-green-900/20 p-1 rounded-full">
+                                    <CheckCircle className="h-4 w-4" />
+                                  </div>
+                                  <span className="font-medium">Pre-Screening Completed</span>
+                                </>
+                              )}
+                              {event.type === "done" && (
+                                <>
+                                  <div className="text-green-500 bg-green-900/20 p-1 rounded-full">
+                                    <CheckSquare className="h-4 w-4" />
+                                  </div>
+                                  <span className="font-medium">Process Finalized</span>
+                                </>
+                              )}
+                              {event.type === "error" && (
+                                <>
+                                  <div className="text-red-500 bg-red-900/20 p-1 rounded-full">
+                                    <AlertCircle className="h-4 w-4" />
+                                  </div>
+                                  <span className="font-medium">Error Occurred</span>
+                                  {event.metadata && event.metadata.error && (
+                                    <span className="text-sm text-red-400 ml-2">{event.metadata.error}</span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+            
+      {/* New Pre-Screening Modal */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="bg-dark-surface border-gray-700 text-white max-w-md dialog-content-bg">
+          <DialogHeader>
+            <DialogTitle className="text-center">AI-Driven Pre-Screening</DialogTitle>
+            <DialogDescription className="text-center text-gray-400">
+              Create a new pre-screening process to evaluate deals
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="dealId">Company</Label>
+              <Select 
+                onValueChange={(value) => handleDealChange(value)}
+                defaultValue={form.getValues("dealId")}
+              >
+                <SelectTrigger className="w-full text-white bg-dark-surface border-gray-700">
+                  <SelectValue placeholder="Select a company" className="text-white" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#121220] text-white border border-gray-700 shadow-lg" style={{ backgroundColor: '#121220', backdropFilter: 'none' }}>
+                  {deals.map((deal) => (
+                    <SelectItem key={deal.id} value={deal.id} className="text-white hover:bg-purple-700 focus:bg-purple-700">
+                      {deal.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.formState.errors.dealId && (
+                <p className="text-sm text-red-500">{form.formState.errors.dealId.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="recipientEmails">Emails</Label>
+              <Input
+                placeholder="Enter emails separated by commas"
+                className="text-white bg-dark-surface border-gray-700"
+                {...form.register("recipientEmails")}
+              />
+              {form.formState.errors.recipientEmails && (
+                <p className="text-sm text-red-500">{form.formState.errors.recipientEmails.message}</p>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-between items-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEmailPreview(!showEmailPreview)}
+              >
+                {showEmailPreview ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Hide Preview
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Show Preview
+                  </>
+                )}
+              </Button>
+
+              <Button
+                type="submit"
+                size="sm"
+                disabled={sendPreScreeningMutation.isPending}
+              >
+                {sendPreScreeningMutation.isPending ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : "Send"}
+              </Button>
+            </div>
+
+            {showEmailPreview && (
+              <div className="border border-gray-700 rounded p-2 mt-4 bg-white text-black h-[300px] overflow-auto">
+                <div dangerouslySetInnerHTML={{ __html: emailPreview }} />
+              </div>
+            )}
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
