@@ -28,8 +28,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { ConcentricPattern } from "@/components/ui/concentric-pattern";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
@@ -69,9 +69,11 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   // State for deal details modal
   const [selectedDeal, setSelectedDeal] = useState<any>(null);
   const [selectedScreening, setSelectedScreening] = useState<ScreeningData | null>(null);
+  const [preScreeningData, setPreScreeningData] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState({
     open: false,
-    showTimeline: false // Timeline collapsed by default
+    showTimeline: false, // Timeline collapsed by default
+    showPreScreening: false // Pre-Screening data collapsed by default
   });
 
   // Form handling
@@ -424,7 +426,16 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   const handleDealClick = (deal: any, screening: ScreeningData) => {
     setSelectedDeal(deal);
     setSelectedScreening(screening);
-    setShowDetailModal({ open: true, showTimeline: false });
+    
+    // Get pre_screening data if it exists
+    const preScreening = deal.pre_screening || deal.preScreening;
+    setPreScreeningData(preScreening);
+    
+    setShowDetailModal({ 
+      open: true, 
+      showTimeline: false,
+      showPreScreening: false
+    });
   };
 
   return (
@@ -857,6 +868,116 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                   </div>
                 </div>
               </div>
+              
+              {/* Pre-Screening Data - Collapsible */}
+              {preScreeningData && (
+                <div className="mt-8">
+                  {/* Pre-Screening Toggle Button */}
+                  <div 
+                    className="flex justify-between items-center cursor-pointer mb-2" 
+                    onClick={() => setShowDetailModal(prev => ({ ...prev, showPreScreening: !prev.showPreScreening }))}
+                  >
+                    <h3 className="text-lg font-medium">Pre-Screening Form Data</h3>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                      {showDetailModal.showPreScreening ? (
+                        <ArrowUp className="h-4 w-4" />
+                      ) : (
+                        <div className="rotate-180">
+                          <ArrowUp className="h-4 w-4" />
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {/* Pre-Screening Content - Only shown when expanded */}
+                  {showDetailModal.showPreScreening && (
+                    <div className="rounded-lg overflow-hidden mt-4">
+                      <div className="bg-gray-800/30 p-4 rounded-lg">
+                        {(() => {
+                          // Extract intro_call data if it exists
+                          const introCall = preScreeningData?.intro_call || {};
+                          const sc0 = preScreeningData?.sc0 || {};
+                          
+                          return (
+                            <div className="space-y-4">
+                              {/* Intro Call Section */}
+                              {Object.keys(introCall).length > 0 && (
+                                <div>
+                                  <h4 className="text-md font-medium mb-2 text-purple-400">Intro Call Information</h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {Object.entries(introCall).map(([key, value]: [string, any]) => (
+                                      <div key={key} className="bg-gray-900/40 p-3 rounded-lg">
+                                        <div className="text-gray-400 text-xs mb-1">{key.replace(/_/g, ' ')}</div>
+                                        <div className="font-medium">{value?.toString() || "—"}</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Screening Results */}
+                              {sc0.completed && (
+                                <div>
+                                  <h4 className="text-md font-medium mb-2 text-green-400">Pre-Screening Results</h4>
+                                  <div className="bg-gray-900/40 p-4 rounded-lg">
+                                    <div className="flex items-center mb-3">
+                                      <div className="font-medium mr-2">Score:</div>
+                                      <div className="text-lg font-semibold">
+                                        {sc0.score} / {sc0.max_score}
+                                      </div>
+                                      <div className="ml-auto">
+                                        {sc0.recommendation && (
+                                          <Badge 
+                                            className={
+                                              sc0.recommendation.toLowerCase().includes('proceed') 
+                                                ? "bg-green-600" 
+                                                : "bg-amber-600"
+                                            }
+                                          >
+                                            {sc0.recommendation}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {sc0.outcomes && (
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                                        {Object.entries(sc0.outcomes)
+                                          .filter(([key]) => key !== 'inputs') // Filter out inputs as we'll display them separately
+                                          .map(([category, data]: [string, any]) => (
+                                            <div key={category} className="bg-gray-800/40 p-3 rounded">
+                                              <div className="flex justify-between items-center mb-2">
+                                                <div className="text-sm font-medium">{category.replace(/_/g, ' ')}</div>
+                                                <Badge variant="outline">
+                                                  {data.cat_score?.toFixed(1) || 0} / {data.max_cat_score?.toFixed(1) || 0}
+                                                </Badge>
+                                              </div>
+                                              <Progress 
+                                                value={(data.cat_score / data.max_cat_score) * 100} 
+                                                className="h-1.5" 
+                                              />
+                                            </div>
+                                          ))
+                                        }
+                                      </div>
+                                    )}
+                                    
+                                    {sc0.completed_at && (
+                                      <div className="text-xs text-gray-400 mt-4">
+                                        Completed on {new Date(sc0.completed_at).toLocaleDateString()} by {sc0.completed_by || "System"}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               
               {/* Event Timeline - Collapsible */}
               <div className="mt-8">
