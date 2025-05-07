@@ -77,8 +77,16 @@ export function VoiceControlToolbar({
     
     // If transcript changed
     if (transcript !== lastTranscriptRef.current) {
+      console.log("Transcript updated:", transcript);
+      
       // Update last transcript
       lastTranscriptRef.current = transcript;
+      
+      // Immediately update the input field with current transcript
+      // This ensures users see what's being transcribed in real-time
+      if (transcript.trim()) {
+        onVoiceInput(transcript);
+      }
       
       // Clear any existing silence timer
       if (silenceTimer) {
@@ -89,8 +97,8 @@ export function VoiceControlToolbar({
       // Set new silence timer - if transcript doesn't change for 1.5 seconds, send it
       if (transcript.trim()) {
         const timer = setTimeout(() => {
-          console.log("Silence detected, sending transcript:", transcript);
-          onVoiceInput(transcript);
+          console.log("Silence detected, finalizing transcript:", transcript);
+          // We've already updated the input field in real-time, so just stop listening
           SpeechRecognition.stopListening();
           resetTranscript();
           setSilenceTimer(null);

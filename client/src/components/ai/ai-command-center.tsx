@@ -636,12 +636,12 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   // Handle voice input from the toolbar
   const handleVoiceInput = (text: string) => {
     if (text.trim()) {
+      console.log("Updating input field with voice input:", text);
       setInput(text);
-      // Optional: Automatically send the message after a brief delay
-      // to give user time to see what was transcribed
-      setTimeout(() => {
-        handleSendMessage();
-      }, 300);
+      // We no longer auto-send the message immediately
+      // Instead, we just update the input field in real-time as the user speaks
+      // The speech recognition component will stop listening after silence
+      // and then the user can review and send the message manually
     }
   };
   
