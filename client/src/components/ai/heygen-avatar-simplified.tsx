@@ -349,6 +349,12 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         utterance.onend = () => {
           console.log('Fallback speech ended');
           setIsSpeaking(false);
+          
+          // Pause the video when speech ends
+          if (backgroundVideoRef.current) {
+            backgroundVideoRef.current.pause();
+            console.log('Paused video at end of speech');
+          }
         };
         
         utterance.onerror = (event) => {
@@ -428,6 +434,12 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
           } else {
             console.log('Finished speaking all chunks');
             setIsSpeaking(false);
+            
+            // Pause the video after all chunks are spoken
+            if (backgroundVideoRef.current) {
+              backgroundVideoRef.current.pause();
+              console.log('Paused video after finishing all speech chunks');
+            }
           }
         };
         
@@ -471,8 +483,8 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
       // Ensure it's muted for autoplay compatibility
       videoElement.muted = true;
       
-      // Set to loop if needed for continuous motion
-      videoElement.loop = true;
+      // Don't loop the video
+      videoElement.loop = false;
       
       // Start playing
       videoElement.play().catch(err => {
@@ -492,13 +504,8 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
     // Handle video ended event
     const handleEnded = () => {
       console.log('Background video playback completed');
-      // Restart the video if it's not looping
-      if (!videoElement.loop) {
-        videoElement.currentTime = 0;
-        videoElement.play().catch(err => {
-          console.error('Error replaying background video:', err);
-        });
-      }
+      // Don't automatically restart the video when it ends
+      // Only speaking events should trigger a restart
     };
     
     videoElement.addEventListener('ended', handleEnded);
