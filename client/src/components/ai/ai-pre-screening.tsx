@@ -250,7 +250,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
           <h2 style="color: #4a2b87; margin-bottom: 15px;">Pre-Screening for [Deal]</h2>
           <p style="margin-bottom: 20px;">Akses welcomes you to our AI AVATAR Pre-Screening. We will guide you through the entire process. Click the link below to start your deal with us.</p>
           <div style="text-align: center;">
-            <a href="https://originator.akses.ai/prescreening/deal-id" style="display: inline-block; background-color: #4a2b87; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Start Pre-Screening Process</a>
+            <a href="https://e0cc8f64-f64f-4e57-b6a7-b04678097db5-00-3tkxua1o00ebk.worf.replit.dev/originator-onboarding/6812ab97c9766ef662c546bd" style="display: inline-block; background-color: #4a2b87; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Start Pre-Screening Process</a>
           </div>
           <p style="margin-top: 20px; font-size: 14px; color: #666;">If you have any questions, please don't hesitate to contact us at support@sixpoint.com</p>
         </div>
@@ -272,7 +272,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
           <h2 style="color: #4a2b87; margin-bottom: 15px;">Pre-Screening for ${deal.name || 'Your Deal'}</h2>
           <p style="margin-bottom: 20px;">Akses welcomes you to our AI AVATAR Pre-Screening. We will guide you through the entire process. Click the link below to start your deal with us.</p>
           <div style="text-align: center;">
-            <a href="https://originator.akses.ai/prescreening/${deal.id}" style="display: inline-block; background-color: #4a2b87; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Start Pre-Screening Process</a>
+            <a href="https://e0cc8f64-f64f-4e57-b6a7-b04678097db5-00-3tkxua1o00ebk.worf.replit.dev/originator-onboarding/6812ab97c9766ef662c546bd" style="display: inline-block; background-color: #4a2b87; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Start Pre-Screening Process</a>
           </div>
           <p style="margin-top: 20px; font-size: 14px; color: #666;">If you have any questions, please don't hesitate to contact us at support@sixpoint.com</p>
         </div>
