@@ -307,12 +307,20 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
         // We have both a deal and emails, let's submit automatically
         const currentFormValues = form.getValues();
         if (currentFormValues.dealId && cleanedEmails) {
+          // Get the selected deal
+          const selectedDeal = deals.find(d => d.id === currentFormValues.dealId);
+        
+          // Generate email content based on the selected deal
+          const generatedEmailContent = selectedDeal ? 
+            generateDealEmailTemplate(selectedDeal) : 
+            generateDefaultEmailTemplate();
+
           const requestData = {
             dealId: currentFormValues.dealId,
             // Convert the cleaned emails string to an array
             recipientEmails: cleanedEmails.split(',').map(email => email.trim()),
             additionalContext: currentFormValues.additionalContext || '',
-            emailContent: emailPreview
+            emailContent: generatedEmailContent // Use freshly generated email content
           };
           
           // Small delay to ensure state updates have been processed
@@ -391,11 +399,19 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   // Submit handler
   const sendPreScreeningMutation = useMutation({
     mutationFn: async (data: PreScreeningForm) => {
+      // Get the selected deal to use it for generating the email
+      const selectedDeal = deals.find(d => d.id === data.dealId);
+      
+      // Generate email content based on the selected deal
+      const generatedEmailContent = selectedDeal ? 
+        generateDealEmailTemplate(selectedDeal) : 
+        generateDefaultEmailTemplate();
+      
       const requestData = {
         dealId: data.dealId,
         recipientEmails: data.recipientEmails.split(",").map(email => email.trim()),
         additionalContext: data.additionalContext,
-        emailContent: emailPreview
+        emailContent: generatedEmailContent // Use freshly generated email content
       };
       
       return await apiRequest("POST", "/api/prescreening/send", requestData);

@@ -364,7 +364,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: currentTimestamp,
         initiatingUser: "Admin", // In a real app, this would come from authentication
         recipientEmails,
-        emailContent,
+        // Make sure we have valid emailContent; if not, generate a default
+        emailContent: emailContent || `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/purple+logo+new+2025.png" alt="SixPoint Logo" style="width: 150px;">
+            </div>
+            <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
+              <h2 style="color: #4a2b87; margin-bottom: 15px;">Pre-Screening for ${deal.name || 'Your Deal'}</h2>
+              <p style="margin-bottom: 20px;">Akses welcomes you to our AI AVATAR Pre-Screening. We will guide you through the entire process. Click the link below to start your deal with us.</p>
+              <div style="text-align: center;">
+                <a href="https://e0cc8f64-f64f-4e57-b6a7-b04678097db5-00-3tkxua1o00ebk.worf.replit.dev/originator-onboarding/6812ab97c9766ef662c546bd" style="display: inline-block; background-color: #4a2b87; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Start Pre-Screening Process</a>
+              </div>
+              <p style="margin-top: 20px; font-size: 14px; color: #666;">If you have any questions, please don't hesitate to contact us at support@sixpoint.com</p>
+            </div>
+            <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
+              <p>© 2025 SixPoint Partners. All rights reserved.</p>
+            </div>
+          </div>
+        `,
         additionalContext: additionalContext || "",
         status: "sending", // Will be updated to "sent" once emails are sent
         resendCount: 0, // Initialize resend count at 0 for new entries
@@ -475,8 +493,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           from: 'Akses AI <info@rsvp.emfintechconference.com>',
           to: cleanedEmails,  // Send to actual recipients
           subject: `Pre-Screening Invitation: ${deal.name || 'Deal'}`,
-          html: emailContent,
-          text: emailContent.replace(/<[^>]*>/g, ''), // Strip HTML for plain text version
+          html: screeningEntry.emailContent, // Use the validated email content from screeningEntry
+          text: screeningEntry.emailContent.replace(/<[^>]*>/g, ''), // Strip HTML for plain text version
         });
         
         console.log('Email sent successfully:', emailResult);
