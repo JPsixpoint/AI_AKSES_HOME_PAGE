@@ -840,6 +840,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           onVoiceInput={handleVoiceInput}
           aiMessage={lastAIMessage}
           isProcessing={aiStatus === "processing"}
+          isMuted={isMuted}
+          onMuteToggle={toggleMute}
         />
         <div className="p-4 overflow-y-auto flex-1">
           <AnimatePresence>

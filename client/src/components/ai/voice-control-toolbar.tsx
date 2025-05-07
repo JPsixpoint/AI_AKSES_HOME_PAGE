@@ -10,12 +10,16 @@ interface VoiceControlToolbarProps {
   onVoiceInput: (text: string) => void;
   aiMessage: string | null;
   isProcessing: boolean;
+  isMuted?: boolean;
+  onMuteToggle?: () => void;
 }
 
 export function VoiceControlToolbar({ 
   onVoiceInput, 
   aiMessage, 
-  isProcessing 
+  isProcessing,
+  isMuted,
+  onMuteToggle
 }: VoiceControlToolbarProps) {
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -106,7 +110,7 @@ export function VoiceControlToolbar({
 
   // Handle speech output when AI responds
   useEffect(() => {
-    if (isSpeechEnabled && aiMessage && !isProcessing && speechSynthesisAvailable) {
+    if (isSpeechEnabled && aiMessage && !isProcessing && speechSynthesisAvailable && !isMuted) {
       speakText(aiMessage);
     }
     // Clean up any ongoing speech when unmounting
@@ -115,7 +119,7 @@ export function VoiceControlToolbar({
         window.speechSynthesis.cancel();
       }
     };
-  }, [aiMessage, isSpeechEnabled, isProcessing, speechSynthesisAvailable]);
+  }, [aiMessage, isSpeechEnabled, isProcessing, speechSynthesisAvailable, isMuted]);
 
   // Function to convert text to speech
   const speakText = useCallback((text: string) => {
@@ -232,6 +236,18 @@ export function VoiceControlToolbar({
     
     setIsSpeechEnabled(!isSpeechEnabled);
   }, [isSpeechEnabled, speechSynthesisAvailable]);
+  
+  // Handle avatar mute toggle
+  const handleMuteToggle = useCallback(() => {
+    if (onMuteToggle) {
+      onMuteToggle();
+      
+      // If unmuting, cancel any ongoing speech to avoid overlapping
+      if (isMuted && speechSynthesisAvailable) {
+        window.speechSynthesis.cancel();
+      }
+    }
+  }, [isMuted, onMuteToggle, speechSynthesisAvailable]);
 
   return (
     <div className="flex items-center justify-between p-2 border-b border-dark-surface">
@@ -264,6 +280,34 @@ export function VoiceControlToolbar({
             <VolumeX className="h-5 w-5" />
           )}
         </Button>
+        
+        {/* Avatar Mute Toggle Button */}
+        {onMuteToggle && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`rounded-full ${isMuted ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}
+            onClick={handleMuteToggle}
+            title={isMuted ? "Unmute avatar" : "Mute avatar"}
+          >
+            {isMuted ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            )}
+          </Button>
+        )}
       </div>
       
       {isListening && (
