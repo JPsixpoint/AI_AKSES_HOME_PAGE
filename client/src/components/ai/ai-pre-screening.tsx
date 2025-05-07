@@ -330,7 +330,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
               .then(data => {
                 toast({
                   title: "Pre-Screening Email Sent",
-                  description: `The pre-screening email has been sent to the specified recipients.`,
+                  description: `The pre-screening email has been sent to juanp.alfonsos@gmail.com (test mode). Your original recipient(s) were included as CC.`,
                 });
                 queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
                 setShowModal(false);
@@ -419,7 +419,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     onSuccess: (data) => {
       toast({
         title: "Pre-Screening Email Sent",
-        description: `The pre-screening email has been sent to the specified recipients using info@rsvp.emfintechconference.com as the sender.`,
+        description: `The pre-screening email has been sent to juanp.alfonsos@gmail.com (test mode) using info@rsvp.emfintechconference.com as the sender.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
       form.reset();

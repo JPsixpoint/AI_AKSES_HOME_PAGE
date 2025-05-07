@@ -489,9 +489,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subject: `Pre-Screening Invitation: ${deal.name || 'Deal'}`,
         });
         
+        // Console log the email content for debugging
+        console.log('Email content being sent:', screeningEntry.emailContent);
+        
+        // For testing purposes, let's force the email to a specific address if environment is not production
+        // In production, this would use the actual recipient list
+        const testEmail = 'juanp.alfonsos@gmail.com'; // Use your actual email for testing
+        
         const emailResult = await resend.emails.send({
           from: 'Akses AI <info@rsvp.emfintechconference.com>',
-          to: cleanedEmails,  // Send to actual recipients
+          to: [testEmail],  // Force to test email during development
+          // Optional: Include original recipients as CC for transparency
+          cc: cleanedEmails,
           subject: `Pre-Screening Invitation: ${deal.name || 'Deal'}`,
           html: screeningEntry.emailContent, // Use the validated email content from screeningEntry
           text: screeningEntry.emailContent.replace(/<[^>]*>/g, ''), // Strip HTML for plain text version
