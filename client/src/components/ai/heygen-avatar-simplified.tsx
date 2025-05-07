@@ -291,7 +291,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
   return (
     <div className="flex flex-col items-center justify-center">
       {error ? (
-        // Error State with video background
+        // Error State with clean video background (no error messages)
         <div className="w-[300px] h-[300px] rounded-xl overflow-hidden relative">
           {/* Background Video */}
           <video 
@@ -303,18 +303,8 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
             src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
           />
           
-          {/* Overlay with error information */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center">
-            <div className="text-red-400 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-            </div>
-            <p className="text-xs text-white/90 mb-1 font-medium">AI Avatar Unavailable</p>
-            <p className="text-[10px] text-white/70 mb-4 max-w-[200px] overflow-hidden text-ellipsis">Using fallback speech synthesis</p>
-            
+          {/* Hidden retry button - only visible on hover */}
+          <div className="absolute bottom-2 right-2 opacity-0 hover:opacity-100 transition-opacity duration-300 z-10">
             <button 
               onClick={() => {
                 setError(null);
@@ -329,14 +319,14 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
                   avatarRef.current = null;
                 }
               }}
-              className="text-xs bg-blue-500/70 hover:bg-blue-500/90 text-white px-3 py-1 rounded-md transition-colors"
+              className="text-[10px] bg-black/50 hover:bg-black/70 text-white px-2 py-1 rounded-sm transition-colors"
             >
-              Retry Connection
+              Retry
             </button>
           </div>
         </div>
       ) : isLoading ? (
-        // Loading State with video background
+        // Loading State with clean video background (no loading indicators)
         <div className="w-[300px] h-[300px] rounded-xl overflow-hidden relative">
           {/* Background Video */}
           <video 
@@ -348,11 +338,9 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
             src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
           />
           
-          {/* Loading overlay */}
-          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-400 mb-3"></div>
-            <p className="text-sm text-white/90 font-medium">Loading AI Avatar</p>
-            <p className="text-[10px] text-white/70 mt-1">Establishing connection...</p>
+          {/* Very subtle loading indicator in corner */}
+          <div className="absolute bottom-2 left-2 z-10">
+            <div className="animate-pulse w-3 h-3 rounded-full bg-blue-500/30"></div>
           </div>
         </div>
       ) : (
@@ -368,8 +356,8 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
               className="w-[300px] h-[300px] rounded-xl bg-black/30"
             />
           ) : (
-            // Custom video background from S3 bucket when using fallback
-            <div className="w-[300px] h-[300px] rounded-xl bg-black/30 overflow-hidden relative">
+            // Clean video background from S3 bucket when using fallback (no overlays)
+            <div className="w-[300px] h-[300px] rounded-xl overflow-hidden relative">
               <video 
                 autoPlay
                 loop
@@ -378,16 +366,6 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
                 className="absolute inset-0 w-full h-full object-cover"
                 src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
               />
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                {/* Overlay content for fallback */}
-                <div className="w-20 h-20 rounded-full bg-blue-500/40 border-2 border-blue-300/60 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                    <line x1="12" x2="12" y1="19" y2="22"></line>
-                  </svg>
-                </div>
-              </div>
             </div>
           )}
           
@@ -433,13 +411,12 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
             </button>
           </div>
           
-          {/* Status Indicator */}
-          <div className="absolute bottom-2 right-2 bg-black/70 rounded-md px-2 py-1 z-20">
-            <p className="text-[10px] text-white/80">
-              {usingFallback ? 'Speech Synthesis' : 'HeyGen AI'} 
-              {isMuted && ' (Muted)'}
-            </p>
-          </div>
+          {/* Only show muted status when needed */}
+          {isMuted && (
+            <div className="absolute bottom-2 right-2 bg-black/50 rounded-md px-2 py-1 z-20 text-[10px] text-white/60">
+              Muted
+            </div>
+          )}
         </div>
       )}
     </div>
