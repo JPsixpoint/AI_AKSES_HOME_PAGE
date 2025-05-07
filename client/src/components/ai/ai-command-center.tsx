@@ -12,7 +12,7 @@ import { AIMessage } from "./ai-message";
 import { UserMessage } from "./user-message";
 import { ConfirmationButtons } from "./confirmation-buttons";
 import { VoiceControlToolbar } from "./voice-control-toolbar";
-import { HeyGenAvatar } from "./heygen-avatar";
+import { HeyGenAvatarV2 } from "./heygen-avatar-v2";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ConcentricPattern } from "../ui/concentric-pattern";
@@ -669,7 +669,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         <div className="flex flex-col items-center mb-6">
           {/* Avatar integration */}
           <div className="w-full mb-2">
-            <HeyGenAvatar 
+            <HeyGenAvatarV2 
               text={aiStatus === "speaking" ? lastAIMessage : null}
               isVisible={true}
             />
