@@ -6,9 +6,6 @@ import {
   EditIcon,
   SearchIcon,
   BarChartIcon,
-  Volume,
-  Volume2,
-  VolumeX,
 } from "lucide-react";
 import { AIAvatar } from "./ai-avatar";
 import { AIMessage } from "./ai-message";
@@ -91,403 +88,32 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     },
   });
 
-  // Speech synthesis setup
-  const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-
-  // Function to speak text using the Web Speech API with improved browser support
-  const speakText = (text: string) => {
-    if (isMuted) return;
-    
-    console.log("Attempting to speak text:", text);
-    
-    // Set speaking status immediately to provide visual feedback
-    setAIStatus("speaking");
-    
-    // For tracking if speech has started
-    let speechStarted = false;
-    
-    // Ensure speech synthesis is available
-    if (!window.speechSynthesis) {
-      console.warn("Speech synthesis not supported in this browser");
-      // Use timer-based fallback immediately
-      useTimerFallback(text);
-      return;
-    }
-    
-    // Cancel any existing speech
-    try {
-      window.speechSynthesis.cancel();
-    } catch (e) {
-      console.error("Error cancelling previous speech:", e);
-    }
-    
-    // Clean up text for speech (remove markdown, code blocks, etc.)
-    const cleanText = text
-      .replace(/```[\s\S]*?```/g, "")  // Remove code blocks
-      .replace(/\*\*(.*?)\*\*/g, "$1")  // Remove bold markers
-      .replace(/\*(.*?)\*/g, "$1")      // Remove italic markers
-      .replace(/\[(.*?)\]\(.*?\)/g, "$1") // Convert links to just text
-      .replace(/\\n/g, " ")  // Replace escaped newlines with spaces
-      .replace(/\$(\d+),?(\d+)?,?(\d+)?(\.\d+)?/g, "$1 dollars")  // Format currency
-      .replace(/(\d{1,3}(?:,\d{3})+)/g, (match) => {
-        // Remove commas from large numbers to improve pronunciation
-        return match.replace(/,/g, "");
-      });
-    
-    console.log("Cleaned text for speech:", cleanText);
-    
-    // Create a safer version of the speak function with a timeout
-    const safeSpeakWithTimeout = (text: string, retryCount = 0, maxRetries = 2) => {
-      if (retryCount > maxRetries) {
-        console.error(`Failed to start speech after ${maxRetries} attempts`);
-        useTimerFallback(text);
-        return;
-      }
-      
-      try {
-        // Create new utterance for each attempt
-        const utterance = new SpeechSynthesisUtterance(text);
-        
-        // Set speaking rate slightly slower for better clarity
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        
-        // Set up event listeners
-        utterance.onstart = () => {
-          console.log("Speech started successfully");
-          speechStarted = true;
-          setAIStatus("speaking");
-        };
-        
-        utterance.onend = () => {
-          console.log("Speech completed successfully");
-          speechSynthesisRef.current = null;
-          setAIStatus("listening");
-        };
-        
-        utterance.onerror = (e) => {
-          console.error("Speech synthesis error:", e);
-          if (!speechStarted) {
-            // Only retry if speech hasn't started yet
-            console.log(`Retry attempt ${retryCount + 1}`);
-            setTimeout(() => safeSpeakWithTimeout(text, retryCount + 1), 300);
-          } else {
-            // Speech started but then failed
-            setAIStatus("listening");
-          }
-        };
-        
-        // Try to set a voice
-        const voiceSet = setVoiceForUtterance(utterance);
-        if (!voiceSet && retryCount === 0) {
-          // If no voice was found on first attempt, try again after a short delay
-          // This helps with browsers that load voices asynchronously
-          setTimeout(() => {
-            safeSpeakWithTimeout(text, retryCount + 1);
-          }, 500);
-          return;
-        }
-        
-        // Save reference
-        speechSynthesisRef.current = utterance;
-        
-        // Try to speak
-        window.speechSynthesis.speak(utterance);
-        
-        // Set a timeout to check if speech started
-        setTimeout(() => {
-          if (!speechStarted && speechSynthesisRef.current === utterance) {
-            console.log("Speech didn't start within timeout, retrying...");
-            // Try to cancel any pending speech
-            try {
-              window.speechSynthesis.cancel();
-            } catch (e) {
-              console.error("Error cancelling stuck speech:", e);
-            }
-            
-            // Retry with backoff
-            setTimeout(() => safeSpeakWithTimeout(text, retryCount + 1), 300);
-          }
-        }, 1000); // 1 second timeout to start speaking
-        
-      } catch (error) {
-        console.error("Error in safeSpeakWithTimeout:", error);
-        if (retryCount < maxRetries) {
-          setTimeout(() => safeSpeakWithTimeout(text, retryCount + 1), 300);
-        } else {
-          useTimerFallback(text);
-        }
-      }
-    };
-    
-    // Attempt to speak with safe timeout handling
-    safeSpeakWithTimeout(cleanText);
-    
-    // Set an overall fallback in case all speech attempts fail
-    const maxSpeechTime = Math.max(8000, cleanText.length * 80); // Roughly 80ms per character
-    const overallFallbackTimer = setTimeout(() => {
-      if (aiStatus === "speaking") {
-        console.log("Overall speech timeout reached, resetting state");
-        setAIStatus("listening");
-        
-        if (speechSynthesisRef.current) {
-          try {
-            window.speechSynthesis.cancel();
-          } catch (e) {
-            console.error("Error cancelling timed-out speech:", e);
-          }
-          speechSynthesisRef.current = null;
-        }
-      }
-    }, maxSpeechTime);
-    
-    return () => clearTimeout(overallFallbackTimer);
-  };
-  
-  // Helper to set the best available voice for an utterance
-  const setVoiceForUtterance = (utterance: SpeechSynthesisUtterance) => {
-    try {
-      // Get available voices
-      const voices = window.speechSynthesis.getVoices();
-      
-      if (voices.length === 0) {
-        console.log("No voices available");
-        return false;
-      }
-      
-      // Preferred voice names in order
-      const preferredVoices = [
-        "Samantha", 
-        "Google US English Female",
-        "Karen",
-        "Daniel (English (United States))",
-        "Alex",
-        "Google US English"
-      ];
-      
-      // Try to find a preferred voice
-      let selectedVoice = null;
-      
-      // First try exact name match
-      for (const voiceName of preferredVoices) {
-        const match = voices.find(v => v.name === voiceName);
-        if (match) {
-          selectedVoice = match;
-          console.log(`Found preferred voice: ${match.name}`);
-          break;
-        }
-      }
-      
-      // Then try partial name match if no exact match
-      if (!selectedVoice) {
-        for (const voiceName of preferredVoices) {
-          const match = voices.find(v => v.name.includes(voiceName));
-          if (match) {
-            selectedVoice = match;
-            console.log(`Found similar voice: ${match.name}`);
-            break;
-          }
-        }
-      }
-      
-      // Fall back to any US English voice
-      if (!selectedVoice) {
-        selectedVoice = voices.find(v => 
-          v.lang === 'en-US' || 
-          v.lang === 'en_US'
-        );
-        
-        if (selectedVoice) {
-          console.log(`Using US English voice: ${selectedVoice.name}`);
-        }
-      }
-      
-      // Last resort: any English voice
-      if (!selectedVoice) {
-        selectedVoice = voices.find(v => v.lang.startsWith('en'));
-        
-        if (selectedVoice) {
-          console.log(`Using English voice: ${selectedVoice.name}`);
-        }
-      }
-      
-      // If we found a voice, use it
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-        utterance.lang = 'en-US'; // Explicitly set language
-        return true;
-      }
-      
-      console.warn("No suitable voice found, using default voice");
-      return false;
-    } catch (e) {
-      console.error("Error setting voice:", e);
-      return false;
-    }
-  };
-  
-  // Helper function to select voice and start speaking
-  const selectVoiceAndSpeak = (utterance: SpeechSynthesisUtterance, voices: SpeechSynthesisVoice[], text: string) => {
-    // Try to find a good quality female voice
-    const preferredVoices = [
-      // US English voices - preferred
-      "Samantha", "Google US English Female", "Victoria", 
-      // UK English voices - fallback
-      "Google UK English Female", "Daniel",
-      // Other English voices
-      "Microsoft Zira", "Karen"
-    ];
-    
-    // Find first matching voice from our preference list
-    let foundVoice = false;
-    for (const voiceName of preferredVoices) {
-      const voice = voices.find(v => v.name.includes(voiceName));
-      if (voice) {
-        utterance.voice = voice;
-        console.log(`Using preferred voice: ${voice.name}`);
-        foundVoice = true;
-        break;
-      }
-    }
-    
-    // If no preferred voice found, use the first English voice available
-    if (!foundVoice) {
-      const englishVoice = voices.find(v => v.lang.startsWith('en-'));
-      if (englishVoice) {
-        utterance.voice = englishVoice;
-        console.log(`Using English voice: ${englishVoice.name}`);
-      } else {
-        console.log("No English voice found, using default");
-      }
-    }
-    
-    // Adjust speech parameters
-    utterance.rate = 1.0;  // Normal speech rate
-    utterance.pitch = 1.0; // Normal pitch
-    utterance.volume = 1.0; // Full volume
-    
-    // Start speaking
-    console.log(`Starting speech with ${utterance.voice?.name || 'default voice'}`);
-    window.speechSynthesis.speak(utterance);
-  };
-  
-  // Alternative speech method as fallback
-  const tryAlternativeSpeech = (text: string) => {
-    console.log("Using alternative speech method");
-    
-    // Stop any current speech
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    
-    try {
-      // Create a new utterance for the retry
-      const newUtterance = new SpeechSynthesisUtterance(text);
-      
-      // Use default settings
-      newUtterance.rate = 1.0;
-      newUtterance.pitch = 1.0;
-      newUtterance.volume = 1.0;
-      
-      // Simple event handlers
-      newUtterance.onstart = () => {
-        console.log("Alternative speech started");
-        setAIStatus("speaking");
-      };
-      
-      newUtterance.onend = () => {
-        console.log("Alternative speech ended");
-        setAIStatus("listening");
-      };
-      
-      newUtterance.onerror = () => {
-        console.error("Alternative speech also failed");
-        // Fall back to timer approach
-        useTimerFallback(text);
-      };
-      
-      // Try speaking without setting voice
-      window.speechSynthesis.speak(newUtterance);
-    } catch (error) {
-      console.error("Alternative speech method failed:", error);
-      useTimerFallback(text);
-    }
-  };
-  
-  // Last resort: use timer-based approach
-  const useTimerFallback = (text: string) => {
-    console.log("Using timer fallback for speech");
-    const words = text.split(/\s+/).length;
-    const speakingTimeMs = Math.max(4000, words * 400); // Min 4 seconds, then 400ms per word
-    
-    setAIStatus("speaking");
-    setTimeout(() => {
-      setAIStatus("listening");
-    }, speakingTimeMs);
-  };
-  
-  // Toggle mute function
-  const toggleMute = () => {
-    const newMutedState = !isMuted;
-    setIsMuted(newMutedState);
-    
-    if (newMutedState) {
-      // Cancel current speech if muting
-      if (window.speechSynthesis && speechSynthesisRef.current) {
-        window.speechSynthesis.cancel();
-        setAIStatus("listening");
-      }
-    } else if (lastAIMessage) {
-      // Restart speech if unmuting and we have a message
-      speakText(lastAIMessage);
-    }
-  };
-
-  // Read welcome message on initial load
-  useEffect(() => {
-    // Use the initial welcome message
-    const welcomeMessage = messages[0]?.content;
-    if (welcomeMessage && messages.length === 1) {
-      console.log("Reading initial welcome message");
-      setLastAIMessage(welcomeMessage);
-      
-      // Add a slight delay to ensure the component is fully mounted
-      const timer = setTimeout(() => {
-        speakText(welcomeMessage);
-        
-        // Also add a click listener to the document to trigger speech again
-        // Many browsers require user interaction before allowing audio to play
-        const clickHandler = () => {
-          if (speechSynthesisRef.current === null) {
-            console.log("Trying to speak welcome message after user interaction");
-            speakText(welcomeMessage);
-          }
-          // Remove the listener after first click
-          document.removeEventListener('click', clickHandler);
-        };
-        
-        document.addEventListener('click', clickHandler, { once: true });
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [messages]);
-
-  // Scroll to bottom of messages and handle speech for new messages
+  // Scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     
     // Update lastAIMessage when a new assistant message is added
     const lastMessage = messages[messages.length - 1];
-    // Skip processing if this is the first/welcome message and component just mounted
-    if (lastMessage && lastMessage.role === "assistant" && messages.length > 1) {
-      const messageText = lastMessage.content;
-      setLastAIMessage(messageText);
+    if (lastMessage && lastMessage.role === "assistant") {
+      setLastAIMessage(lastMessage.content);
+      // Also set speech status
+      setAIStatus("speaking");
       
-      // Speak the message
-      speakText(messageText);
+      // Calculate a reasonable speaking time based on message length
+      // Average human speaking rate is about 150 words per minute, or 2.5 words per second
+      const words = lastMessage.content.split(/\s+/).length;
+      const speakingTimeMs = Math.max(4000, words * 400); // Min 4 seconds, then 400ms per word
+      
+      console.log(`Speaking time: ${speakingTimeMs}ms for ${words} words`);
+      
+      // Reset to listening after the calculated delay
+      const timer = setTimeout(() => {
+        setAIStatus("listening");
+        // Clear the lastAIMessage after speaking is complete
+        setLastAIMessage(null);
+      }, speakingTimeMs);
+      
+      return () => clearTimeout(timer);
     }
   }, [messages]);
 
@@ -1072,46 +698,6 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             }`}>
               <span className="sr-only">Speaking</span>
             </div>
-            
-            {/* Welcome message playback button */}
-            <button
-              onClick={() => {
-                const welcomeMessage = messages[0]?.content;
-                if (welcomeMessage) {
-                  console.log("Play welcome button clicked");
-                  setLastAIMessage(welcomeMessage);
-                  speakText(welcomeMessage);
-                }
-              }}
-              className="text-xs bg-blue-500/20 text-blue-400 p-1 px-2 rounded-full flex items-center hover:bg-blue-500/30 transition-colors ml-2"
-              title="Click to hear welcome message"
-            >
-              <Volume2 className="h-3 w-3 mr-1" />
-              <span>Play Welcome</span>
-            </button>
-            
-            {/* Mute toggle button */}
-            <button
-              onClick={toggleMute}
-              className={`text-xs p-1 px-2 rounded-full flex items-center transition-colors ${
-                isMuted 
-                  ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" 
-                  : "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30"
-              }`}
-              title={isMuted ? "Unmute voice" : "Mute voice"}
-            >
-              {isMuted ? (
-                <>
-                  <VolumeX className="h-3 w-3 mr-1" />
-                  <span>Unmute</span>
-                </>
-              ) : (
-                <>
-                  <Volume className="h-3 w-3 mr-1" />
-                  <span>Mute</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
       </div>
@@ -1121,8 +707,6 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           onVoiceInput={handleVoiceInput}
           aiMessage={lastAIMessage}
           isProcessing={aiStatus === "processing"}
-          isMuted={isMuted}
-          onToggleMute={toggleMute}
         />
         <div className="p-4 overflow-y-auto flex-1">
           <AnimatePresence>
