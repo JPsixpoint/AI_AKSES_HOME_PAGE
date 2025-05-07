@@ -904,53 +904,438 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                               {Object.keys(introCall).length > 0 && (
                                 <div>
                                   <h4 className="text-md font-medium mb-2 text-purple-400">Intro Call Information</h4>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {Object.entries(introCall).map(([key, value]: [string, any]) => {
-                                      // Format the field name to be properly capitalized
-                                      const formattedKey = key
-                                        .split('_')
-                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                        .join(' ');
-                                      
-                                      // Format the value based on type
-                                      let formattedValue = value?.toString() || "—";
-                                      
-                                      // Format numbers with commas and currency symbols where appropriate
-                                      if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
-                                        // If the key indicates it's currency-related
-                                        if (
-                                          key.includes('capital') || 
-                                          key.includes('revenue') || 
-                                          key.includes('amount') || 
-                                          key.includes('budget') || 
-                                          key.includes('fee') ||
-                                          key.includes('asset') ||
-                                          key.includes('aum') ||
-                                          key.includes('valuation')
-                                        ) {
-                                          const numValue = typeof value === 'string' ? Number(value) : value;
-                                          formattedValue = `$${numValue.toLocaleString()}`;
-                                        } 
-                                        // For percentage values
-                                        else if (key.includes('percentage') || key.includes('rate') || key.includes('percent')) {
-                                          const numValue = typeof value === 'string' ? Number(value) : value;
-                                          formattedValue = `${numValue.toLocaleString()}%`;
+                                  {/* Categorized sections following requested structure */}
+                                  
+                                  {/* 1. Business Information */}
+                                  <div className="mb-6">
+                                    <h5 className="text-md font-semibold mb-3 text-blue-400 border-b border-blue-900/40 pb-1">1. Business Information</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {['company_name', 'url', 'business_start_date', 'lending_start_date', 'country', 'credit_hub'].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // For date fields
+                                        if (fieldKey.includes('date') && introCall[fieldKey]) {
+                                          try {
+                                            const date = new Date(introCall[fieldKey]);
+                                            if (!isNaN(date.getTime())) {
+                                              formattedValue = date.toLocaleDateString();
+                                            }
+                                          } catch (e) {
+                                            // Keep original format if date parsing fails
+                                          }
                                         }
-                                        // For other numeric values
-                                        else if (!isNaN(Number(value))) {
-                                          const numValue = typeof value === 'string' ? Number(value) : value;
-                                          formattedValue = numValue.toLocaleString();
-                                        }
-                                      }
-
-                                      return (
-                                        <div key={key} className="bg-gray-900/40 p-3 rounded-lg">
-                                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
-                                          <div className="font-medium">{formattedValue}</div>
-                                        </div>
-                                      );
-                                    })}
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">{formattedValue}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
+                                  
+                                  {/* 2. Financing */}
+                                  <div className="mb-6">
+                                    <h5 className="text-md font-semibold mb-3 text-purple-400 border-b border-purple-900/40 pb-1">2. Financing</h5>
+                                    
+                                    {/* Equity */}
+                                    <h6 className="text-sm font-medium mb-2 ml-2 text-purple-300">Equity</h6>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                      {[
+                                        'loan_financing_capital_source', 
+                                        'total_capital_raised_since_inception', 
+                                        'stage_of_last_round',
+                                        'last_round',
+                                        'post_money_valuation',
+                                        'pre_money_valuation',
+                                        'date_of_equity_last_round'
+                                      ].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // Format currency values
+                                        if (
+                                          fieldKey.includes('capital') || 
+                                          fieldKey.includes('valuation') ||
+                                          fieldKey.includes('round') && !fieldKey.includes('stage') && !fieldKey.includes('date')
+                                        ) {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            formattedValue = `$${numValue.toLocaleString()}`;
+                                          }
+                                        }
+                                        
+                                        // For date fields
+                                        if (fieldKey.includes('date') && introCall[fieldKey]) {
+                                          try {
+                                            const date = new Date(introCall[fieldKey]);
+                                            if (!isNaN(date.getTime())) {
+                                              formattedValue = date.toLocaleDateString();
+                                            }
+                                          } catch (e) {
+                                            // Keep original format if date parsing fails
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">{formattedValue}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    
+                                    {/* Debt */}
+                                    <h6 className="text-sm font-medium mb-2 ml-2 text-purple-300">Debt</h6>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {[
+                                        'institutional_debt_investor', 
+                                        'debt_raised_since_inception', 
+                                        'date_of_last_debt_round'
+                                      ].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // Format currency values
+                                        if (fieldKey.includes('debt_raised')) {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            formattedValue = `$${numValue.toLocaleString()}`;
+                                          }
+                                        }
+                                        
+                                        // For date fields
+                                        if (fieldKey.includes('date') && introCall[fieldKey]) {
+                                          try {
+                                            const date = new Date(introCall[fieldKey]);
+                                            if (!isNaN(date.getTime())) {
+                                              formattedValue = date.toLocaleDateString();
+                                            }
+                                          } catch (e) {
+                                            // Keep original format if date parsing fails
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">{formattedValue}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* 3. Portfolio and Originations */}
+                                  <div className="mb-6">
+                                    <h5 className="text-md font-semibold mb-3 text-green-400 border-b border-green-900/40 pb-1">3. Portfolio and Originations</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {[
+                                        'sixpoint_initial_facility_size', 
+                                        'historical_origination_volume', 
+                                        'portfolio_size',
+                                        'last_6_month_origination_volume',
+                                        'target_closing_date',
+                                        'first_sp_drawdown_start_date',
+                                        'accordion_exercised_date'
+                                      ].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // Format currency values
+                                        if (
+                                          fieldKey.includes('size') || 
+                                          fieldKey.includes('volume')
+                                        ) {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            formattedValue = `$${numValue.toLocaleString()}`;
+                                          }
+                                        }
+                                        
+                                        // For date fields
+                                        if (fieldKey.includes('date') && introCall[fieldKey]) {
+                                          try {
+                                            const date = new Date(introCall[fieldKey]);
+                                            if (!isNaN(date.getTime())) {
+                                              formattedValue = date.toLocaleDateString();
+                                            }
+                                          } catch (e) {
+                                            // Keep original format if date parsing fails
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">{formattedValue}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* 4. Profitability, OPEX and Cash */}
+                                  <div className="mb-6">
+                                    <h5 className="text-md font-semibold mb-3 text-amber-400 border-b border-amber-900/40 pb-1">4. Profitability, OPEX and Cash</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {[
+                                        'profitability_status', 
+                                        'months_to_profitability', 
+                                        'cash_balance',
+                                        'monthly_burn',
+                                        'opex_per_month',
+                                        'runway',
+                                        'automatic_collection'
+                                      ].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // Format currency values
+                                        if (
+                                          fieldKey.includes('cash') || 
+                                          fieldKey.includes('burn') ||
+                                          fieldKey.includes('opex')
+                                        ) {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            formattedValue = `$${numValue.toLocaleString()}`;
+                                          }
+                                        }
+                                        
+                                        // Format month values
+                                        if (fieldKey.includes('months') || fieldKey === 'runway') {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            formattedValue = `${numValue.toLocaleString()} ${numValue === 1 ? 'month' : 'months'}`;
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">{formattedValue}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* 5. Platform Experience */}
+                                  <div className="mb-4">
+                                    <h5 className="text-md font-semibold mb-3 text-indigo-400 border-b border-indigo-900/40 pb-1">5. Platform Experience</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {[
+                                        'financial_and_credit_experience_of_the_team', 
+                                        'technological_experience_of_the_team', 
+                                        'brand_or_potential',
+                                        'management_team'
+                                      ].map((fieldKey) => {
+                                        if (!introCall[fieldKey] && introCall[fieldKey] !== 0) return null;
+                                        
+                                        // Format the field name to be properly capitalized
+                                        const formattedKey = fieldKey
+                                          .split('_')
+                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                          .join(' ');
+                                        
+                                        // Format the value based on type
+                                        let formattedValue = introCall[fieldKey]?.toString() || "—";
+                                        
+                                        // Format rating values
+                                        if (
+                                          fieldKey.includes('experience') || 
+                                          fieldKey.includes('potential') ||
+                                          fieldKey.includes('management')
+                                        ) {
+                                          const value = introCall[fieldKey];
+                                          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                            const numValue = typeof value === 'string' ? Number(value) : value;
+                                            const maxRating = 5; // Assuming ratings are out of 5
+                                            
+                                            // Create a visual rating representation
+                                            formattedValue = (
+                                              <div className="flex items-center">
+                                                <span className="mr-2">{numValue.toFixed(1)}</span>
+                                                <div className="flex">
+                                                  {Array.from({ length: 5 }).map((_, i) => (
+                                                    <div 
+                                                      key={i} 
+                                                      className={`w-4 h-4 rounded-full mr-1 ${
+                                                        i < Math.floor(numValue) 
+                                                          ? 'bg-indigo-500' 
+                                                          : i < numValue 
+                                                            ? 'bg-gradient-to-r from-indigo-500 to-transparent' 
+                                                            : 'bg-gray-700'
+                                                      }`}
+                                                    />
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            );
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={fieldKey} className="bg-gray-900/40 p-3 rounded-lg">
+                                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                            <div className="font-medium">
+                                              {typeof formattedValue === 'string' ? formattedValue : formattedValue}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Any remaining fields that don't fit into the categories */}
+                                  {Object.entries(introCall).filter(([key]) => {
+                                    const allCategorizedFields = [
+                                      // Business Information
+                                      'company_name', 'url', 'business_start_date', 'lending_start_date', 'country', 'credit_hub',
+                                      // Financing - Equity
+                                      'loan_financing_capital_source', 'total_capital_raised_since_inception', 'stage_of_last_round',
+                                      'last_round', 'post_money_valuation', 'pre_money_valuation', 'date_of_equity_last_round',
+                                      // Financing - Debt
+                                      'institutional_debt_investor', 'debt_raised_since_inception', 'date_of_last_debt_round',
+                                      // Portfolio and Originations
+                                      'sixpoint_initial_facility_size', 'historical_origination_volume', 'portfolio_size',
+                                      'last_6_month_origination_volume', 'target_closing_date', 'first_sp_drawdown_start_date', 
+                                      'accordion_exercised_date',
+                                      // Profitability, OPEX and Cash
+                                      'profitability_status', 'months_to_profitability', 'cash_balance', 'monthly_burn', 
+                                      'opex_per_month', 'runway', 'automatic_collection',
+                                      // Platform Experience
+                                      'financial_and_credit_experience_of_the_team', 'technological_experience_of_the_team', 
+                                      'brand_or_potential', 'management_team'
+                                    ];
+                                    
+                                    return !allCategorizedFields.includes(key);
+                                  }).length > 0 && (
+                                    <div className="mt-6">
+                                      <h5 className="text-md font-semibold mb-3 text-gray-400 border-b border-gray-700 pb-1">Additional Information</h5>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {Object.entries(introCall)
+                                          .filter(([key]) => {
+                                            const allCategorizedFields = [
+                                              // Business Information
+                                              'company_name', 'url', 'business_start_date', 'lending_start_date', 'country', 'credit_hub',
+                                              // Financing - Equity
+                                              'loan_financing_capital_source', 'total_capital_raised_since_inception', 'stage_of_last_round',
+                                              'last_round', 'post_money_valuation', 'pre_money_valuation', 'date_of_equity_last_round',
+                                              // Financing - Debt
+                                              'institutional_debt_investor', 'debt_raised_since_inception', 'date_of_last_debt_round',
+                                              // Portfolio and Originations
+                                              'sixpoint_initial_facility_size', 'historical_origination_volume', 'portfolio_size',
+                                              'last_6_month_origination_volume', 'target_closing_date', 'first_sp_drawdown_start_date', 
+                                              'accordion_exercised_date',
+                                              // Profitability, OPEX and Cash
+                                              'profitability_status', 'months_to_profitability', 'cash_balance', 'monthly_burn', 
+                                              'opex_per_month', 'runway', 'automatic_collection',
+                                              // Platform Experience
+                                              'financial_and_credit_experience_of_the_team', 'technological_experience_of_the_team', 
+                                              'brand_or_potential', 'management_team'
+                                            ];
+                                            
+                                            return !allCategorizedFields.includes(key);
+                                          })
+                                          .map(([key, value]: [string, any]) => {
+                                            // Format the field name to be properly capitalized
+                                            const formattedKey = key
+                                              .split('_')
+                                              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                              .join(' ');
+                                            
+                                            // Format the value based on type
+                                            let formattedValue = value?.toString() || "—";
+                                            
+                                            // Format numbers with commas and currency symbols where appropriate
+                                            if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                              // If the key indicates it's currency-related
+                                              if (
+                                                key.includes('capital') || 
+                                                key.includes('revenue') || 
+                                                key.includes('amount') || 
+                                                key.includes('budget') || 
+                                                key.includes('fee') ||
+                                                key.includes('asset') ||
+                                                key.includes('aum') ||
+                                                key.includes('valuation')
+                                              ) {
+                                                const numValue = typeof value === 'string' ? Number(value) : value;
+                                                formattedValue = `$${numValue.toLocaleString()}`;
+                                              } 
+                                              // For percentage values
+                                              else if (key.includes('percentage') || key.includes('rate') || key.includes('percent')) {
+                                                const numValue = typeof value === 'string' ? Number(value) : value;
+                                                formattedValue = `${numValue.toLocaleString()}%`;
+                                              }
+                                              // For other numeric values
+                                              else if (!isNaN(Number(value))) {
+                                                const numValue = typeof value === 'string' ? Number(value) : value;
+                                                formattedValue = numValue.toLocaleString();
+                                              }
+                                            }
+
+                                            return (
+                                              <div key={key} className="bg-gray-900/40 p-3 rounded-lg">
+                                                <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                                <div className="font-medium">{formattedValue}</div>
+                                              </div>
+                                            );
+                                          })
+                                        }
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               
