@@ -905,12 +905,51 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                                 <div>
                                   <h4 className="text-md font-medium mb-2 text-purple-400">Intro Call Information</h4>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {Object.entries(introCall).map(([key, value]: [string, any]) => (
-                                      <div key={key} className="bg-gray-900/40 p-3 rounded-lg">
-                                        <div className="text-gray-400 text-xs mb-1">{key.replace(/_/g, ' ')}</div>
-                                        <div className="font-medium">{value?.toString() || "—"}</div>
-                                      </div>
-                                    ))}
+                                    {Object.entries(introCall).map(([key, value]: [string, any]) => {
+                                      // Format the field name to be properly capitalized
+                                      const formattedKey = key
+                                        .split('_')
+                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                        .join(' ');
+                                      
+                                      // Format the value based on type
+                                      let formattedValue = value?.toString() || "—";
+                                      
+                                      // Format numbers with commas and currency symbols where appropriate
+                                      if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                                        // If the key indicates it's currency-related
+                                        if (
+                                          key.includes('capital') || 
+                                          key.includes('revenue') || 
+                                          key.includes('amount') || 
+                                          key.includes('budget') || 
+                                          key.includes('fee') ||
+                                          key.includes('asset') ||
+                                          key.includes('aum') ||
+                                          key.includes('valuation')
+                                        ) {
+                                          const numValue = typeof value === 'string' ? Number(value) : value;
+                                          formattedValue = `$${numValue.toLocaleString()}`;
+                                        } 
+                                        // For percentage values
+                                        else if (key.includes('percentage') || key.includes('rate') || key.includes('percent')) {
+                                          const numValue = typeof value === 'string' ? Number(value) : value;
+                                          formattedValue = `${numValue.toLocaleString()}%`;
+                                        }
+                                        // For other numeric values
+                                        else if (!isNaN(Number(value))) {
+                                          const numValue = typeof value === 'string' ? Number(value) : value;
+                                          formattedValue = numValue.toLocaleString();
+                                        }
+                                      }
+
+                                      return (
+                                        <div key={key} className="bg-gray-900/40 p-3 rounded-lg">
+                                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">{formattedKey}</div>
+                                          <div className="font-medium">{formattedValue}</div>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               )}
@@ -944,21 +983,28 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                                         {Object.entries(sc0.outcomes)
                                           .filter(([key]) => key !== 'inputs') // Filter out inputs as we'll display them separately
-                                          .map(([category, data]: [string, any]) => (
-                                            <div key={category} className="bg-gray-800/40 p-3 rounded">
-                                              <div className="flex justify-between items-center mb-2">
-                                                <div className="text-sm font-medium">{category.replace(/_/g, ' ')}</div>
-                                                <Badge variant="outline">
-                                                  {data.cat_score?.toFixed(1) || 0} / {data.max_cat_score?.toFixed(1) || 0}
-                                                </Badge>
+                                          .map(([category, data]: [string, any]) => {
+                                            // Format the category name with proper capitalization
+                                            const formattedCategory = category
+                                              .split('_')
+                                              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                              .join(' ');
+                                            
+                                            return (
+                                              <div key={category} className="bg-gray-800/40 p-3 rounded">
+                                                <div className="flex justify-between items-center mb-2">
+                                                  <div className="text-sm font-semibold">{formattedCategory}</div>
+                                                  <Badge variant="outline">
+                                                    {data.cat_score?.toFixed(1) || 0} / {data.max_cat_score?.toFixed(1) || 0}
+                                                  </Badge>
+                                                </div>
+                                                <Progress 
+                                                  value={(data.cat_score / data.max_cat_score) * 100} 
+                                                  className="h-1.5" 
+                                                />
                                               </div>
-                                              <Progress 
-                                                value={(data.cat_score / data.max_cat_score) * 100} 
-                                                className="h-1.5" 
-                                              />
-                                            </div>
-                                          ))
-                                        }
+                                            );
+                                          })}
                                       </div>
                                     )}
                                     
