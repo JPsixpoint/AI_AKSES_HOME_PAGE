@@ -144,10 +144,40 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         }
       } catch (err: any) {
         console.error('Avatar initialization error:', err);
+        
+        // Log more detailed error information
+        const errorDetails = {
+          name: err?.name,
+          message: err?.message,
+          status: err?.status,
+          responseText: err?.responseText,
+          stack: err?.stack
+        };
+        console.error('Detailed error information:', errorDetails);
+        
         if (!isMounted) {
           return;
         }
-        setError('Failed to initialize avatar: ' + (err.message || String(err)));
+        
+        // Create a more descriptive error message
+        let errorMessage = 'Failed to initialize avatar';
+        
+        if (err?.status === 401) {
+          errorMessage += ': Authentication failed. The API key might be invalid or expired.';
+        } else if (err?.message) {
+          errorMessage += `: ${err.message}`;
+        } else if (err?.responseText) {
+          try {
+            const responseData = JSON.parse(err.responseText);
+            errorMessage += `: ${responseData.message || responseData.error || String(err)}`;
+          } catch (e) {
+            errorMessage += `: ${err.responseText || String(err)}`;
+          }
+        } else {
+          errorMessage += `: ${String(err)}`;
+        }
+        
+        setError(errorMessage);
         setUsingFallback(true);
         setIsLoading(false);
       }
@@ -187,6 +217,17 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         return true;
       } catch (err) {
         console.error('Error making avatar speak:', err);
+        
+        // Log detailed error information
+        if (err instanceof Error) {
+          console.error('Error details:', {
+            name: err.name,
+            message: err.message,
+            stack: err.stack,
+            ...(err as any) // Capture any additional properties
+          });
+        }
+        
         setUsingFallback(true);
         speakWithFallback(text);
         return false;

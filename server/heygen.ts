@@ -30,9 +30,30 @@ export const heygenController = {
       // HeyGen's API uses the API key directly, so we're just passing it through
       // If in the future they implement temporary token generation, we would call their API here
       if (!HEYGEN_API_KEY) {
+        console.error('HeyGen API key is missing from environment variables');
         return res.status(500).json({
           error: 'HeyGen API key not configured'
         });
+      }
+
+      console.log(`Providing HeyGen token: ${HEYGEN_API_KEY.substring(0, 5)}...${HEYGEN_API_KEY.slice(-5)} (length: ${HEYGEN_API_KEY.length})`);
+      
+      // Make a test request to validate the token (optional validation step)
+      try {
+        const testResponse = await fetch('https://api.heygen.com/v1/status', {
+          headers: {
+            'Authorization': `Bearer ${HEYGEN_API_KEY}`
+          }
+        });
+        
+        if (testResponse.ok) {
+          console.log('HeyGen API key validated successfully');
+        } else {
+          const errorText = await testResponse.text();
+          console.warn(`HeyGen API key validation failed: ${testResponse.status} ${errorText}`);
+        }
+      } catch (validationError) {
+        console.warn('Could not validate HeyGen API key:', validationError);
       }
 
       // Return the token
