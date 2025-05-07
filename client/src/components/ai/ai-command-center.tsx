@@ -92,97 +92,228 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [isMuted, setIsMuted] = useState(false);
 
-  // Function to speak text using the Web Speech API
+  // Function to speak text using the Web Speech API with improved browser support
   const speakText = (text: string) => {
     if (isMuted) return;
     
     console.log("Attempting to speak text:", text);
     
-    // Cancel any existing speech
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+    // Set speaking status immediately to provide visual feedback
+    setAIStatus("speaking");
+    
+    // For tracking if speech has started
+    let speechStarted = false;
+    
+    // Ensure speech synthesis is available
+    if (!window.speechSynthesis) {
+      console.warn("Speech synthesis not supported in this browser");
+      // Use timer-based fallback immediately
+      useTimerFallback(text);
+      return;
     }
     
+    // Cancel any existing speech
     try {
-      // Clean up text for speech (remove markdown, code blocks, etc.)
-      const cleanText = text
-        .replace(/```[\s\S]*?```/g, "")  // Remove code blocks
-        .replace(/\*\*(.*?)\*\*/g, "$1")  // Remove bold markers
-        .replace(/\*(.*?)\*/g, "$1")      // Remove italic markers
-        .replace(/\[(.*?)\]\(.*?\)/g, "$1") // Convert links to just text
-        .replace(/(\d{1,3}(?:,\d{3})+(\.\d+)?|\d{1,3}(\.\d+)?)/g, (match) => {
-          // Make currency and large numbers sound better
-          return match.replace(/,/g, "").replace(/\$/g, "dollars ");
-        });
-      
-      console.log("Cleaned text for speech:", cleanText);
-      
-      // Create speech utterance
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      
-      // Immediately trigger speaking status
-      setAIStatus("speaking");
-      
-      // Get available voices
-      let voices = window.speechSynthesis.getVoices();
-      console.log(`Available voices: ${voices.length}`);
-      
-      // If voices array is empty, immediately try to get them again
-      if (voices.length === 0) {
-        // This is a workaround for Chrome's async voice loading
-        setTimeout(() => {
-          voices = window.speechSynthesis.getVoices();
-          console.log(`Retried voice loading, got ${voices.length} voices`);
-          
-          if (voices.length > 0) {
-            // Set voice once they're loaded
-            selectVoiceAndSpeak(utterance, voices, cleanText);
-          } else {
-            // Fallback to default voice if still no voices available
-            window.speechSynthesis.speak(utterance);
-          }
-        }, 100);
-      } else {
-        // Use available voices right away
-        selectVoiceAndSpeak(utterance, voices, cleanText);
+      window.speechSynthesis.cancel();
+    } catch (e) {
+      console.error("Error cancelling previous speech:", e);
+    }
+    
+    // Clean up text for speech (remove markdown, code blocks, etc.)
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, "")  // Remove code blocks
+      .replace(/\*\*(.*?)\*\*/g, "$1")  // Remove bold markers
+      .replace(/\*(.*?)\*/g, "$1")      // Remove italic markers
+      .replace(/\[(.*?)\]\(.*?\)/g, "$1") // Convert links to just text
+      .replace(/\\n/g, " ")  // Replace escaped newlines with spaces
+      .replace(/\$(\d+),?(\d+)?,?(\d+)?(\.\d+)?/g, "$1 dollars")  // Format currency
+      .replace(/(\d{1,3}(?:,\d{3})+)/g, (match) => {
+        // Remove commas from large numbers to improve pronunciation
+        return match.replace(/,/g, "");
+      });
+    
+    console.log("Cleaned text for speech:", cleanText);
+    
+    // Create a safer version of the speak function with a timeout
+    const safeSpeakWithTimeout = (text: string, retryCount = 0, maxRetries = 2) => {
+      if (retryCount > maxRetries) {
+        console.error(`Failed to start speech after ${maxRetries} attempts`);
+        useTimerFallback(text);
+        return;
       }
       
-      // Save reference to speech utterance
-      speechSynthesisRef.current = utterance;
-      
-      // Event handlers
-      utterance.onstart = () => {
-        console.log("Speech started successfully");
-        setAIStatus("speaking");
-      };
-      
-      utterance.onend = () => {
-        console.log("Speech completed successfully");
-        setAIStatus("listening");
-        speechSynthesisRef.current = null;
-      };
-      
-      utterance.onerror = (event) => {
-        console.error("Speech synthesis error:", event);
-        // Try again with another approach
-        console.log("Trying alternative speech approach");
-        tryAlternativeSpeech(cleanText);
-      };
-      
-      // Fallback timer in case speech synthesis fails silently
-      const fallbackTimer = setTimeout(() => {
-        if (speechSynthesisRef.current && aiStatus === "speaking") {
-          console.log("Fallback timer triggered - speech may have failed silently");
-          // Try one more time with an alternative approach
-          tryAlternativeSpeech(cleanText);
+      try {
+        // Create new utterance for each attempt
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Set speaking rate slightly slower for better clarity
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        
+        // Set up event listeners
+        utterance.onstart = () => {
+          console.log("Speech started successfully");
+          speechStarted = true;
+          setAIStatus("speaking");
+        };
+        
+        utterance.onend = () => {
+          console.log("Speech completed successfully");
+          speechSynthesisRef.current = null;
+          setAIStatus("listening");
+        };
+        
+        utterance.onerror = (e) => {
+          console.error("Speech synthesis error:", e);
+          if (!speechStarted) {
+            // Only retry if speech hasn't started yet
+            console.log(`Retry attempt ${retryCount + 1}`);
+            setTimeout(() => safeSpeakWithTimeout(text, retryCount + 1), 300);
+          } else {
+            // Speech started but then failed
+            setAIStatus("listening");
+          }
+        };
+        
+        // Try to set a voice
+        setVoiceForUtterance(utterance);
+        
+        // Save reference
+        speechSynthesisRef.current = utterance;
+        
+        // Try to speak
+        window.speechSynthesis.speak(utterance);
+        
+        // Set a timeout to check if speech started
+        setTimeout(() => {
+          if (!speechStarted && speechSynthesisRef.current === utterance) {
+            console.log("Speech didn't start within timeout, retrying...");
+            // Try to cancel any pending speech
+            try {
+              window.speechSynthesis.cancel();
+            } catch (e) {
+              console.error("Error cancelling stuck speech:", e);
+            }
+            
+            // Retry with backoff
+            setTimeout(() => safeSpeakWithTimeout(text, retryCount + 1), 300);
+          }
+        }, 1000); // 1 second timeout to start speaking
+        
+      } catch (error) {
+        console.error("Error in safeSpeakWithTimeout:", error);
+        if (retryCount < maxRetries) {
+          setTimeout(() => safeSpeakWithTimeout(text, retryCount + 1), 300);
+        } else {
+          useTimerFallback(text);
         }
-      }, 10000); // 10 second max timeout
+      }
+    };
+    
+    // Attempt to speak with safe timeout handling
+    safeSpeakWithTimeout(cleanText);
+    
+    // Set an overall fallback in case all speech attempts fail
+    const maxSpeechTime = Math.max(10000, cleanText.length * 100); // Roughly 10 characters per second
+    const overallFallbackTimer = setTimeout(() => {
+      if (aiStatus === "speaking") {
+        console.log("Overall speech timeout reached, resetting state");
+        setAIStatus("listening");
+        
+        if (speechSynthesisRef.current) {
+          try {
+            window.speechSynthesis.cancel();
+          } catch (e) {
+            console.error("Error cancelling timed-out speech:", e);
+          }
+          speechSynthesisRef.current = null;
+        }
+      }
+    }, maxSpeechTime);
+    
+    return () => clearTimeout(overallFallbackTimer);
+  };
+  
+  // Helper to set the best available voice for an utterance
+  const setVoiceForUtterance = (utterance: SpeechSynthesisUtterance) => {
+    try {
+      // Get available voices
+      const voices = window.speechSynthesis.getVoices();
       
-      return () => clearTimeout(fallbackTimer);
-    } catch (error) {
-      console.error("Speech synthesis initial error:", error);
-      // Try alternative approach
-      tryAlternativeSpeech(text);
+      if (voices.length === 0) {
+        console.log("No voices available");
+        return false;
+      }
+      
+      // Preferred voice names in order
+      const preferredVoices = [
+        "Samantha", 
+        "Google US English Female",
+        "Karen",
+        "Daniel (English (United States))",
+        "Alex",
+        "Google US English"
+      ];
+      
+      // Try to find a preferred voice
+      let selectedVoice = null;
+      
+      // First try exact name match
+      for (const voiceName of preferredVoices) {
+        const match = voices.find(v => v.name === voiceName);
+        if (match) {
+          selectedVoice = match;
+          console.log(`Found preferred voice: ${match.name}`);
+          break;
+        }
+      }
+      
+      // Then try partial name match if no exact match
+      if (!selectedVoice) {
+        for (const voiceName of preferredVoices) {
+          const match = voices.find(v => v.name.includes(voiceName));
+          if (match) {
+            selectedVoice = match;
+            console.log(`Found similar voice: ${match.name}`);
+            break;
+          }
+        }
+      }
+      
+      // Fall back to any US English voice
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => 
+          v.lang === 'en-US' || 
+          v.lang === 'en_US'
+        );
+        
+        if (selectedVoice) {
+          console.log(`Using US English voice: ${selectedVoice.name}`);
+        }
+      }
+      
+      // Last resort: any English voice
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => v.lang.startsWith('en'));
+        
+        if (selectedVoice) {
+          console.log(`Using English voice: ${selectedVoice.name}`);
+        }
+      }
+      
+      // If we found a voice, use it
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+        utterance.lang = 'en-US'; // Explicitly set language
+        return true;
+      }
+      
+      console.warn("No suitable voice found, using default voice");
+      return false;
+    } catch (e) {
+      console.error("Error setting voice:", e);
+      return false;
     }
   };
   
@@ -303,13 +434,25 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     }
   };
 
-  // Scroll to bottom of messages and handle speech
+  // Read welcome message on initial load
+  useEffect(() => {
+    // Use the initial welcome message
+    const welcomeMessage = messages[0]?.content;
+    if (welcomeMessage && messages.length === 1) {
+      console.log("Reading initial welcome message");
+      setLastAIMessage(welcomeMessage);
+      speakText(welcomeMessage);
+    }
+  }, [messages]);
+
+  // Scroll to bottom of messages and handle speech for new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     
     // Update lastAIMessage when a new assistant message is added
     const lastMessage = messages[messages.length - 1];
-    if (lastMessage && lastMessage.role === "assistant") {
+    // Skip processing if this is the first/welcome message and component just mounted
+    if (lastMessage && lastMessage.role === "assistant" && messages.length > 1) {
       const messageText = lastMessage.content;
       setLastAIMessage(messageText);
       
