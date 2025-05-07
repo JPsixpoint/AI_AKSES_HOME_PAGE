@@ -53,11 +53,17 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         
         try {
           const config = await getAvatarConfig();
-          console.log('Avatar configuration obtained successfully');
+          console.log('Avatar configuration obtained successfully:', {
+            token: config.token ? `${config.token.substring(0, 5)}...${config.token.slice(-5)} (length: ${config.token.length})` : 'Missing',
+            basePath: config.basePath || 'default'
+          });
           
           // Create a new avatar instance with configuration from server
           avatarInstance = new StreamingAvatar(config);
           console.log('StreamingAvatar instance created successfully');
+          
+          // Log avatar configuration and continue with initialization
+          console.log('StreamingAvatar instance created with configuration.');
           
           if (!isMounted) return;
           avatarRef.current = avatarInstance;
@@ -204,72 +210,221 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
   
   // Handle text changes
   useEffect(() => {
-    if (!text || !isVisible || isMuted || !avatarRef.current) return;
+    if (!text || !isVisible || isMuted) return;
     
-    const speakWithAvatar = async () => {
-      try {
-        console.log('Making avatar speak:', text);
-        
-        // Try to use avatar to speak
-        await avatarRef.current!.speak({
-          text
-        });
-        
-        return true;
-      } catch (err) {
-        console.error('Error making avatar speak:', err);
-        
-        // Log detailed error information
-        if (err instanceof Error) {
-          console.error('Error details:', {
-            name: err.name,
-            message: err.message,
-            stack: err.stack,
-            ...(err as any) // Capture any additional properties
+    // Since we're having issues with the HeyGen API, let's directly use the fallback speech synthesis
+    setUsingFallback(true);
+    speakWithFallback(text);
+    
+    // This commented code is the original attempt to use HeyGen Avatar
+    /*
+    // Only attempt HeyGen speaking if we have an avatar reference
+    if (avatarRef.current) {
+      const speakWithAvatar = async () => {
+        try {
+          console.log('Making avatar speak:', text);
+          
+          // Try to use avatar to speak
+          await avatarRef.current!.speak({
+            text
           });
+          
+          return true;
+        } catch (err) {
+          console.error('Error making avatar speak:', err);
+          
+          // Log detailed error information
+          if (err instanceof Error) {
+            console.error('Error details:', {
+              name: err.name,
+              message: err.message,
+              stack: err.stack,
+              ...(err as any) // Capture any additional properties
+            });
+          }
+          
+          setUsingFallback(true);
+          speakWithFallback(text);
+          return false;
         }
-        
-        setUsingFallback(true);
-        speakWithFallback(text);
-        return false;
-      }
-    };
-    
-    speakWithAvatar();
+      };
+      
+      speakWithAvatar();
+    } else {
+      setUsingFallback(true);
+      speakWithFallback(text);
+    }
+    */
   }, [text, isVisible, isMuted]);
   
   // Fallback speech synthesis
   const speakWithFallback = (text: string) => {
-    if (!window.speechSynthesis) return;
+    if (!window.speechSynthesis) {
+      console.error('Speech synthesis not supported by this browser');
+      return;
+    }
     
     try {
       // Cancel any existing speech
-      window.speechSynthesis.cancel();
-      
-      console.log('Using fallback speech synthesis');
-      const utterance = new SpeechSynthesisUtterance(text);
-      
-      // Find a good voice
-      const voices = window.speechSynthesis.getVoices();
-      const femaleVoice = voices.find(voice => 
-        voice.name.includes('Samantha') || 
-        voice.name.includes('Female') ||
-        (voice.name.toLowerCase().includes('female') && voice.lang.startsWith('en'))
-      );
-      
-      if (femaleVoice) {
-        utterance.voice = femaleVoice;
-        console.log('Using voice:', femaleVoice.name);
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {
+        console.error('Error canceling previous speech:', e);
       }
       
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+      console.log('Using fallback speech synthesis for text:', text);
       
-      window.speechSynthesis.speak(utterance);
+      // First attempt - standard speech synthesis
+      const trySpeechSynthesis = () => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Set voice properties for better audio
+        utterance.rate = 1.0; // Normal speed
+        utterance.pitch = 1.0; // Normal pitch
+        utterance.volume = 1.0; // Full volume
+        
+        // Find a good voice
+        const voices = window.speechSynthesis.getVoices();
+        console.log('Available voices for fallback:', voices.length);
+        
+        // List of preferred female voice names in order of preference
+        const preferredVoiceNames = [
+          'Samantha', 'Google US English Female', 'Microsoft Zira',
+          'Karen', 'Victoria', 'Ellen', 'Tessa', 'Moira', 'Samantha', 'Veena'
+        ];
+        
+        // First try: exact match from our priority list
+        let selectedVoice = null;
+        for (const name of preferredVoiceNames) {
+          const match = voices.find(voice => voice.name === name);
+          if (match) {
+            selectedVoice = match;
+            break;
+          }
+        }
+        
+        // Second try: any voice containing "female" or "woman"
+        if (!selectedVoice) {
+          selectedVoice = voices.find(voice => 
+            voice.name.toLowerCase().includes('female') || 
+            voice.name.toLowerCase().includes('woman')
+          );
+        }
+        
+        // Third try: any US English voice (likely to be default female on many systems)
+        if (!selectedVoice) {
+          selectedVoice = voices.find(voice => 
+            voice.lang === 'en-US' || voice.lang === 'en_US'
+          );
+        }
+        
+        // Last resort: any available voice
+        if (!selectedVoice && voices.length > 0) {
+          selectedVoice = voices[0];
+        }
+        
+        // Set the selected voice
+        if (selectedVoice) {
+          console.log('Using fallback voice:', selectedVoice.name, selectedVoice.lang);
+          utterance.voice = selectedVoice;
+          utterance.lang = 'en-US'; // Ensure US English pronunciation
+        } else {
+          console.warn('No voices available for speech synthesis');
+        }
+        
+        // Set event handlers for proper UI updates
+        utterance.onstart = () => {
+          console.log('Fallback speech started');
+          setIsSpeaking(true);
+        };
+        
+        utterance.onend = () => {
+          console.log('Fallback speech ended');
+          setIsSpeaking(false);
+        };
+        
+        utterance.onerror = (event) => {
+          console.error('Fallback speech error:', event);
+          setIsSpeaking(false);
+          
+          // If there's an error, try our manual approach for chunking
+          try {
+            speakInChunks(text);
+          } catch (chunkedError) {
+            console.error('Even chunked speech failed:', chunkedError);
+          }
+        };
+        
+        // Speak the text
+        window.speechSynthesis.speak(utterance);
+        
+        // On some browsers, speech can get cut off, so we'll keep the synthesis active
+        const keepAlive = () => {
+          try {
+            if (window.speechSynthesis.speaking) {
+              console.log('Speech still in progress, keeping alive...');
+              window.speechSynthesis.pause();
+              window.speechSynthesis.resume();
+              setTimeout(keepAlive, 5000);
+            }
+          } catch (e) {
+            console.error('Error in speech synthesis keepAlive:', e);
+          }
+        };
+        
+        // Start the keepAlive timer regardless - if there's no speech it will just not continue
+        setTimeout(keepAlive, 2000);
+      };
+      
+      // Alternative method - break text into chunks for more reliable playback
+      const speakInChunks = (fullText: string) => {
+        console.log('Using chunked speech synthesis approach');
+        setIsSpeaking(true);
+        
+        // Split text into sentences or smaller chunks
+        const chunks = fullText.match(/[^.!?]+[.!?]+|\s+/g) || [fullText];
+        let currentChunk = 0;
+        
+        const speakNextChunk = () => {
+          if (currentChunk < chunks.length) {
+            const chunk = chunks[currentChunk];
+            console.log(`Speaking chunk ${currentChunk + 1}/${chunks.length}: ${chunk}`);
+            
+            const chunkUtterance = new SpeechSynthesisUtterance(chunk);
+            
+            // Use default voice settings for simplicity
+            chunkUtterance.onend = () => {
+              currentChunk++;
+              speakNextChunk();
+            };
+            
+            chunkUtterance.onerror = () => {
+              console.error(`Error speaking chunk ${currentChunk + 1}`);
+              currentChunk++;
+              speakNextChunk();
+            };
+            
+            window.speechSynthesis.speak(chunkUtterance);
+          } else {
+            console.log('Finished speaking all chunks');
+            setIsSpeaking(false);
+          }
+        };
+        
+        speakNextChunk();
+      };
+      
+      // Try the standard method first
+      trySpeechSynthesis();
+      
     } catch (err) {
       console.error('Fallback speech error:', err);
       setIsSpeaking(false);
+      
+      // Set up animation anyway to show that we're processing
+      setTimeout(() => {
+        setIsSpeaking(false);
+      }, text.length * 100); // Rough estimate of reading time
     }
   };
   
