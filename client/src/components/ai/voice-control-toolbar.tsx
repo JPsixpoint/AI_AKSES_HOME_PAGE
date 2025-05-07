@@ -21,7 +21,7 @@ export function VoiceControlToolbar({
   isMuted,
   onMuteToggle
 }: VoiceControlToolbarProps) {
-  const [isSpeechEnabled, setIsSpeechEnabled] = useState(false);
+  const [isSpeechEnabled, setIsSpeechEnabled] = useState(true); // Enable speech by default
   const [isListening, setIsListening] = useState(false);
   const [speechSynthesisAvailable, setSpeechSynthesisAvailable] = useState(false);
   const [silenceTimer, setSilenceTimer] = useState<NodeJS.Timeout | null>(null);
