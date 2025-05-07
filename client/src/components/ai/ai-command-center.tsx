@@ -313,7 +313,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                   ...prev,
                   {
                     role: "assistant",
-                    content: parsedResponse.message || `I'm sending the pre-screening email to ${extractedEmails.join(', ')}. The email will be delivered to a test address (juanp.alfonsos@gmail.com) with your recipients copied (CC). You can track this in the AI Pre-Screening tab.`,
+                    content: parsedResponse.message || `I'm sending the pre-screening email to ${extractedEmails.join(', ')}. You can track this in the AI Pre-Screening tab.`,
                   },
                 ]);
               } catch (error) {

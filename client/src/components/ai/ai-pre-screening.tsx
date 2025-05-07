@@ -250,7 +250,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
           <h2 style="color: #4a2b87; margin-bottom: 15px;">Pre-Screening for [Deal]</h2>
           <p style="margin-bottom: 20px;">Akses welcomes you to our AI AVATAR Pre-Screening. We will guide you through the entire process. Click the link below to start your deal with us.</p>
           <div style="text-align: center;">
-            <a href="https://e0cc8f64-f64f-4e57-b6a7-b04678097db5-00-3tkxua1o00ebk.worf.replit.dev/originator-onboarding/6812ab97c9766ef662c546bd" style="display: inline-block; background-color: #4a2b87; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Start Pre-Screening Process</a>
+            <a href="https://originator.akses.ai/prescreening/deal-id" style="display: inline-block; background-color: #4a2b87; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Start Pre-Screening Process</a>
           </div>
           <p style="margin-top: 20px; font-size: 14px; color: #666;">If you have any questions, please don't hesitate to contact us at support@sixpoint.com</p>
         </div>
@@ -272,7 +272,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
           <h2 style="color: #4a2b87; margin-bottom: 15px;">Pre-Screening for ${deal.name || 'Your Deal'}</h2>
           <p style="margin-bottom: 20px;">Akses welcomes you to our AI AVATAR Pre-Screening. We will guide you through the entire process. Click the link below to start your deal with us.</p>
           <div style="text-align: center;">
-            <a href="https://e0cc8f64-f64f-4e57-b6a7-b04678097db5-00-3tkxua1o00ebk.worf.replit.dev/originator-onboarding/6812ab97c9766ef662c546bd" style="display: inline-block; background-color: #4a2b87; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Start Pre-Screening Process</a>
+            <a href="https://originator.akses.ai/prescreening/${deal.id}" style="display: inline-block; background-color: #4a2b87; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Start Pre-Screening Process</a>
           </div>
           <p style="margin-top: 20px; font-size: 14px; color: #666;">If you have any questions, please don't hesitate to contact us at support@sixpoint.com</p>
         </div>
@@ -307,20 +307,12 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
         // We have both a deal and emails, let's submit automatically
         const currentFormValues = form.getValues();
         if (currentFormValues.dealId && cleanedEmails) {
-          // Get the selected deal
-          const selectedDeal = deals.find(d => d.id === currentFormValues.dealId);
-        
-          // Generate email content based on the selected deal
-          const generatedEmailContent = selectedDeal ? 
-            generateDealEmailTemplate(selectedDeal) : 
-            generateDefaultEmailTemplate();
-
           const requestData = {
             dealId: currentFormValues.dealId,
             // Convert the cleaned emails string to an array
             recipientEmails: cleanedEmails.split(',').map(email => email.trim()),
             additionalContext: currentFormValues.additionalContext || '',
-            emailContent: generatedEmailContent // Use freshly generated email content
+            emailContent: emailPreview
           };
           
           // Small delay to ensure state updates have been processed
@@ -330,7 +322,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
               .then(data => {
                 toast({
                   title: "Pre-Screening Email Sent",
-                  description: `The pre-screening email has been sent to juanp.alfonsos@gmail.com (test mode). Your original recipient(s) were included as CC.`,
+                  description: `The pre-screening email has been sent to the specified recipients.`,
                 });
                 queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
                 setShowModal(false);
@@ -399,19 +391,11 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
   // Submit handler
   const sendPreScreeningMutation = useMutation({
     mutationFn: async (data: PreScreeningForm) => {
-      // Get the selected deal to use it for generating the email
-      const selectedDeal = deals.find(d => d.id === data.dealId);
-      
-      // Generate email content based on the selected deal
-      const generatedEmailContent = selectedDeal ? 
-        generateDealEmailTemplate(selectedDeal) : 
-        generateDefaultEmailTemplate();
-      
       const requestData = {
         dealId: data.dealId,
         recipientEmails: data.recipientEmails.split(",").map(email => email.trim()),
         additionalContext: data.additionalContext,
-        emailContent: generatedEmailContent // Use freshly generated email content
+        emailContent: emailPreview
       };
       
       return await apiRequest("POST", "/api/prescreening/send", requestData);
@@ -419,7 +403,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
     onSuccess: (data) => {
       toast({
         title: "Pre-Screening Email Sent",
-        description: `The pre-screening email has been sent to juanp.alfonsos@gmail.com (test mode) using info@rsvp.emfintechconference.com as the sender.`,
+        description: `The pre-screening email has been sent to the specified recipients using info@rsvp.emfintechconference.com as the sender.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
       form.reset();
