@@ -40,7 +40,19 @@ interface DealsTableProps {
 
 export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRefresh }: DealsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const dealsPerPage = 6;
+  
+  const handleRefresh = async () => {
+    if (onRefresh && !isRefreshing) {
+      setIsRefreshing(true);
+      try {
+        await onRefresh();
+      } finally {
+        setIsRefreshing(false);
+      }
+    }
+  };
   
   // Calculate pagination
   const indexOfLastDeal = currentPage * dealsPerPage;
@@ -89,7 +101,26 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
         <Table>
           <TableHeader className="bg-dark-surface border-b border-dark text-left">
             <TableRow>
-              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Company</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">
+                <div className="flex items-center space-x-2">
+                  <span>Company</span>
+                  {onRefresh && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={`h-6 w-6 hover:bg-primary/10 hover:text-primary transition-colors ${isRefreshing ? 'animate-spin text-primary' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRefresh();
+                      }}
+                      disabled={isRefreshing}
+                      title="Refresh deals data"
+                    >
+                      <RefreshCwIcon className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Country</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Credit Hub</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Lead</TableHead>
