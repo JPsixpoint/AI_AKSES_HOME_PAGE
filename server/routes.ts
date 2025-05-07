@@ -20,6 +20,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
   const apiPrefix = "/api";
 
+  // HeyGen Avatar token endpoint
+  app.get(`${apiPrefix}/heygen/token`, heygenController.getToken);
+
   // AI Chat route
   app.post(`${apiPrefix}/ai/chat`, async (req, res) => {
     try {

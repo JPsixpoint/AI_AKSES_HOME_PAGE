@@ -1,16 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import StreamingAvatar, { StreamingEvents } from '@heygen/streaming-avatar';
+import StreamingAvatar, { StreamingEvents, StartAvatarRequest } from '@heygen/streaming-avatar';
+import { getAvatarConfig, AVATAR_CONFIG } from '@/lib/heygen-client';
 
 // Interface for component props
 interface HeyGenAvatarSimplifiedProps {
   text: string | null;
   isVisible: boolean;
 }
-
-// HeyGen API configuration
-const HEYGEN_API_KEY = 'YzEwZmEyOWJmYjdlNGI0ZWE3MzFiMjUzZWUzMzZiNTQtMTc0NjU4NDc4Nw==';
-const AVATAR_ID = 'Sophie_A1';
-const VOICE_ID = 'c8e176c17f814004885fd590e03ff99f';
 
 /**
  * Simplified HeyGen Avatar component with minimal dependencies
@@ -51,11 +47,11 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         
         console.log('Initializing avatar using API key...');
         
-        // Create a new avatar instance
-        const avatar = new StreamingAvatar({
-          token: HEYGEN_API_KEY,
-          basePath: undefined,
-        });
+        // Get token from server
+        const config = await getAvatarConfig();
+        
+        // Create a new avatar instance with configuration from server
+        const avatar = new StreamingAvatar(config);
         
         if (!isMounted) return;
         avatarRef.current = avatar;
@@ -108,24 +104,24 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         try {
           // Start avatar with basic configuration - trying compatible approaches
           try {
-            // Method 1: Try createStartAvatar with avatar and voice options
-            await avatar.createStartAvatar({
-              avatar_id: AVATAR_ID,
-              voice_id: VOICE_ID
-            });
-          } catch (e) {
-            console.log('First start method failed, trying alternative method');
-            
-            // Method 2: Try new SDK format without options
-            await avatar.createStartAvatar();
-            
-            // After starting, try to set avatar and voice
+            // Start with various methods - SDK compatibility varies by version
             try {
-              await avatar.setAvatar(AVATAR_ID);
-              await avatar.setVoice(VOICE_ID);
+              // Method 1: Try createStartAvatar with params
+              console.log('Attempting to start avatar with param object');
+              // Cast to any to bypass type checking since SDK types may vary by version
+              const startParams = {
+                avatar_id: AVATAR_CONFIG.avatarId,
+                voice_id: AVATAR_CONFIG.voiceId
+              } as any;
+              await avatar.createStartAvatar(startParams);
             } catch (e) {
-              console.log('Setting avatar/voice after start failed');
+              // Method 2: Try createStartAvatar with empty object for SDK compatibility
+              console.log('First start method failed, trying alternative method');
+              await avatar.createStartAvatar({} as any);
             }
+          } catch (error) {
+            console.error('All start methods failed:', error);
+            throw error;
           }
           
           if (!isMounted) return;
