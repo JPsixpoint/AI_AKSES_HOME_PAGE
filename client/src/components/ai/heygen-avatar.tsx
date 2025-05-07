@@ -147,11 +147,39 @@ export function HeyGenAvatar({ text, isVisible }: HeyGenAvatarProps) {
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="relative">
-        <img 
-          src="/assets/avatar-placeholder.svg"
-          alt="AI Assistant"
-          className="w-[300px] h-[300px] rounded-xl bg-black/30"
-        />
+        <div className="w-[300px] h-[300px] rounded-xl bg-black/30 flex items-center justify-center">
+          <svg width="250" height="250" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#111827" stopOpacity="1" />
+                <stop offset="100%" stopColor="#1F2937" stopOpacity="1" />
+              </linearGradient>
+              <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.4" />
+              </linearGradient>
+            </defs>
+            
+            {/* Background Circle */}
+            <circle cx="150" cy="150" r="150" fill="url(#grad1)" />
+            
+            {/* Hexagon Grid Pattern */}
+            <g opacity="0.2">
+              <circle cx="150" cy="150" r="120" fill="none" stroke="#3B82F6" strokeWidth="2" strokeDasharray="4 6" />
+              <circle cx="150" cy="150" r="80" fill="none" stroke="#3B82F6" strokeWidth="2" strokeDasharray="4 6" />
+              <circle cx="150" cy="150" r="40" fill="none" stroke="#3B82F6" strokeWidth="2" strokeDasharray="4 6" />
+            </g>
+            
+            {/* Profile Silhouette */}
+            <g fill="#3B82F6" opacity="0.6">
+              <circle cx="150" cy="115" r="45" />
+              <path d="M95,220 C95,180 205,180 205,220 L205,240 C205,245 200,250 195,250 L105,250 C100,250 95,245 95,240 Z" />
+            </g>
+            
+            {/* AI Label */}
+            <text x="150" y="285" fontSize="12" fill="#fff" textAnchor="middle">AI Assistant</text>
+          </svg>
+        </div>
         
         {/* Animated overlay for speech */}
         {isSpeaking && !isMuted && (
