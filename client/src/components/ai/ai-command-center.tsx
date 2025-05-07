@@ -6,6 +6,9 @@ import {
   EditIcon,
   SearchIcon,
   BarChartIcon,
+  Volume,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { AIAvatar } from "./ai-avatar";
 import { AIMessage } from "./ai-message";
@@ -177,7 +180,15 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         };
         
         // Try to set a voice
-        setVoiceForUtterance(utterance);
+        const voiceSet = setVoiceForUtterance(utterance);
+        if (!voiceSet && retryCount === 0) {
+          // If no voice was found on first attempt, try again after a short delay
+          // This helps with browsers that load voices asynchronously
+          setTimeout(() => {
+            safeSpeakWithTimeout(text, retryCount + 1);
+          }, 500);
+          return;
+        }
         
         // Save reference
         speechSynthesisRef.current = utterance;
@@ -215,7 +226,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     safeSpeakWithTimeout(cleanText);
     
     // Set an overall fallback in case all speech attempts fail
-    const maxSpeechTime = Math.max(10000, cleanText.length * 100); // Roughly 10 characters per second
+    const maxSpeechTime = Math.max(8000, cleanText.length * 80); // Roughly 80ms per character
     const overallFallbackTimer = setTimeout(() => {
       if (aiStatus === "speaking") {
         console.log("Overall speech timeout reached, resetting state");
@@ -441,7 +452,26 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     if (welcomeMessage && messages.length === 1) {
       console.log("Reading initial welcome message");
       setLastAIMessage(welcomeMessage);
-      speakText(welcomeMessage);
+      
+      // Add a slight delay to ensure the component is fully mounted
+      const timer = setTimeout(() => {
+        speakText(welcomeMessage);
+        
+        // Also add a click listener to the document to trigger speech again
+        // Many browsers require user interaction before allowing audio to play
+        const clickHandler = () => {
+          if (speechSynthesisRef.current === null) {
+            console.log("Trying to speak welcome message after user interaction");
+            speakText(welcomeMessage);
+          }
+          // Remove the listener after first click
+          document.removeEventListener('click', clickHandler);
+        };
+        
+        document.addEventListener('click', clickHandler, { once: true });
+      }, 1000);
+      
+      return () => clearTimeout(timer);
     }
   }, [messages]);
 
@@ -1042,6 +1072,46 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             }`}>
               <span className="sr-only">Speaking</span>
             </div>
+            
+            {/* Welcome message playback button */}
+            <button
+              onClick={() => {
+                const welcomeMessage = messages[0]?.content;
+                if (welcomeMessage) {
+                  console.log("Play welcome button clicked");
+                  setLastAIMessage(welcomeMessage);
+                  speakText(welcomeMessage);
+                }
+              }}
+              className="text-xs bg-blue-500/20 text-blue-400 p-1 px-2 rounded-full flex items-center hover:bg-blue-500/30 transition-colors ml-2"
+              title="Click to hear welcome message"
+            >
+              <Volume2 className="h-3 w-3 mr-1" />
+              <span>Play Welcome</span>
+            </button>
+            
+            {/* Mute toggle button */}
+            <button
+              onClick={toggleMute}
+              className={`text-xs p-1 px-2 rounded-full flex items-center transition-colors ${
+                isMuted 
+                  ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" 
+                  : "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30"
+              }`}
+              title={isMuted ? "Unmute voice" : "Mute voice"}
+            >
+              {isMuted ? (
+                <>
+                  <VolumeX className="h-3 w-3 mr-1" />
+                  <span>Unmute</span>
+                </>
+              ) : (
+                <>
+                  <Volume className="h-3 w-3 mr-1" />
+                  <span>Mute</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
