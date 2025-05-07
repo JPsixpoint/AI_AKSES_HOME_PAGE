@@ -22,6 +22,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
   // Refs
   const avatarRef = useRef<StreamingAvatar | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const backgroundVideoRef = useRef<HTMLVideoElement>(null);
   
   // Initialize avatar when component becomes visible
   useEffect(() => {
@@ -283,6 +284,48 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
     }
   }, [isMuted]);
   
+  // Control the background video to only play once
+  useEffect(() => {
+    const videoElement = backgroundVideoRef.current;
+    if (!videoElement) return;
+    
+    videoElement.addEventListener('loadeddata', () => {
+      // Ensure video starts from the beginning
+      videoElement.currentTime = 0;
+      
+      // Ensure it's muted for autoplay compatibility
+      videoElement.muted = true;
+      
+      // Set to only play once
+      videoElement.loop = false;
+      
+      // Start playing
+      videoElement.play().catch(err => {
+        console.error('Error playing background video:', err);
+      });
+    });
+    
+    // Play/pause the video based on visibility
+    if (isVisible) {
+      videoElement.play().catch(err => {
+        console.error('Error playing background video:', err);
+      });
+    } else {
+      videoElement.pause();
+    }
+    
+    // Handle video ended event
+    const handleEnded = () => {
+      console.log('Background video playback completed');
+    };
+    
+    videoElement.addEventListener('ended', handleEnded);
+    
+    return () => {
+      videoElement.removeEventListener('ended', handleEnded);
+    };
+  }, [isVisible]);
+  
   // Don't render if not visible
   if (!isVisible) {
     return null;
@@ -290,26 +333,36 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
 
   return (
     <div className="flex flex-col items-center justify-center">
-      {error ? (
-        // Error State with clean video background (no error messages)
-        <div className="w-[300px] h-[300px] rounded-xl overflow-hidden relative">
-          {/* Background Video */}
+      <div className="relative w-[300px] h-[300px] rounded-xl overflow-hidden">
+        {/* Background Video - Always present across all states */}
+        <video 
+          ref={backgroundVideoRef}
+          autoPlay
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
+        />
+        
+        {/* HeyGen Avatar Video - Only shown when active and not using fallback */}
+        {!isLoading && !error && !usingFallback && (
           <video 
+            ref={videoRef}
+            id="heygen-video"
             autoPlay
-            loop
-            muted
             playsInline
+            muted={isMuted}
             className="absolute inset-0 w-full h-full object-cover"
-            src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
           />
-          
-          {/* Hidden retry button - only visible on hover */}
+        )}
+        
+        {/* Error state - Only show retry button on hover */}
+        {error && (
           <div className="absolute bottom-2 right-2 opacity-0 hover:opacity-100 transition-opacity duration-300 z-10">
             <button 
               onClick={() => {
                 setError(null);
                 setIsLoading(true);
-                // Force re-mount of the component by toggling a key
                 if (avatarRef.current) {
                   try {
                     avatarRef.current.stopAvatar();
@@ -324,101 +377,64 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
               Retry
             </button>
           </div>
-        </div>
-      ) : isLoading ? (
-        // Loading State with clean video background (no loading indicators)
-        <div className="w-[300px] h-[300px] rounded-xl overflow-hidden relative">
-          {/* Background Video */}
-          <video 
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover"
-            src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
-          />
-          
-          {/* Very subtle loading indicator in corner */}
+        )}
+        
+        {/* Loading state - Just a subtle indicator */}
+        {isLoading && (
           <div className="absolute bottom-2 left-2 z-10">
             <div className="animate-pulse w-3 h-3 rounded-full bg-blue-500/30"></div>
           </div>
-        </div>
-      ) : (
-        // Active Avatar State
-        <div className="relative">
-          {!usingFallback ? (
-            <video 
-              ref={videoRef}
-              id="heygen-video"
-              autoPlay
-              playsInline
-              muted={isMuted}
-              className="w-[300px] h-[300px] rounded-xl bg-black/30"
-            />
-          ) : (
-            // Clean video background from S3 bucket when using fallback (no overlays)
-            <div className="w-[300px] h-[300px] rounded-xl overflow-hidden relative">
-              <video 
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="absolute inset-0 w-full h-full object-cover"
-                src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
-              />
-            </div>
-          )}
-          
-          {/* Speech Animation Overlay */}
-          {isSpeaking && !isMuted && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="absolute inset-0 bg-black/20 rounded-xl"></div>
-              <div className="z-10 flex flex-col items-center justify-center">
-                <div className="flex space-x-1 mb-3">
-                  <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '0ms'}}></div>
-                  <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '200ms'}}></div>
-                  <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '400ms'}}></div>
-                  <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '600ms'}}></div>
-                  <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '800ms'}}></div>
-                </div>
+        )}
+        
+        {/* Speech Animation Overlay */}
+        {isSpeaking && !isMuted && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <div className="absolute inset-0 bg-black/20 rounded-xl"></div>
+            <div className="flex flex-col items-center justify-center">
+              <div className="flex space-x-1 mb-3">
+                <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '0ms'}}></div>
+                <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '200ms'}}></div>
+                <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '400ms'}}></div>
+                <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '600ms'}}></div>
+                <div className="w-2 h-8 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '800ms'}}></div>
               </div>
             </div>
-          )}
-          
-          {/* Mute Control */}
-          <div className="absolute top-2 right-2 z-20">
-            <button 
-              onClick={() => setIsMuted(!isMuted)}
-              className="bg-black/70 hover:bg-black/90 rounded-full p-2 transition-colors"
-              aria-label={isMuted ? "Unmute" : "Mute"}
-            >
-              {isMuted ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
-                  <line x1="1" y1="1" x2="23" y2="23"></line>
-                  <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
-                  <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
-                  <line x1="12" y1="19" x2="12" y2="23"></line>
-                  <line x1="8" y1="23" x2="16" y2="23"></line>
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                  <line x1="12" y1="19" x2="12" y2="23"></line>
-                  <line x1="8" y1="23" x2="16" y2="23"></line>
-                </svg>
-              )}
-            </button>
           </div>
-          
-          {/* Only show muted status when needed */}
-          {isMuted && (
-            <div className="absolute bottom-2 right-2 bg-black/50 rounded-md px-2 py-1 z-20 text-[10px] text-white/60">
-              Muted
-            </div>
-          )}
+        )}
+        
+        {/* Mute Control */}
+        <div className="absolute top-2 right-2 z-20">
+          <button 
+            onClick={() => setIsMuted(!isMuted)}
+            className="bg-black/70 hover:bg-black/90 rounded-full p-2 transition-colors"
+            aria-label={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            )}
+          </button>
         </div>
-      )}
+        
+        {/* Only show muted status when needed */}
+        {isMuted && (
+          <div className="absolute bottom-2 right-2 bg-black/50 rounded-md px-2 py-1 z-20 text-[10px] text-white/60">
+            Muted
+          </div>
+        )}
+      </div>
     </div>
   );
 }
