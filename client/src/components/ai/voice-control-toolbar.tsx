@@ -10,14 +10,18 @@ interface VoiceControlToolbarProps {
   onVoiceInput: (text: string) => void;
   aiMessage: string | null;
   isProcessing: boolean;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
 }
 
 export function VoiceControlToolbar({ 
   onVoiceInput, 
   aiMessage, 
-  isProcessing 
+  isProcessing,
+  isMuted = false,
+  onToggleMute
 }: VoiceControlToolbarProps) {
-  const [isSpeechEnabled, setIsSpeechEnabled] = useState(false);
+  const [isSpeechEnabled, setIsSpeechEnabled] = useState(true); // Enable speech by default
   const [isListening, setIsListening] = useState(false);
   const [speechSynthesisAvailable, setSpeechSynthesisAvailable] = useState(false);
   const [silenceTimer, setSilenceTimer] = useState<NodeJS.Timeout | null>(null);
@@ -236,6 +240,7 @@ export function VoiceControlToolbar({
   return (
     <div className="flex items-center justify-between p-2 border-b border-dark-surface">
       <div className="flex items-center gap-3">
+        {/* Voice input microphone button */}
         <Button
           variant="ghost"
           size="sm"
@@ -251,6 +256,7 @@ export function VoiceControlToolbar({
           )}
         </Button>
         
+        {/* Toggle internal speech synthesis */}
         <Button
           variant="ghost"
           size="sm"
@@ -264,14 +270,36 @@ export function VoiceControlToolbar({
             <VolumeX className="h-5 w-5" />
           )}
         </Button>
+        
+        {/* Global mute button (if onToggleMute provided) */}
+        {onToggleMute && (
+          <Button
+            variant="outline"
+            size="sm"
+            className={`rounded-full ${isMuted ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}
+            onClick={onToggleMute}
+            title={isMuted ? "Unmute AI voice" : "Mute AI voice"}
+          >
+            {isMuted ? (
+              <VolumeX className="h-5 w-5" />
+            ) : (
+              <Volume2 className="h-5 w-5" />
+            )}
+            <span className="ml-2 text-xs">
+              {isMuted ? "Muted" : "Voice On"}
+            </span>
+          </Button>
+        )}
       </div>
       
+      {/* Display listening status */}
       {isListening && (
         <div className="text-xs text-primary-lighter animate-pulse">
           Listening...
         </div>
       )}
       
+      {/* Display transcript */}
       {transcript && isListening && (
         <div className="text-xs max-w-[250px] truncate">
           {transcript}
