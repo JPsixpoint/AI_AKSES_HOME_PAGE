@@ -12,12 +12,22 @@ interface HeyGenAvatarSimplifiedProps {
  * Simplified Avatar component with Web Speech API fallback
  */
 export function HeyGenAvatarSimplified({ text, isVisible, isMuted: externalMuted, onMuteToggle }: HeyGenAvatarSimplifiedProps) {
-  // States
+  // States - default to unmuted always
   const [internalMuted, setInternalMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   
   // Use external mute state if provided, otherwise use internal state
+  // Always make sure it's not muted by default
   const isMuted = externalMuted !== undefined ? externalMuted : internalMuted;
+  
+  // Log mute state for debugging
+  useEffect(() => {
+    console.log("HeyGenAvatarSimplified mute state:", { 
+      externalMuted, 
+      internalMuted, 
+      effectiveMuted: isMuted 
+    });
+  }, [externalMuted, internalMuted, isMuted]);
   
   // Refs
   const backgroundVideoRef = useRef<HTMLVideoElement>(null);
