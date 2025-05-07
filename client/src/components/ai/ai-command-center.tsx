@@ -12,6 +12,7 @@ import { AIMessage } from "./ai-message";
 import { UserMessage } from "./user-message";
 import { ConfirmationButtons } from "./confirmation-buttons";
 import { VoiceControlToolbar } from "./voice-control-toolbar";
+import { HeyGenAvatar } from "./heygen-avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ConcentricPattern } from "../ui/concentric-pattern";
@@ -97,10 +98,21 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
       setLastAIMessage(lastMessage.content);
       // Also set speech status
       setAIStatus("speaking");
-      // Reset to listening after a short delay to simulate speaking
+      
+      // Calculate a reasonable speaking time based on message length
+      // Average human speaking rate is about 150 words per minute, or 2.5 words per second
+      const words = lastMessage.content.split(/\s+/).length;
+      const speakingTimeMs = Math.max(4000, words * 400); // Min 4 seconds, then 400ms per word
+      
+      console.log(`Speaking time: ${speakingTimeMs}ms for ${words} words`);
+      
+      // Reset to listening after the calculated delay
       const timer = setTimeout(() => {
         setAIStatus("listening");
-      }, 1000);
+        // Clear the lastAIMessage after speaking is complete
+        setLastAIMessage(null);
+      }, speakingTimeMs);
+      
       return () => clearTimeout(timer);
     }
   }, [messages]);
@@ -653,6 +665,16 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
 
       <div className="z-10">
         <h2 className="text-xl font-semibold mb-4">AI Command Center</h2>
+        
+        {/* HeyGen Avatar integration */}
+        <div className="w-full mb-4">
+          <HeyGenAvatar 
+            text={lastAIMessage}
+            isVisible={aiStatus === "speaking"}
+          />
+        </div>
+        
+        {/* Keep the AIAvatar as a fallback/loading indicator */}
         <AIAvatar status={aiStatus} />
       </div>
 
