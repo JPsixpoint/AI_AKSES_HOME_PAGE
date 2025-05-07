@@ -1010,7 +1010,7 @@ export function AIPreScreening({ initialDealId }: AIPreScreeningProps) {
                                     
                                     {sc0.completed_at && (
                                       <div className="text-xs text-gray-400 mt-4">
-                                        Completed on {new Date(sc0.completed_at).toLocaleDateString()} by {sc0.completed_by || "System"}
+                                        Completed on {new Date(sc0.completed_at).toLocaleDateString()} at {new Date(sc0.completed_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} by {sc0.completed_by || "System"}
                                       </div>
                                     )}
                                   </div>
