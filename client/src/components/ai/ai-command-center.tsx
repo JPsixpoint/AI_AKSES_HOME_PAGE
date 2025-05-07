@@ -247,8 +247,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         // Start keep-alive interval when speech starts
         const originalOnStart = utterance.onstart;
-        utterance.onstart = () => {
-          if (originalOnStart) originalOnStart.call(utterance);
+        utterance.onstart = (event) => {
+          if (originalOnStart) originalOnStart.call(utterance, event);
           
           if (intervalId === null) {
             intervalId = window.setInterval(keepAlive, 5000) as unknown as number;
@@ -257,8 +257,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         // Clean up interval when speech ends
         const originalOnEnd = utterance.onend;
-        utterance.onend = () => {
-          if (originalOnEnd) originalOnEnd.call(utterance);
+        utterance.onend = (event) => {
+          if (originalOnEnd) originalOnEnd.call(utterance, event);
           
           if (intervalId !== null) {
             clearInterval(intervalId);
@@ -268,7 +268,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         // Clean up interval on error
         const originalOnError = utterance.onerror;
-        utterance.onerror = (event) => {
+        utterance.onerror = (event: Event) => {
           if (originalOnError) originalOnError.call(utterance, event);
           
           if (intervalId !== null) {
@@ -324,18 +324,68 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
 
   // Play welcome message when component mounts
   useEffect(() => {
+    // Ensure we're unmuted
+    setIsMuted(false);
+    
     // Set the initial message
     setLastAIMessage(initialWelcomeMessage);
     
     // Wait a brief moment to make sure everything is loaded before speaking
+    // Using a longer timeout to ensure all components are fully initialized
     const timer = setTimeout(() => {
-      console.log("Speaking welcome message with isMuted =", isMuted);
+      console.log("Forcing speaking of welcome message (isMuted =", isMuted, ")");
+      
+      // Force all speech synthesis to be terminated
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      
       // Set AI status to speaking and speak the welcome message
-      if (!isMuted) {
-        setAIStatus("speaking");
+      setAIStatus("speaking");
+      
+      // Use a direct Web Speech synthesis for the welcome message
+      // This avoids any issues with the status tracking in speakText
+      try {
+        const utterance = new SpeechSynthesisUtterance(initialWelcomeMessage);
+        utterance.volume = 1.0;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.lang = 'en-US';
+        
+        // Try to find a good voice
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => v.name === 'Samantha' || v.name.includes('Google US English Female'));
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+        
+        // Event handlers
+        utterance.onstart = () => {
+          console.log("Welcome message speech started");
+          setAIStatus("speaking");
+          
+          // Trigger video playback for visual feedback
+          const videoElement = document.querySelector<HTMLVideoElement>('.avatar-background-video');
+          if (videoElement) {
+            videoElement.currentTime = 0;
+            videoElement.play().catch(err => console.error("Error playing video for welcome message:", err));
+          }
+        };
+        
+        utterance.onend = () => {
+          console.log("Welcome message speech ended");
+          setAIStatus("listening");
+        };
+        
+        // Speak the welcome message
+        console.log("Speaking welcome message directly");
+        window.speechSynthesis.speak(utterance);
+      } catch (error) {
+        console.error("Error speaking welcome message:", error);
+        // Fallback to regular speak method
         speakText(initialWelcomeMessage);
       }
-    }, 800);
+    }, 1500);
     
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
