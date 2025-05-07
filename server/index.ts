@@ -1,11 +1,29 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
+import session from 'express-session';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import passport from './auth';
 
 const app = express();
 // Set larger limits for request body parsing to handle large deal data payloads
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+
+// Configure session
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  }
+}));
+
+// Initialize Passport and restore authentication state from session
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -60,11 +78,10 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
+  const port = 3000;
   server.listen({
     port,
-    host: "0.0.0.0",
-    reusePort: true,
+    host: "localhost",
   }, () => {
     log(`serving on port ${port}`);
   });

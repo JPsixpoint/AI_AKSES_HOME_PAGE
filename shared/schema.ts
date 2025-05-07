@@ -1,22 +1,97 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, varchar, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
-// User table - already defined
+// User permission types for type safety
+export const UserPermissions = {
+  VIEW_USERS: 'view_users',
+  MANAGE_USERS: 'manage_users',
+  VIEW_DEALS: 'view_deals',
+  MANAGE_DEALS: 'manage_deals',
+  VIEW_ANALYTICS: 'view_analytics',
+} as const;
+
+export type UserPermission = typeof UserPermissions[keyof typeof UserPermissions];
+
+// User table with admin role and permissions
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"),  // Nullable for OAuth users
+  oauth_provider: text("oauth_provider"),
+  oauth_id: text("oauth_id"),
+  display_name: text("display_name"),
+  is_admin: boolean("is_admin").default(false),
+  permissions: jsonb("permissions").$type<string[]>().default([]),
+  created_at: timestamp("created_at").defaultNow(),
+  last_login: timestamp("last_login"),
 });
+
+// Permission groups table
+export const permissionGroups = pgTable("permission_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  permissions: jsonb("permissions").$type<string[]>().default([]),
+  is_default: boolean("is_default").default(false),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+// Junction table for users and permission groups (many-to-many)
+export const userPermissionGroups = pgTable("user_permission_groups", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  group_id: integer("group_id").notNull().references(() => permissionGroups.id, { onDelete: 'cascade' }),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+// Relations setup
+export const usersRelations = relations(users, ({ many }) => ({
+  permissionGroups: many(userPermissionGroups),
+}));
+
+export const permissionGroupsRelations = relations(permissionGroups, ({ many }) => ({
+  users: many(userPermissionGroups),
+}));
+
+export const userPermissionGroupsRelations = relations(userPermissionGroups, ({ one }) => ({
+  user: one(users, { fields: [userPermissionGroups.user_id], references: [users.id] }),
+  group: one(permissionGroups, { fields: [userPermissionGroups.group_id], references: [permissionGroups.id] }),
+}));
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  oauth_provider: true,
+  oauth_id: true,
+  display_name: true,
+  is_admin: true,
+  permissions: true,
+}).partial({
+  password: true,
+  oauth_provider: true,
+  oauth_id: true,
+  display_name: true,
+  is_admin: true,
+  permissions: true,
+});
+
+// Validation schemas for permission groups
+export const insertPermissionGroupSchema = createInsertSchema(permissionGroups).pick({
+  name: true,
+  description: true,
+  permissions: true,
+  is_default: true,
+}).partial({
+  description: true,
+  is_default: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type InsertPermissionGroup = z.infer<typeof insertPermissionGroupSchema>;
+export type PermissionGroup = typeof permissionGroups.$inferSelect;
 
 // Deals table (using the existing pipeline table)
 export const deals = pgTable("pipeline", {
