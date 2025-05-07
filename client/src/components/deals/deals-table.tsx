@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontalIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { MoreHorizontalIcon, ChevronLeftIcon, ChevronRightIcon, RefreshCwIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 // Import the PipelineDeal interface from deals-pipeline
 interface PipelineDeal {
@@ -35,9 +35,10 @@ interface DealsTableProps {
   isLoading: boolean;
   selectedDealId?: string | null;
   onRowClick?: (dealId: string) => void;
+  onRefresh?: () => void;
 }
 
-export function DealsTable({ deals, isLoading, selectedDealId, onRowClick }: DealsTableProps) {
+export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRefresh }: DealsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const dealsPerPage = 6;
   

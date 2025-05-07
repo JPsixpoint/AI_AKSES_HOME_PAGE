@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DealsTable } from "./deals-table";
 import { DealFilters } from "./deal-filters";
 import { DealStatistics } from "./deal-statistics";
@@ -21,7 +21,7 @@ interface PipelineDeal {
   created_by?: number | null;
 }
 import { Button } from "../ui/button";
-import { PlusIcon, SearchIcon } from "lucide-react";
+import { PlusIcon, SearchIcon, RefreshCwIcon } from "lucide-react";
 import { Input } from "../ui/input";
 
 interface DealsPipelineProps {
@@ -32,10 +32,16 @@ interface DealsPipelineProps {
 export function DealsPipeline({ selectedDealId, onSelectedDealChange }: DealsPipelineProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [stageFilter, setStageFilter] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   
-  const { data: deals = [], isLoading } = useQuery<PipelineDeal[]>({
+  const { data: deals = [], isLoading, refetch } = useQuery<PipelineDeal[]>({
     queryKey: ['/api/deals'],
   });
+  
+  // Function to refresh deals data
+  const handleRefresh = async () => {
+    await refetch();
+  };
   
   // Filter deals based on search term and stage
   const filteredDeals = deals.filter((deal: PipelineDeal) => {
@@ -94,6 +100,7 @@ export function DealsPipeline({ selectedDealId, onSelectedDealChange }: DealsPip
         isLoading={isLoading}
         selectedDealId={selectedDealId}
         onRowClick={onSelectedDealChange}
+        onRefresh={handleRefresh}
       />
       
       <DealStatistics />
