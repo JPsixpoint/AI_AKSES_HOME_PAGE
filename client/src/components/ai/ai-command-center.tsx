@@ -66,6 +66,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  // Function declaration is moved to the existing toggleMute function below
 
   const { data: deals = [] } = useQuery<Deal[]>({
     queryKey: ["/api/deals"],
