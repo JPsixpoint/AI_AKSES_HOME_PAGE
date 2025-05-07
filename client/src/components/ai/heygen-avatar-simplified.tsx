@@ -36,6 +36,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
           // Clean up existing avatar if any
           try {
             avatarRef.current.stopAvatar();
+            avatarRef.current = null;
           } catch (e) {
             console.log('Error stopping previous avatar session:', e);
           }
@@ -45,19 +46,29 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         setError(null);
         setUsingFallback(false);
         
-        console.log('Initializing avatar using API key...');
-        
         // Get token from server
-        const config = await getAvatarConfig();
+        console.log('Initializing avatar using secure token...');
+        let avatarInstance: StreamingAvatar;
         
-        // Create a new avatar instance with configuration from server
-        const avatar = new StreamingAvatar(config);
+        try {
+          const config = await getAvatarConfig();
+          console.log('Avatar configuration obtained successfully');
+          
+          // Create a new avatar instance with configuration from server
+          avatarInstance = new StreamingAvatar(config);
+          console.log('StreamingAvatar instance created successfully');
+          
+          if (!isMounted) return;
+          avatarRef.current = avatarInstance;
+        } catch (tokenError: any) {
+          console.error('Failed to initialize avatar with token:', tokenError);
+          throw new Error('Could not initialize avatar: ' + (tokenError?.message || String(tokenError)));
+        }
         
-        if (!isMounted) return;
-        avatarRef.current = avatar;
+        if (!isMounted || !avatarRef.current) return;
         
         // Set up event listeners
-        avatar.on(StreamingEvents.STREAM_READY, (event) => {
+        avatarRef.current.on(StreamingEvents.STREAM_READY, (event: any) => {
           if (!isMounted) return;
           console.log('Stream ready:', event.detail);
           
@@ -73,13 +84,13 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
           setIsLoading(false);
         });
         
-        avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+        avatarRef.current.on(StreamingEvents.AVATAR_START_TALKING, () => {
           if (!isMounted) return;
           console.log('Avatar started talking');
           setIsSpeaking(true);
         });
         
-        avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+        avatarRef.current.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
           if (!isMounted) return;
           console.log('Avatar stopped talking');
           setIsSpeaking(false);
@@ -87,7 +98,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         
         // Listen for session events (the actual event name may vary by SDK version)
         try {
-          avatar.on('session_created' as any, (event: any) => {
+          avatarRef.current.on('session_created' as any, (event: any) => {
             if (!isMounted) return;
             console.log('Session created:', event.detail);
             sessionId = event.detail?.session_id;
@@ -96,7 +107,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
           console.log('Session created event not supported in this SDK version');
         }
         
-        avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
+        avatarRef.current.on(StreamingEvents.STREAM_DISCONNECTED, () => {
           if (!isMounted) return;
           console.log('Stream disconnected');
         });
@@ -113,11 +124,11 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
                 avatar_id: AVATAR_CONFIG.avatarId,
                 voice_id: AVATAR_CONFIG.voiceId
               } as any;
-              await avatar.createStartAvatar(startParams);
+              await avatarRef.current.createStartAvatar(startParams);
             } catch (e) {
               // Method 2: Try createStartAvatar with empty object for SDK compatibility
               console.log('First start method failed, trying alternative method');
-              await avatar.createStartAvatar({} as any);
+              await avatarRef.current.createStartAvatar({} as any);
             }
           } catch (error) {
             console.error('All start methods failed:', error);

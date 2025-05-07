@@ -17,14 +17,22 @@ export const HEYGEN_DEFAULTS = {
  * @returns Access token string
  */
 export async function getAccessToken(): Promise<string> {
-  const response = await fetch('/api/heygen/token');
-  
-  if (!response.ok) {
-    throw new Error(`Failed to get HeyGen token: ${response.status} ${response.statusText}`);
+  try {
+    console.log('Requesting HeyGen token from server...');
+    const response = await fetch('/api/heygen/token');
+    
+    if (!response.ok) {
+      console.error(`HeyGen token request failed with status: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to get HeyGen token: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Successfully received HeyGen token');
+    return data.token;
+  } catch (error) {
+    console.error('Error in getAccessToken:', error);
+    throw error;
   }
-  
-  const data = await response.json();
-  return data.token;
 }
 
 /**
