@@ -67,6 +67,9 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
+  // Reference to initial welcome message
+  const initialWelcomeMessage = "Welcome to AKSES. I can help you manage your investment deals. What would you like to do today?";
+  
   // Function declaration is moved to the existing toggleMute function below
 
   const { data: deals = [] } = useQuery<Deal[]>({
@@ -237,6 +240,18 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     }
   };
 
+  // Play welcome message when component mounts
+  useEffect(() => {
+    // Set the initial message
+    setLastAIMessage(initialWelcomeMessage);
+    
+    // Set AI status to speaking and speak the welcome message
+    setAIStatus("speaking");
+    speakText(initialWelcomeMessage);
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
   // Scroll to bottom of messages and handle speech
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -247,10 +262,12 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
       const messageText = lastMessage.content;
       setLastAIMessage(messageText);
       
-      // Speak the message
-      speakText(messageText);
+      // Only speak the message if it's not the initial message (which is handled by the mount effect)
+      if (messages.length > 1 || messageText !== initialWelcomeMessage) {
+        speakText(messageText);
+      }
     }
-  }, [messages]);
+  }, [messages, initialWelcomeMessage]);
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
