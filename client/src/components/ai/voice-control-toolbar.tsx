@@ -252,20 +252,7 @@ export function VoiceControlToolbar({
   return (
     <div className="flex items-center justify-between p-2 border-b border-dark-surface">
       <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`rounded-full ${isListening ? 'bg-primary/20 text-primary-lighter' : ''}`}
-          onClick={toggleListening}
-          disabled={isProcessing}
-          title={isListening ? "Stop listening" : "Start voice input"}
-        >
-          {isListening ? (
-            <Mic className="h-5 w-5 animate-pulse" />
-          ) : (
-            <MicOff className="h-5 w-5" />
-          )}
-        </Button>
+        {/* Voice input button removed as requested */}
         
         <Button
           variant="ghost"
