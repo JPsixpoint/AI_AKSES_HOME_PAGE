@@ -1,6 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import StreamingAvatar, { StreamingEvents, StartAvatarRequest } from '@heygen/streaming-avatar';
-import { getAvatarConfig, AVATAR_CONFIG } from '@/lib/heygen-client';
 
 // Interface for component props
 interface HeyGenAvatarSimplifiedProps {
@@ -9,280 +7,16 @@ interface HeyGenAvatarSimplifiedProps {
 }
 
 /**
- * Simplified HeyGen Avatar component with minimal dependencies
+ * Simplified Avatar component with Web Speech API fallback
  */
 export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifiedProps) {
   // States
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [usingFallback, setUsingFallback] = useState(false);
   
   // Refs
-  const avatarRef = useRef<StreamingAvatar | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const backgroundVideoRef = useRef<HTMLVideoElement>(null);
-  
-  // Initialize avatar when component becomes visible
-  useEffect(() => {
-    if (!isVisible) return;
-    
-    let isMounted = true;
-    let sessionId: string | null = null;
-    
-    const initializeAvatar = async () => {
-      try {
-        if (avatarRef.current) {
-          // Clean up existing avatar if any
-          try {
-            avatarRef.current.stopAvatar();
-            avatarRef.current = null;
-          } catch (e) {
-            console.log('Error stopping previous avatar session:', e);
-          }
-        }
-        
-        setIsLoading(true);
-        setError(null);
-        setUsingFallback(false);
-        
-        // Get token from server
-        console.log('Initializing avatar using secure token...');
-        let avatarInstance: StreamingAvatar;
-        
-        try {
-          const config = await getAvatarConfig();
-          console.log('Avatar configuration obtained successfully');
-          
-          // Create a new avatar instance with configuration from server
-          avatarInstance = new StreamingAvatar(config);
-          console.log('StreamingAvatar instance created successfully');
-          
-          if (!isMounted) return;
-          avatarRef.current = avatarInstance;
-        } catch (tokenError: any) {
-          console.error('Failed to initialize avatar with token:', tokenError);
-          throw new Error('Could not initialize avatar: ' + (tokenError?.message || String(tokenError)));
-        }
-        
-        if (!isMounted || !avatarRef.current) return;
-        
-        // Set up event listeners
-        avatarRef.current.on(StreamingEvents.STREAM_READY, (event: any) => {
-          if (!isMounted) return;
-          console.log('Stream ready:', event.detail);
-          
-          // Set video source when stream is ready
-          if (videoRef.current && event.detail) {
-            videoRef.current.srcObject = event.detail;
-            videoRef.current.muted = isMuted;
-            videoRef.current.play().catch(e => {
-              console.error('Error playing video:', e);
-            });
-          }
-          
-          setIsLoading(false);
-        });
-        
-        avatarRef.current.on(StreamingEvents.AVATAR_START_TALKING, () => {
-          if (!isMounted) return;
-          console.log('Avatar started talking');
-          setIsSpeaking(true);
-        });
-        
-        avatarRef.current.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-          if (!isMounted) return;
-          console.log('Avatar stopped talking');
-          setIsSpeaking(false);
-        });
-        
-        // Listen for session events (the actual event name may vary by SDK version)
-        try {
-          avatarRef.current.on('session_created' as any, (event: any) => {
-            if (!isMounted) return;
-            console.log('Session created:', event.detail);
-            sessionId = event.detail?.session_id;
-          });
-        } catch (e) {
-          console.log('Session created event not supported in this SDK version');
-        }
-        
-        avatarRef.current.on(StreamingEvents.STREAM_DISCONNECTED, () => {
-          if (!isMounted) return;
-          console.log('Stream disconnected');
-        });
-        
-        try {
-          // Start avatar with basic configuration - trying compatible approaches
-          try {
-            // Start with various methods - SDK compatibility varies by version
-            try {
-              // Method 1: Try createStartAvatar with params
-              console.log('Attempting to start avatar with param object');
-              // Cast to any to bypass type checking since SDK types may vary by version
-              const startParams = {
-                avatar_id: AVATAR_CONFIG.avatarId,
-                voice_id: AVATAR_CONFIG.voiceId
-              } as any;
-              await avatarRef.current.createStartAvatar(startParams);
-            } catch (e) {
-              // Method 2: Try createStartAvatar with empty object for SDK compatibility
-              console.log('First start method failed, trying alternative method');
-              await avatarRef.current.createStartAvatar({} as any);
-            }
-          } catch (error) {
-            console.error('All start methods failed:', error);
-            throw error;
-          }
-          
-          if (!isMounted) return;
-          console.log('Avatar created and started successfully');
-        } catch (err: any) {
-          console.error('Failed to create/start avatar:', err);
-          if (!isMounted) return;
-          throw err;
-        }
-      } catch (err: any) {
-        console.error('Avatar initialization error:', err);
-        
-        // Log more detailed error information
-        const errorDetails = {
-          name: err?.name,
-          message: err?.message,
-          status: err?.status,
-          responseText: err?.responseText,
-          stack: err?.stack
-        };
-        console.error('Detailed error information:', errorDetails);
-        
-        if (!isMounted) {
-          return;
-        }
-        
-        // Create a more descriptive error message
-        let errorMessage = 'Failed to initialize avatar';
-        
-        if (err?.status === 401) {
-          errorMessage += ': Authentication failed. The API key might be invalid or expired.';
-        } else if (err?.message) {
-          errorMessage += `: ${err.message}`;
-        } else if (err?.responseText) {
-          try {
-            const responseData = JSON.parse(err.responseText);
-            errorMessage += `: ${responseData.message || responseData.error || String(err)}`;
-          } catch (e) {
-            errorMessage += `: ${err.responseText || String(err)}`;
-          }
-        } else {
-          errorMessage += `: ${String(err)}`;
-        }
-        
-        setError(errorMessage);
-        setUsingFallback(true);
-        setIsLoading(false);
-      }
-    };
-    
-    initializeAvatar();
-    
-    // Cleanup function
-    return () => {
-      isMounted = false;
-      
-      if (avatarRef.current) {
-        console.log('Cleaning up avatar on unmount');
-        try {
-          avatarRef.current.stopAvatar();
-        } catch (e) {
-          console.error('Error stopping avatar:', e);
-        }
-        avatarRef.current = null;
-      }
-    };
-  }, [isVisible, isMuted]);
-  
-  // Handle text changes
-  useEffect(() => {
-    if (!text || !isVisible || isMuted || !avatarRef.current) return;
-    
-    const speakWithAvatar = async () => {
-      try {
-        console.log('Making avatar speak:', text);
-        
-        // Try to use avatar to speak
-        await avatarRef.current!.speak({
-          text
-        });
-        
-        return true;
-      } catch (err) {
-        console.error('Error making avatar speak:', err);
-        
-        // Log detailed error information
-        if (err instanceof Error) {
-          console.error('Error details:', {
-            name: err.name,
-            message: err.message,
-            stack: err.stack,
-            ...(err as any) // Capture any additional properties
-          });
-        }
-        
-        setUsingFallback(true);
-        speakWithFallback(text);
-        return false;
-      }
-    };
-    
-    speakWithAvatar();
-  }, [text, isVisible, isMuted]);
-  
-  // Fallback speech synthesis
-  const speakWithFallback = (text: string) => {
-    if (!window.speechSynthesis) return;
-    
-    try {
-      // Cancel any existing speech
-      window.speechSynthesis.cancel();
-      
-      console.log('Using fallback speech synthesis');
-      const utterance = new SpeechSynthesisUtterance(text);
-      
-      // Find a good voice
-      const voices = window.speechSynthesis.getVoices();
-      const femaleVoice = voices.find(voice => 
-        voice.name.includes('Samantha') || 
-        voice.name.includes('Female') ||
-        (voice.name.toLowerCase().includes('female') && voice.lang.startsWith('en'))
-      );
-      
-      if (femaleVoice) {
-        utterance.voice = femaleVoice;
-        console.log('Using voice:', femaleVoice.name);
-      }
-      
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-      
-      window.speechSynthesis.speak(utterance);
-    } catch (err) {
-      console.error('Fallback speech error:', err);
-      setIsSpeaking(false);
-    }
-  };
-  
-  // Apply mute changes to video
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = isMuted;
-    }
-    
-    if (isMuted && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-  }, [isMuted]);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   
   // Control the background video to only play once
   useEffect(() => {
@@ -326,6 +60,113 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
     };
   }, [isVisible]);
   
+  // Speech synthesis with Web Speech API
+  useEffect(() => {
+    if (!text || !isVisible || isMuted) return;
+    
+    try {
+      // Cancel any existing speech
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      
+      console.log('Using speech synthesis for text:', text);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utteranceRef.current = utterance;
+      
+      // Load voices if needed
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length === 0) {
+        // This is needed for some browsers that load voices asynchronously
+        window.speechSynthesis.onvoiceschanged = () => {
+          const updatedVoices = window.speechSynthesis.getVoices();
+          setVoice(utterance, updatedVoices);
+        };
+      } else {
+        setVoice(utterance, voices);
+      }
+      
+      // Event listeners
+      utterance.onstart = () => {
+        console.log('Speech started');
+        setIsSpeaking(true);
+      };
+      
+      utterance.onend = () => {
+        console.log('Speech ended');
+        setIsSpeaking(false);
+        utteranceRef.current = null;
+      };
+      
+      utterance.onerror = (event) => {
+        console.error('Speech error:', event);
+        setIsSpeaking(false);
+        utteranceRef.current = null;
+      };
+      
+      // Start speaking
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.error('Speech synthesis error:', err);
+      setIsSpeaking(false);
+    }
+    
+    // Cleanup function
+    return () => {
+      if (window.speechSynthesis && utteranceRef.current) {
+        window.speechSynthesis.cancel();
+        utteranceRef.current = null;
+      }
+    };
+  }, [text, isVisible, isMuted]);
+  
+  // Helper function to set a good voice
+  const setVoice = (utterance: SpeechSynthesisUtterance, voices: SpeechSynthesisVoice[]) => {
+    if (!voices || voices.length === 0) return;
+    
+    // Log available voices for debugging
+    console.log('Voices loaded:', voices.length);
+    
+    // Find a good female voice - these are common high-quality voices
+    const preferredVoices = [
+      "Samantha", // iOS/macOS
+      "Google US English Female", // Chrome
+      "Microsoft Zira", // Windows
+      "Karen", // macOS/iOS Australian
+      "Victoria" // macOS/iOS UK
+    ];
+    
+    // Try to find preferred voices first
+    for (const voiceName of preferredVoices) {
+      const voice = voices.find(v => v.name.includes(voiceName));
+      if (voice) {
+        console.log('Using preferred voice:', voice.name);
+        utterance.voice = voice;
+        return;
+      }
+    }
+    
+    // If no preferred voice found, use any English female voice
+    const femaleVoice = voices.find(voice => 
+      (voice.name.toLowerCase().includes('female') && voice.lang.startsWith('en')) ||
+      voice.name === 'Samantha' ||
+      voice.name === 'Victoria'
+    );
+    
+    if (femaleVoice) {
+      console.log('Using female voice:', femaleVoice.name);
+      utterance.voice = femaleVoice;
+      return;
+    }
+    
+    // Last resort - any English voice
+    const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
+    if (englishVoice) {
+      console.log('Using English voice:', englishVoice.name);
+      utterance.voice = englishVoice;
+    }
+  };
+  
   // Don't render if not visible
   if (!isVisible) {
     return null;
@@ -334,7 +175,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="relative w-[300px] h-[300px] rounded-xl overflow-hidden">
-        {/* Background Video - Always present across all states */}
+        {/* Background Video - Always present */}
         <video 
           ref={backgroundVideoRef}
           autoPlay
@@ -343,48 +184,6 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
           className="absolute inset-0 w-full h-full object-cover"
           src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
         />
-        
-        {/* HeyGen Avatar Video - Only shown when active and not using fallback */}
-        {!isLoading && !error && !usingFallback && (
-          <video 
-            ref={videoRef}
-            id="heygen-video"
-            autoPlay
-            playsInline
-            muted={isMuted}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        )}
-        
-        {/* Error state - Only show retry button on hover */}
-        {error && (
-          <div className="absolute bottom-2 right-2 opacity-0 hover:opacity-100 transition-opacity duration-300 z-10">
-            <button 
-              onClick={() => {
-                setError(null);
-                setIsLoading(true);
-                if (avatarRef.current) {
-                  try {
-                    avatarRef.current.stopAvatar();
-                  } catch (e) {
-                    console.error('Error stopping avatar during retry:', e);
-                  }
-                  avatarRef.current = null;
-                }
-              }}
-              className="text-[10px] bg-black/50 hover:bg-black/70 text-white px-2 py-1 rounded-sm transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-        
-        {/* Loading state - Just a subtle indicator */}
-        {isLoading && (
-          <div className="absolute bottom-2 left-2 z-10">
-            <div className="animate-pulse w-3 h-3 rounded-full bg-blue-500/30"></div>
-          </div>
-        )}
         
         {/* Speech Animation Overlay */}
         {isSpeaking && !isMuted && (
@@ -405,7 +204,12 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         {/* Mute Control */}
         <div className="absolute top-2 right-2 z-20">
           <button 
-            onClick={() => setIsMuted(!isMuted)}
+            onClick={() => {
+              setIsMuted(!isMuted);
+              if (!isMuted && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+              }
+            }}
             className="bg-black/70 hover:bg-black/90 rounded-full p-2 transition-colors"
             aria-label={isMuted ? "Unmute" : "Mute"}
           >

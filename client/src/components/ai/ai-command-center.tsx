@@ -62,6 +62,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const [input, setInput] = useState("");
   const [aiStatus, setAIStatus] = useState<AIStatus>("listening");
   const [lastAIMessage, setLastAIMessage] = useState<string | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -90,7 +91,6 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
 
   // Speech synthesis setup
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
 
   // Function to speak text using the Web Speech API
   const speakText = (text: string) => {
