@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getAccessToken } from '@/lib/heygen-api';
+import { AVATAR_CONFIG } from '@/lib/heygen-client';
 
 // Interface for component props
 interface HeyGenAvatarSimplifiedProps {
@@ -9,16 +11,23 @@ interface HeyGenAvatarSimplifiedProps {
 }
 
 /**
- * Simplified Avatar component with Web Speech API fallback
+ * Simplified Avatar component with HeyGen API for voice and local video
  */
 export function HeyGenAvatarSimplified({ text, isVisible, isMuted: externalMuted, onMuteToggle }: HeyGenAvatarSimplifiedProps) {
   // States - default to unmuted always
   const [internalMuted, setInternalMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isHeyGenFailed, setIsHeyGenFailed] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   
   // Use external mute state if provided, otherwise use internal state
   // Always make sure it's not muted by default
   const isMuted = externalMuted !== undefined ? externalMuted : internalMuted;
+  
+  // Refs
+  const backgroundVideoRef = useRef<HTMLVideoElement>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // Log mute state for debugging
   useEffect(() => {
@@ -28,10 +37,6 @@ export function HeyGenAvatarSimplified({ text, isVisible, isMuted: externalMuted
       effectiveMuted: isMuted 
     });
   }, [externalMuted, internalMuted, isMuted]);
-  
-  // Refs
-  const backgroundVideoRef = useRef<HTMLVideoElement>(null);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   
   // Control the background video to only play once
   useEffect(() => {
@@ -75,18 +80,136 @@ export function HeyGenAvatarSimplified({ text, isVisible, isMuted: externalMuted
     };
   }, [isVisible]);
   
-  // Speech synthesis with Web Speech API
-  useEffect(() => {
-    if (!text || !isVisible || isMuted) return;
-    
+  // Function to get voice from HeyGen API
+  const getHeyGenVoice = async (textToSpeak: string): Promise<string | null> => {
     try {
+      console.log('Requesting HeyGen voice for:', textToSpeak);
+      
+      // Get access token from server
+      const token = await getAccessToken();
+      
+      // Make direct call to HeyGen API to synthesize voice
+      const response = await fetch('https://api.heygen.com/v1/audio/generation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          voice_id: AVATAR_CONFIG.voiceId,
+          text: textToSpeak,
+          output_format: "mp3",
+          speed: 1.0
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`HeyGen voice API error: ${response.status} ${errorText}`);
+        throw new Error(`HeyGen voice API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('HeyGen voice generated successfully:', data);
+      
+      if (data.data && data.data.audio_url) {
+        return data.data.audio_url;
+      } else {
+        throw new Error('No audio URL in HeyGen response');
+      }
+    } catch (error) {
+      console.error('Error getting HeyGen voice:', error);
+      setIsHeyGenFailed(true);
+      return null;
+    }
+  };
+  
+  // Function to handle speaking with HeyGen or fallback
+  const speakText = async (textToSpeak: string) => {
+    if (!textToSpeak || !isVisible || isMuted) return;
+    
+    // Mark as speaking immediately for UI feedback
+    setIsSpeaking(true);
+    
+    // Play the video regardless of voice source
+    if (backgroundVideoRef.current) {
+      backgroundVideoRef.current.currentTime = 0;
+      backgroundVideoRef.current.play().catch(err => {
+        console.error('Error replaying background video on speech start:', err);
+      });
+    }
+    
+    // Try HeyGen voice API first if not failed previously
+    if (!isHeyGenFailed) {
+      try {
+        const audioUrl = await getHeyGenVoice(textToSpeak);
+        
+        if (audioUrl) {
+          // Clean up any previous audio
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.removeAttribute('src');
+          }
+          
+          // Create audio element for HeyGen voice
+          const audio = new Audio(audioUrl);
+          audioRef.current = audio;
+          
+          // Set up event handlers
+          audio.onplay = () => {
+            console.log('HeyGen audio started playing');
+          };
+          
+          audio.onended = () => {
+            console.log('HeyGen audio finished playing');
+            setIsSpeaking(false);
+            setAudioUrl(null);
+          };
+          
+          audio.onerror = (err) => {
+            console.error('HeyGen audio error:', err);
+            setIsSpeaking(false);
+            setAudioUrl(null);
+            setIsHeyGenFailed(true);
+            // Fall back to Web Speech API
+            useWebSpeechFallback(textToSpeak);
+          };
+          
+          // Store URL for debugging
+          setAudioUrl(audioUrl);
+          
+          // Play the audio
+          audio.play().catch(err => {
+            console.error('Error playing HeyGen audio:', err);
+            setIsSpeaking(false);
+            setIsHeyGenFailed(true);
+            // Fall back to Web Speech API
+            useWebSpeechFallback(textToSpeak);
+          });
+          
+          return;
+        }
+      } catch (error) {
+        console.error('Error with HeyGen voice API:', error);
+        setIsHeyGenFailed(true);
+      }
+    }
+    
+    // If we got here, HeyGen failed or is not available
+    useWebSpeechFallback(textToSpeak);
+  };
+  
+  // Fallback to Web Speech API
+  const useWebSpeechFallback = (textToSpeak: string) => {
+    try {
+      console.log('Using Web Speech API fallback for:', textToSpeak);
+      
       // Cancel any existing speech
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
       
-      console.log('Using speech synthesis for text:', text);
-      const utterance = new SpeechSynthesisUtterance(text);
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
       utteranceRef.current = utterance;
       
       // Load voices if needed
@@ -103,26 +226,18 @@ export function HeyGenAvatarSimplified({ text, isVisible, isMuted: externalMuted
       
       // Event listeners
       utterance.onstart = () => {
-        console.log('Speech started');
+        console.log('Web Speech started');
         setIsSpeaking(true);
-        
-        // Play the video when speech starts
-        if (backgroundVideoRef.current) {
-          backgroundVideoRef.current.currentTime = 0;
-          backgroundVideoRef.current.play().catch(err => {
-            console.error('Error replaying background video on speech start:', err);
-          });
-        }
       };
       
       utterance.onend = () => {
-        console.log('Speech ended');
+        console.log('Web Speech ended');
         setIsSpeaking(false);
         utteranceRef.current = null;
       };
       
       utterance.onerror = (event) => {
-        console.error('Speech error:', event);
+        console.error('Web Speech error:', event);
         setIsSpeaking(false);
         utteranceRef.current = null;
       };
@@ -130,9 +245,35 @@ export function HeyGenAvatarSimplified({ text, isVisible, isMuted: externalMuted
       // Start speaking
       window.speechSynthesis.speak(utterance);
     } catch (err) {
-      console.error('Speech synthesis error:', err);
+      console.error('Web Speech synthesis error:', err);
       setIsSpeaking(false);
     }
+  };
+  
+  // Speak welcome message when component first mounts
+  useEffect(() => {
+    if (!isVisible || isMuted) return;
+    
+    // Welcome message to speak on startup
+    const welcomeMessage = "Welcome to AKSES. I can help you manage your investment deals. What would you like to do today?";
+    
+    // Wait a short time for everything to initialize
+    const welcomeMessageTimer = setTimeout(() => {
+      console.log('Speaking welcome message');
+      speakText(welcomeMessage);
+    }, 2000);
+    
+    return () => {
+      clearTimeout(welcomeMessageTimer);
+    };
+  }, [isVisible, isMuted]);
+  
+  // Process text changes to make avatar speak
+  useEffect(() => {
+    if (!text || !isVisible || isMuted) return;
+    
+    // Speak the new text
+    speakText(text);
     
     // Cleanup function
     return () => {
@@ -140,10 +281,16 @@ export function HeyGenAvatarSimplified({ text, isVisible, isMuted: externalMuted
         window.speechSynthesis.cancel();
         utteranceRef.current = null;
       }
+      
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeAttribute('src');
+        audioRef.current = null;
+      }
     };
   }, [text, isVisible, isMuted]);
   
-  // Helper function to set a good voice
+  // Helper function to set a good voice for Web Speech API
   const setVoice = (utterance: SpeechSynthesisUtterance, voices: SpeechSynthesisVoice[]) => {
     if (!voices || voices.length === 0) return;
     
@@ -224,14 +371,12 @@ export function HeyGenAvatarSimplified({ text, isVisible, isMuted: externalMuted
           </div>
         )}
         
-        {/* Mute Control removed to simplify UI */}
-        
-        {/* Only show muted status when needed */}
-        {isMuted && (
-          <div className="absolute bottom-2 right-2 bg-black/50 rounded-md px-2 py-1 z-20 text-[10px] text-white/60">
-            Muted
-          </div>
-        )}
+        {/* Audio source indicator */}
+        <div className="absolute bottom-2 right-2 bg-black/50 rounded-md px-2 py-1 z-20 text-[10px] text-white/60">
+          {isMuted ? 'Muted' : isSpeaking ? 
+            (audioUrl ? 'HeyGen Voice' : 'Web Speech') : 
+            (isHeyGenFailed ? 'Ready (Web Speech)' : 'Ready (HeyGen)')}
+        </div>
       </div>
     </div>
   );

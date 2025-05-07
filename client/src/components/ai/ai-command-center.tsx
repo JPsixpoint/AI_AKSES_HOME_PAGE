@@ -268,7 +268,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         // Clean up interval on error
         const originalOnError = utterance.onerror;
-        utterance.onerror = (event: Event) => {
+        utterance.onerror = (event: any) => { // Using any type to avoid TypeScript issues
           if (originalOnError) originalOnError.call(utterance, event);
           
           if (intervalId !== null) {
