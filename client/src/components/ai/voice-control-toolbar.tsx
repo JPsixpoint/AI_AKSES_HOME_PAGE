@@ -10,18 +10,14 @@ interface VoiceControlToolbarProps {
   onVoiceInput: (text: string) => void;
   aiMessage: string | null;
   isProcessing: boolean;
-  isMuted?: boolean;
-  onMuteToggle?: () => void;
 }
 
 export function VoiceControlToolbar({ 
   onVoiceInput, 
   aiMessage, 
-  isProcessing,
-  isMuted,
-  onMuteToggle
+  isProcessing 
 }: VoiceControlToolbarProps) {
-  const [isSpeechEnabled, setIsSpeechEnabled] = useState(true); // Enable speech by default
+  const [isSpeechEnabled, setIsSpeechEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechSynthesisAvailable, setSpeechSynthesisAvailable] = useState(false);
   const [silenceTimer, setSilenceTimer] = useState<NodeJS.Timeout | null>(null);
@@ -31,22 +27,8 @@ export function VoiceControlToolbar({
     transcript,
     listening,
     resetTranscript,
-    browserSupportsSpeechRecognition,
-    isMicrophoneAvailable
-  } = useSpeechRecognition({
-    clearTranscriptOnListen: true,
-    commands: []
-  });
-  
-  // Log speech recognition status for debugging
-  useEffect(() => {
-    console.log("Speech recognition status:", {
-      browserSupport: browserSupportsSpeechRecognition,
-      microphoneAvailable: isMicrophoneAvailable,
-      isListening: listening,
-      currentTranscript: transcript
-    });
-  }, [browserSupportsSpeechRecognition, isMicrophoneAvailable, listening, transcript]);
+    browserSupportsSpeechRecognition
+  } = useSpeechRecognition();
 
   // Check if browser supports speech synthesis and load voices
   useEffect(() => {
@@ -91,16 +73,8 @@ export function VoiceControlToolbar({
     
     // If transcript changed
     if (transcript !== lastTranscriptRef.current) {
-      console.log("Transcript updated:", transcript);
-      
       // Update last transcript
       lastTranscriptRef.current = transcript;
-      
-      // Immediately update the input field with current transcript
-      // This ensures users see what's being transcribed in real-time
-      if (transcript.trim()) {
-        onVoiceInput(transcript);
-      }
       
       // Clear any existing silence timer
       if (silenceTimer) {
@@ -111,8 +85,8 @@ export function VoiceControlToolbar({
       // Set new silence timer - if transcript doesn't change for 1.5 seconds, send it
       if (transcript.trim()) {
         const timer = setTimeout(() => {
-          console.log("Silence detected, finalizing transcript:", transcript);
-          // We've already updated the input field in real-time, so just stop listening
+          console.log("Silence detected, sending transcript:", transcript);
+          onVoiceInput(transcript);
           SpeechRecognition.stopListening();
           resetTranscript();
           setSilenceTimer(null);
@@ -132,7 +106,7 @@ export function VoiceControlToolbar({
 
   // Handle speech output when AI responds
   useEffect(() => {
-    if (isSpeechEnabled && aiMessage && !isProcessing && speechSynthesisAvailable && !isMuted) {
+    if (isSpeechEnabled && aiMessage && !isProcessing && speechSynthesisAvailable) {
       speakText(aiMessage);
     }
     // Clean up any ongoing speech when unmounting
@@ -141,7 +115,7 @@ export function VoiceControlToolbar({
         window.speechSynthesis.cancel();
       }
     };
-  }, [aiMessage, isSpeechEnabled, isProcessing, speechSynthesisAvailable, isMuted]);
+  }, [aiMessage, isSpeechEnabled, isProcessing, speechSynthesisAvailable]);
 
   // Function to convert text to speech
   const speakText = useCallback((text: string) => {
@@ -217,7 +191,7 @@ export function VoiceControlToolbar({
   }, [speechSynthesisAvailable]);
 
   // Handle start/stop listening
-  const toggleListening = useCallback(async () => {
+  const toggleListening = useCallback(() => {
     if (!browserSupportsSpeechRecognition) {
       toast({
         title: "Speech Recognition Not Supported",
@@ -228,7 +202,6 @@ export function VoiceControlToolbar({
     }
 
     if (listening) {
-      console.log("Stopping speech recognition");
       SpeechRecognition.stopListening();
       // Only send non-empty transcripts
       if (transcript.trim()) {
@@ -236,38 +209,8 @@ export function VoiceControlToolbar({
       }
       resetTranscript();
     } else {
-      console.log("Starting speech recognition");
       resetTranscript();
-      
-      // First explicitly request microphone permissions
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log("Microphone access granted:", stream.active);
-        
-        // Keep the stream active while listening
-        const tracks = stream.getAudioTracks();
-        if (tracks.length > 0) {
-          console.log("Audio track enabled:", tracks[0].enabled);
-        }
-        
-        // Start listening with explicit language settings
-        SpeechRecognition.startListening({ 
-          continuous: true,
-          language: 'en-US'
-        });
-        
-        toast({
-          title: "Microphone Active",
-          description: "Listening for your voice input...",
-        });
-      } catch (err) {
-        console.error("Microphone access error:", err);
-        toast({
-          title: "Microphone Error",
-          description: "Could not access your microphone. Please check your browser permissions.",
-          variant: "destructive"
-        });
-      }
+      SpeechRecognition.startListening({ continuous: true });
     }
   }, [listening, transcript, onVoiceInput, resetTranscript, browserSupportsSpeechRecognition]);
 
@@ -289,39 +232,25 @@ export function VoiceControlToolbar({
     
     setIsSpeechEnabled(!isSpeechEnabled);
   }, [isSpeechEnabled, speechSynthesisAvailable]);
-  
-  // Handle avatar mute toggle
-  const handleMuteToggle = useCallback(() => {
-    if (onMuteToggle) {
-      onMuteToggle();
-      
-      // If unmuting, cancel any ongoing speech to avoid overlapping
-      if (isMuted && speechSynthesisAvailable) {
-        window.speechSynthesis.cancel();
-      }
-    }
-  }, [isMuted, onMuteToggle, speechSynthesisAvailable]);
 
   return (
     <div className="flex items-center justify-between p-2 border-b border-dark-surface">
       <div className="flex items-center gap-3">
-        {/* Voice input microphone button - for user to speak to the AI */}
         <Button
           variant="ghost"
           size="sm"
-          className={`rounded-full ${isListening ? 'bg-green-500/20 text-green-400' : 'opacity-70'}`}
+          className={`rounded-full ${isListening ? 'bg-primary/20 text-primary-lighter' : ''}`}
           onClick={toggleListening}
           disabled={isProcessing}
-          title={isListening ? "Stop listening" : "Start listening"}
+          title={isListening ? "Stop listening" : "Start voice input"}
         >
           {isListening ? (
-            <Mic className="h-5 w-5 text-green-400 animate-pulse" />
+            <Mic className="h-5 w-5 animate-pulse" />
           ) : (
-            <Mic className="h-5 w-5" />
+            <MicOff className="h-5 w-5" />
           )}
         </Button>
         
-        {/* AI output speaker button - controls if AI responses are spoken */}
         <Button
           variant="ghost"
           size="sm"
@@ -335,46 +264,17 @@ export function VoiceControlToolbar({
             <VolumeX className="h-5 w-5" />
           )}
         </Button>
-        
-        {/* Avatar Mute Toggle Button */}
-        {onMuteToggle && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`rounded-full ${isMuted ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}
-            onClick={handleMuteToggle}
-            title={isMuted ? "Unmute avatar" : "Mute avatar"}
-          >
-            {isMuted ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
-                <line x1="1" y1="1" x2="23" y2="23"></line>
-                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
-                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
-            )}
-          </Button>
-        )}
       </div>
       
       {isListening && (
-        <div className="flex flex-col">
-          <div className="text-xs text-primary-lighter animate-pulse">
-            Listening...
-          </div>
-          {transcript && (
-            <div className="text-xs max-w-[250px] text-white font-semibold mt-1 bg-black/20 px-2 py-1 rounded">
-              "{transcript}"
-            </div>
-          )}
+        <div className="text-xs text-primary-lighter animate-pulse">
+          Listening...
+        </div>
+      )}
+      
+      {transcript && isListening && (
+        <div className="text-xs max-w-[250px] truncate">
+          {transcript}
         </div>
       )}
     </div>
