@@ -666,16 +666,34 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
       <div className="z-10">
         <h2 className="text-xl font-semibold mb-4">AI Command Center</h2>
         
-        {/* HeyGen Avatar integration */}
-        <div className="w-full mb-4">
-          <HeyGenAvatar 
-            text={lastAIMessage}
-            isVisible={aiStatus === "speaking"}
-          />
+        <div className="flex flex-col items-center mb-6">
+          {/* HeyGen Avatar integration */}
+          <div className="w-full mb-2">
+            <HeyGenAvatar 
+              text={lastAIMessage}
+              isVisible={aiStatus === "speaking"}
+            />
+          </div>
+          
+          {/* Status indicators */}
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <div className={`rounded-full h-2 w-2 ${
+              aiStatus === "listening" 
+                ? "bg-green-500 animate-pulse" 
+                : "bg-gray-500"
+            }`}></div>
+            <div className={`rounded-full h-2 w-2 ${
+              aiStatus === "processing" 
+                ? "bg-yellow-500 animate-pulse" 
+                : "bg-gray-500"
+            }`}></div>
+            <div className={`rounded-full h-2 w-2 ${
+              aiStatus === "speaking" 
+                ? "bg-blue-500 animate-pulse" 
+                : "bg-gray-500"
+            }`}></div>
+          </div>
         </div>
-        
-        {/* Keep the AIAvatar as a fallback/loading indicator */}
-        <AIAvatar status={aiStatus} />
       </div>
 
       <div className="gradient-border bg-dark-lighter flex-1 overflow-hidden flex flex-col mb-4 z-10">
