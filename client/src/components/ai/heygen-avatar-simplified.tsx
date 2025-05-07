@@ -291,47 +291,69 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
   return (
     <div className="flex flex-col items-center justify-center">
       {error ? (
-        // Error State
-        <div className="w-[300px] h-[300px] rounded-xl bg-black/30 flex flex-col items-center justify-center p-4 text-center">
-          <div className="text-red-500 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-          </div>
-          <p className="text-xs text-white/80 mb-2">Could not load AI avatar</p>
-          <p className="text-[10px] text-white/60 mb-4">{error}</p>
+        // Error State with video background
+        <div className="w-[300px] h-[300px] rounded-xl overflow-hidden relative">
+          {/* Background Video */}
+          <video 
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
+          />
           
-          <button 
-            onClick={() => {
-              setError(null);
-              setIsLoading(true);
-              // Force re-mount of the component by toggling a key
-              if (avatarRef.current) {
-                try {
-                  avatarRef.current.stopAvatar();
-                } catch (e) {
-                  console.error('Error stopping avatar during retry:', e);
+          {/* Overlay with error information */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center">
+            <div className="text-red-400 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <p className="text-xs text-white/90 mb-1 font-medium">AI Avatar Unavailable</p>
+            <p className="text-[10px] text-white/70 mb-4 max-w-[200px] overflow-hidden text-ellipsis">Using fallback speech synthesis</p>
+            
+            <button 
+              onClick={() => {
+                setError(null);
+                setIsLoading(true);
+                // Force re-mount of the component by toggling a key
+                if (avatarRef.current) {
+                  try {
+                    avatarRef.current.stopAvatar();
+                  } catch (e) {
+                    console.error('Error stopping avatar during retry:', e);
+                  }
+                  avatarRef.current = null;
                 }
-                avatarRef.current = null;
-              }
-            }}
-            className="text-xs bg-primary-light hover:bg-primary-lighter text-white px-3 py-1 rounded-md transition-colors"
-          >
-            Retry Connection
-          </button>
-          
-          <p className="text-[10px] text-white/40 mt-2">
-            Using fallback voice synthesis
-          </p>
+              }}
+              className="text-xs bg-blue-500/70 hover:bg-blue-500/90 text-white px-3 py-1 rounded-md transition-colors"
+            >
+              Retry Connection
+            </button>
+          </div>
         </div>
       ) : isLoading ? (
-        // Loading State
-        <div className="w-[300px] h-[300px] rounded-xl bg-black/30 flex flex-col items-center justify-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-2"></div>
-          <p className="text-xs text-white/80">Loading AI Avatar...</p>
-          <p className="text-[10px] text-white/60 mt-1">Connecting to HeyGen API</p>
+        // Loading State with video background
+        <div className="w-[300px] h-[300px] rounded-xl overflow-hidden relative">
+          {/* Background Video */}
+          <video 
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
+          />
+          
+          {/* Loading overlay */}
+          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-400 mb-3"></div>
+            <p className="text-sm text-white/90 font-medium">Loading AI Avatar</p>
+            <p className="text-[10px] text-white/70 mt-1">Establishing connection...</p>
+          </div>
         </div>
       ) : (
         // Active Avatar State
@@ -346,35 +368,26 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
               className="w-[300px] h-[300px] rounded-xl bg-black/30"
             />
           ) : (
-            // Fallback Avatar Display (SVG)
-            <div className="w-[300px] h-[300px] rounded-xl bg-black/30 flex items-center justify-center">
-              <svg width="250" height="250" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#111827" stopOpacity="1" />
-                    <stop offset="100%" stopColor="#1F2937" stopOpacity="1" />
-                  </linearGradient>
-                </defs>
-                
-                {/* Background Circle */}
-                <circle cx="150" cy="150" r="150" fill="url(#grad1)" />
-                
-                {/* Grid Pattern */}
-                <g opacity="0.2">
-                  <circle cx="150" cy="150" r="120" fill="none" stroke="#3B82F6" strokeWidth="2" strokeDasharray="4 6" />
-                  <circle cx="150" cy="150" r="80" fill="none" stroke="#3B82F6" strokeWidth="2" strokeDasharray="4 6" />
-                  <circle cx="150" cy="150" r="40" fill="none" stroke="#3B82F6" strokeWidth="2" strokeDasharray="4 6" />
-                </g>
-                
-                {/* Profile Silhouette */}
-                <g fill="#3B82F6" opacity="0.6">
-                  <circle cx="150" cy="115" r="45" />
-                  <path d="M95,220 C95,180 205,180 205,220 L205,240 C205,245 200,250 195,250 L105,250 C100,250 95,245 95,240 Z" />
-                </g>
-                
-                {/* AI Label */}
-                <text x="150" y="285" fontSize="12" fill="#fff" textAnchor="middle">AI Assistant</text>
-              </svg>
+            // Custom video background from S3 bucket when using fallback
+            <div className="w-[300px] h-[300px] rounded-xl bg-black/30 overflow-hidden relative">
+              <video 
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+                src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
+              />
+              <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                {/* Overlay content for fallback */}
+                <div className="w-20 h-20 rounded-full bg-blue-500/40 border-2 border-blue-300/60 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" x2="12" y1="19" y2="22"></line>
+                  </svg>
+                </div>
+              </div>
             </div>
           )}
           
