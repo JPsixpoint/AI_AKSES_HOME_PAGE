@@ -15,6 +15,9 @@ export function HeyGenAvatar({ text, isVisible, isMuted: externalMuted, onMuteTo
   const [internalMuted, setInternalMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   
+  // Refs
+  const backgroundVideoRef = useRef<HTMLVideoElement>(null);
+  
   // Use external mute state if provided, otherwise use internal state
   const isMuted = externalMuted !== undefined ? externalMuted : internalMuted;
   
@@ -83,6 +86,16 @@ export function HeyGenAvatar({ text, isVisible, isMuted: externalMuted, onMuteTo
       utterance.onstart = () => {
         console.log('Browser speech started');
         setIsSpeaking(true);
+        
+        // Replay the video on speech start
+        if (backgroundVideoRef.current) {
+          // Reset to beginning
+          backgroundVideoRef.current.currentTime = 0;
+          // Play video
+          backgroundVideoRef.current.play().catch(err => {
+            console.error('Error replaying background video on speech start:', err);
+          });
+        }
       };
       
       utterance.onend = () => {
@@ -152,38 +165,16 @@ export function HeyGenAvatar({ text, isVisible, isMuted: externalMuted, onMuteTo
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="relative">
-        <div className="w-[300px] h-[300px] rounded-xl bg-black/30 flex items-center justify-center">
-          <svg width="250" height="250" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#111827" stopOpacity="1" />
-                <stop offset="100%" stopColor="#1F2937" stopOpacity="1" />
-              </linearGradient>
-              <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.2" />
-                <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.4" />
-              </linearGradient>
-            </defs>
-            
-            {/* Background Circle */}
-            <circle cx="150" cy="150" r="150" fill="url(#grad1)" />
-            
-            {/* Hexagon Grid Pattern */}
-            <g opacity="0.2">
-              <circle cx="150" cy="150" r="120" fill="none" stroke="#3B82F6" strokeWidth="2" strokeDasharray="4 6" />
-              <circle cx="150" cy="150" r="80" fill="none" stroke="#3B82F6" strokeWidth="2" strokeDasharray="4 6" />
-              <circle cx="150" cy="150" r="40" fill="none" stroke="#3B82F6" strokeWidth="2" strokeDasharray="4 6" />
-            </g>
-            
-            {/* Profile Silhouette */}
-            <g fill="#3B82F6" opacity="0.6">
-              <circle cx="150" cy="115" r="45" />
-              <path d="M95,220 C95,180 205,180 205,220 L205,240 C205,245 200,250 195,250 L105,250 C100,250 95,245 95,240 Z" />
-            </g>
-            
-            {/* AI Label */}
-            <text x="150" y="285" fontSize="12" fill="#fff" textAnchor="middle">AI Assistant</text>
-          </svg>
+        <div className="w-[300px] h-[300px] rounded-xl bg-black/30 flex items-center justify-center overflow-hidden">
+          {/* Background Video */}
+          <video 
+            ref={backgroundVideoRef}
+            autoPlay
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+            src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
+          />
         </div>
         
         {/* Animated overlay for speech */}

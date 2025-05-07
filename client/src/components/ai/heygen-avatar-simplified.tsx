@@ -95,6 +95,14 @@ export function HeyGenAvatarSimplified({ text, isVisible, isMuted: externalMuted
       utterance.onstart = () => {
         console.log('Speech started');
         setIsSpeaking(true);
+        
+        // Play the video when speech starts
+        if (backgroundVideoRef.current) {
+          backgroundVideoRef.current.currentTime = 0;
+          backgroundVideoRef.current.play().catch(err => {
+            console.error('Error replaying background video on speech start:', err);
+          });
+        }
       };
       
       utterance.onend = () => {
