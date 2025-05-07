@@ -1,10 +1,28 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { db, pool } from "@db";
-import { deals, insertDealSchema, sixpointDeals } from "@shared/schema";
+import { deals, insertDealSchema, sixpointDeals, users, permissionGroups, userPermissionGroups, insertPermissionGroupSchema } from "@shared/schema";
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import OpenAI from "openai";
+import passport from './auth';
+import { registerUser, generateResetToken, isAuthenticated } from './auth';
+import { sendWelcomeEmail, sendLoginNotificationEmail, sendPasswordResetEmail, sendEmail } from './services/email';
+import crypto from 'crypto';
+
+// Middleware to check if user is an admin
+const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  
+  const user = req.user as any;
+  if (!user.is_admin) {
+    return res.status(403).json({ message: 'Forbidden: Admin access required' });
+  }
+  
+  next();
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up OpenAI client
@@ -12,8 +30,303 @@ export async function registerRoutes(app: Express): Promise<Server> {
     apiKey: process.env.OPENAI_API_KEY || "mock_key_for_development",
   });
 
+  // TEMPORARY: Backdoor route to make a user an admin (REMOVE AFTER TESTING)
+  app.get('/make-admin/:username', async (req, res) => {
+    try {
+      const username = req.params.username;
+      
+      if (!username) {
+        return res.status(400).json({ message: 'Username is required' });
+      }
+      
+      const result = await db.update(users)
+        .set({ is_admin: true })
+        .where(eq(users.username, username))
+        .returning();
+      
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      res.json({ message: `User ${username} is now an admin`, user: result[0] });
+    } catch (error) {
+      console.error('Error making user admin:', error);
+      res.status(500).json({ message: 'Failed to make user an admin' });
+    }
+  });
+
+  // Test page for API
+  app.get('/test-api', (req, res) => {
+    res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>API Test</title>
+    </head>
+    <body>
+      <h1>Permission Groups API Test</h1>
+      <button id="fetchButton">Fetch Permission Groups</button>
+      <pre id="result" style="margin-top: 20px; padding: 10px; background-color: #f5f5f5;"></pre>
+
+      <script>
+        document.getElementById('fetchButton').addEventListener('click', async () => {
+          const resultElement = document.getElementById('result');
+          resultElement.textContent = 'Loading...';
+          
+          try {
+            const response = await fetch('/api/permission-groups', {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            resultElement.textContent = \`Status: \${response.status}\\n\`;
+            
+            if (!response.ok) {
+              if (response.status === 401) {
+                resultElement.textContent += 'Error: You must be logged in to access permission groups\\n';
+              } else if (response.status === 403) {
+                resultElement.textContent += 'Error: You do not have permission to access permission groups\\n';
+              } else {
+                resultElement.textContent += 'Error: Failed to fetch permission groups\\n';
+              }
+              
+              try {
+                const errorData = await response.text();
+                resultElement.textContent += \`Response: \${errorData}\\n\`;
+              } catch (e) {
+                resultElement.textContent += \`Could not parse response: \${e.message}\\n\`;
+              }
+            } else {
+              const data = await response.json();
+              resultElement.textContent += \`Response: \${JSON.stringify(data, null, 2)}\\n\`;
+            }
+          } catch (err) {
+            resultElement.textContent = \`Error: \${err.message}\`;
+            console.error('Error:', err);
+          }
+        });
+      </script>
+    </body>
+    </html>
+    `);
+  });
+
   // API Routes
   const apiPrefix = "/api";
+
+  // Authentication routes
+  app.post(`${apiPrefix}/auth/login`, (req, res, next) => {
+    // First, check if credentials were provided
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
+    
+    passport.authenticate('local', (err: any, user: any, info: { message?: string }) => {
+      if (err) {
+        return res.status(500).json({ message: 'An error occurred during login' });
+      }
+      
+      if (!user) {
+        // Authentication failed
+        return res.status(401).json({ message: info?.message || 'Invalid username or password' });
+      }
+      
+      // Log the user in
+      req.logIn(user, async (loginErr) => {
+        if (loginErr) {
+          return res.status(500).json({ message: 'An error occurred during login' });
+        }
+        
+        try {
+          // Update last_login timestamp
+          await db.update(users)
+            .set({ last_login: new Date() })
+            .where(eq(users.id, user.id));
+          
+          // Send user information (excluding password)
+          const { password, ...userWithoutPassword } = user;
+          
+          // Send login notification email asynchronously
+          sendLoginNotificationEmail(user.username, user.display_name || user.username)
+            .catch(err => console.error('Failed to send login notification email:', err));
+          
+          return res.json({ 
+            user: userWithoutPassword,
+            message: 'Logged in successfully' 
+          });
+        } catch (error) {
+          console.error('Error in login route:', error);
+          return res.status(500).json({ message: 'An error occurred during login' });
+        }
+      });
+    })(req, res, next);
+  });
+
+  // Microsoft OAuth routes
+  app.get(
+    `${apiPrefix}/auth/microsoft`,
+    passport.authenticate('microsoft', { prompt: 'select_account' })
+  );
+
+  app.get(
+    `${apiPrefix}/auth/microsoft/callback`,
+    passport.authenticate('microsoft', { 
+      failureRedirect: '/login',
+      keepSessionInfo: true 
+    }),
+    async (req, res) => {
+      try {
+        // Update last_login timestamp
+        const user = req.user as any;
+        await db.update(users)
+          .set({ last_login: new Date() })
+          .where(eq(users.id, user.id));
+          
+        // Send login notification email asynchronously
+        sendLoginNotificationEmail(user.username, user.display_name || user.username)
+          .catch(err => console.error('Failed to send login notification email:', err));
+          
+        // Successful authentication, redirect home
+        res.redirect('/');
+      } catch (error) {
+        console.error('Error in Microsoft OAuth callback:', error);
+        res.redirect('/login?error=auth_error');
+      }
+    }
+  );
+
+  app.post(`${apiPrefix}/auth/logout`, (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error logging out' });
+      }
+      res.json({ message: 'Logged out successfully' });
+    });
+  });
+
+  app.post(`${apiPrefix}/auth/register`, async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password are required' });
+      }
+      
+      const user = await registerUser(username, password);
+      
+      // Send welcome email asynchronously 
+      sendWelcomeEmail(username, user.display_name || username)
+        .catch(err => console.error('Failed to send welcome email:', err));
+      
+      res.status(201).json({ 
+        message: 'User registered successfully',
+        user: { id: user.id, username: user.username }
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || 'Error registering user' });
+    }
+  });
+
+  app.post(`${apiPrefix}/auth/forgot-password`, async (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ message: 'Username is required' });
+      }
+      
+      const token = await generateResetToken(username);
+      
+      if (!token) {
+        // Don't reveal that the user doesn't exist
+        return res.json({ message: 'If that account exists, we sent a password reset email' });
+      }
+      
+      // Send password reset email
+      try {
+        // Get user display name if available
+        const userResults = await db.select().from(users).where(eq(users.username, username));
+        const displayName = userResults.length > 0 ? (userResults[0].display_name || username) : username;
+        
+        await sendPasswordResetEmail(username, displayName, token);
+      } catch (emailError) {
+        console.error('Failed to send password reset email:', emailError);
+        // Continue the flow even if email fails
+      }
+      
+      res.json({ 
+        message: 'If that account exists, we sent a password reset email',
+        // In a real application, don't include the token in the response
+        // This is just for demonstration purposes
+        token
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Error processing request' });
+    }
+  });
+  
+  app.post(`${apiPrefix}/auth/reset-password`, async (req, res) => {
+    try {
+      const { token, username, password } = req.body;
+      
+      if (!token || !username || !password) {
+        return res.status(400).json({ message: 'Token, username, and password are required' });
+      }
+      
+      // In a real application, you would validate the token
+      // For now, we'll just pretend it's valid
+      
+      // Find the user
+      const userResults = await db.select().from(users).where(eq(users.username, username));
+      
+      if (userResults.length === 0) {
+        return res.status(400).json({ message: 'Invalid token or username' });
+      }
+      
+      // Generate a new salt
+      const salt = crypto.randomBytes(16).toString('hex');
+      // Hash the new password with the salt
+      const hashedPassword = crypto.createHash('sha256').update(password + salt).digest('hex');
+      // Store the password with salt
+      const passwordWithSalt = `${hashedPassword}:${salt}`;
+      
+      // Update the user's password
+      await db.update(users)
+        .set({ password: passwordWithSalt })
+        .where(eq(users.username, username));
+      
+      res.json({ message: 'Password reset successfully' });
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      res.status(500).json({ message: 'Error processing request' });
+    }
+  });
+  
+  app.get(`${apiPrefix}/auth/check`, async (req, res) => {
+    if (req.isAuthenticated()) {
+      const user = req.user as any;
+      
+      // Update last_login timestamp
+      await db.update(users)
+        .set({ last_login: new Date() })
+        .where(eq(users.id, user.id));
+      
+      console.log(`Last login updated for user ${user.username} at ${new Date().toISOString()}`);
+      
+      const { password, ...userWithoutPassword } = user;
+      return res.json({ 
+        authenticated: true,
+        user: userWithoutPassword
+      });
+    }
+    res.json({ authenticated: false });
+  });
 
   // AI Chat route
   app.post(`${apiPrefix}/ai/chat`, async (req, res) => {
@@ -585,6 +898,626 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`Error fetching SixPoint deal with ID ${req.params.id}:`, error);
       return res.status(500).json({ message: "Failed to fetch SixPoint deal" });
+    }
+  });
+
+  // User Management Routes (Admin only)
+  app.get(`${apiPrefix}/users`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      // Get all users
+      const userResults = await db.select().from(users);
+      
+      // Get all user-permission group mappings
+      const userGroupMappings = await db.select().from(userPermissionGroups);
+      
+      // Create a mapping of user_id to group_ids
+      const userGroupMap = new Map();
+      userGroupMappings.forEach(mapping => {
+        if (!userGroupMap.has(mapping.user_id)) {
+          userGroupMap.set(mapping.user_id, []);
+        }
+        userGroupMap.get(mapping.user_id).push(mapping.group_id);
+      });
+      
+      // Combine user data with permission groups
+      const usersWithGroups = userResults.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return {
+          ...userWithoutPassword,
+          permission_groups: userGroupMap.get(user.id) || []
+        };
+      });
+      
+      res.json(usersWithGroups);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+  
+  app.get(`${apiPrefix}/users/:id`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      const userResult = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (userResult.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      const user = userResult[0];
+      // Don't send password in response
+      const { password, ...userWithoutPassword } = user;
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      res.status(500).json({ message: 'Failed to fetch user' });
+    }
+  });
+  
+  app.post(`${apiPrefix}/users`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { username, password, display_name, is_admin, permissions } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ message: 'Username is required' });
+      }
+      
+      // Check if user already exists
+      const existingUser = await db.select().from(users).where(eq(users.username, username));
+      if (existingUser.length > 0) {
+        return res.status(400).json({ message: 'Username already exists' });
+      }
+      
+      let userData: any = {
+        username,
+        display_name,
+        is_admin: is_admin || false,
+        permissions: permissions || []
+      };
+      
+      // If password is provided, hash it
+      if (password) {
+        const salt = crypto.randomBytes(16).toString('hex');
+        const hashedPassword = crypto.createHash('sha256').update(password + salt).digest('hex');
+        userData.password = `${hashedPassword}:${salt}`;
+      }
+      
+      const result = await db.insert(users).values(userData).returning();
+      
+      // Don't return password
+      const { password: _, ...newUser } = result[0];
+      
+      // Send welcome email asynchronously
+      sendWelcomeEmail(username, display_name || username)
+        .catch(err => console.error('Failed to send welcome email:', err));
+      
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      res.status(500).json({ message: 'Failed to create user' });
+    }
+  });
+  
+  app.put(`${apiPrefix}/users/:id`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      const { username, password, display_name, is_admin, permissions, permission_group_id } = req.body;
+      
+      // Check if user exists
+      const userResult = await db.select().from(users).where(eq(users.id, userId));
+      if (userResult.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // If changing username, check if new username already exists
+      if (username && username !== userResult[0].username) {
+        const existingUser = await db.select().from(users).where(eq(users.username, username));
+        if (existingUser.length > 0) {
+          return res.status(400).json({ message: 'Username already exists' });
+        }
+      }
+      
+      let userData: any = {};
+      
+      if (username) userData.username = username;
+      if (display_name !== undefined) userData.display_name = display_name;
+      if (is_admin !== undefined) userData.is_admin = is_admin;
+      if (permissions !== undefined) userData.permissions = permissions;
+      
+      // If password is provided, hash it
+      if (password) {
+        const salt = crypto.randomBytes(16).toString('hex');
+        const hashedPassword = crypto.createHash('sha256').update(password + salt).digest('hex');
+        userData.password = `${hashedPassword}:${salt}`;
+      }
+      
+      if (Object.keys(userData).length === 0 && permission_group_id === undefined) {
+        return res.status(400).json({ message: 'No data provided for update' });
+      }
+      
+      // Update user data
+      const result = await db.update(users)
+        .set(userData)
+        .where(eq(users.id, userId))
+        .returning();
+      
+      // Handle permission group assignment
+      if (permission_group_id !== undefined) {
+        // First, remove all existing group associations
+        await db.delete(userPermissionGroups).where(eq(userPermissionGroups.user_id, userId));
+        
+        // If a new group is specified, add it
+        if (permission_group_id) {
+          const groupId = parseInt(permission_group_id);
+          
+          // Verify the group exists
+          const groupExists = await db.select().from(permissionGroups).where(eq(permissionGroups.id, groupId));
+          if (groupExists.length === 0) {
+            return res.status(400).json({ message: 'Permission group not found' });
+          }
+          
+          // Add user to group
+          await db.insert(userPermissionGroups).values({
+            user_id: userId,
+            group_id: groupId
+          });
+          
+          // Optionally update user permissions to match group
+          if (groupExists[0].permissions) {
+            await db.update(users)
+              .set({ permissions: groupExists[0].permissions })
+              .where(eq(users.id, userId));
+          }
+        }
+      }
+      
+      // Get updated user with permission groups
+      const userGroups = await db
+        .select({ group_id: userPermissionGroups.group_id })
+        .from(userPermissionGroups)
+        .where(eq(userPermissionGroups.user_id, userId));
+      
+      const groupIds = userGroups.map(ug => ug.group_id);
+      
+      // Don't return password
+      const { password: _, ...updatedUser } = result[0];
+      
+      res.json({
+        ...updatedUser,
+        permission_groups: groupIds
+      });
+    } catch (err) {
+      console.error('Error updating user:', err);
+      res.status(500).json({ message: 'Failed to update user' });
+    }
+  });
+  
+  app.delete(`${apiPrefix}/users/:id`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      // Don't allow deleting current user
+      if (req.user && (req.user as any).id === userId) {
+        return res.status(400).json({ message: 'Cannot delete your own account' });
+      }
+      
+      // Check if user exists
+      const userResult = await db.select().from(users).where(eq(users.id, userId));
+      if (userResult.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      await db.delete(users).where(eq(users.id, userId));
+      
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      res.status(500).json({ message: 'Failed to delete user' });
+    }
+  });
+  
+  // Invite user (send invitation email)
+  app.post(`${apiPrefix}/users/invite`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { email, is_admin, permissions, permission_group_id } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+      
+      // Check if user already exists
+      const existingUser = await db.select().from(users).where(eq(users.username, email));
+      if (existingUser.length > 0) {
+        return res.status(400).json({ message: 'User already exists' });
+      }
+      
+      // Generate a token for the invite
+      const token = crypto.randomBytes(32).toString('hex');
+      
+      // Generate a temporary password hash (user will need to reset this)
+      // This prevents the "Invalid account configuration" error
+      const tempPassword = crypto.randomBytes(16).toString('hex');
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hashedPassword = crypto.createHash('sha256').update(tempPassword + salt).digest('hex');
+      const passwordWithSalt = `${hashedPassword}:${salt}`;
+      
+      // Extract display name from email
+      const emailUsername = email.split('@')[0]; // Get the part before @
+      let displayName = emailUsername; // Default fallback
+      
+      if (emailUsername) {
+        // Handle common naming patterns in emails
+        if (emailUsername.includes('.') || emailUsername.includes('_') || emailUsername.includes('-')) {
+          // Replace dots, underscores, etc. with spaces
+          const nameParts = emailUsername.replace(/[._-]/g, ' ').split(' ');
+          
+          // Capitalize each part and join with space
+          displayName = nameParts
+            .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+            .join(' ');
+        } else {
+          // Try to detect camelCase (e.g., johnSmith) or other patterns
+          const nameParts = emailUsername.replace(/([a-z])([A-Z])/g, '$1 $2').split(' ');
+          
+          if (nameParts.length === 1) {
+            // If it's still one word, it might just be a single name or username
+            displayName = nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1).toLowerCase();
+          } else {
+            // Capitalize each part
+            displayName = nameParts
+              .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+              .join(' ');
+          }
+        }
+      }
+      
+      // Create the user with the temporary password
+      const userData = {
+        username: email,
+        is_admin: is_admin || false,
+        permissions: permissions || [],
+        password: passwordWithSalt, // Add temporary password
+        display_name: displayName // Add extracted display name
+      };
+      
+      // Create the user
+      const result = await db.insert(users).values(userData).returning();
+      const userId = result[0].id;
+      
+      // Handle permission group assignment if specified
+      if (permission_group_id) {
+        const groupId = parseInt(permission_group_id);
+        
+        // Verify the group exists
+        const groupExists = await db.select().from(permissionGroups).where(eq(permissionGroups.id, groupId));
+        if (groupExists.length === 0) {
+          return res.status(400).json({ message: 'Permission group not found' });
+        }
+        
+        // Add user to group
+        await db.insert(userPermissionGroups).values({
+          user_id: userId,
+          group_id: groupId
+        });
+        
+        // Update user permissions to match group
+        if (groupExists[0].permissions) {
+          await db.update(users)
+            .set({ permissions: groupExists[0].permissions })
+            .where(eq(users.id, userId));
+        }
+      } else {
+        // If no group specified and there's a default group, assign user to it
+        const defaultGroup = await db.select().from(permissionGroups).where(eq(permissionGroups.is_default, true));
+        if (defaultGroup.length > 0) {
+          await db.insert(userPermissionGroups).values({
+            user_id: userId,
+            group_id: defaultGroup[0].id
+          });
+          
+          // Update user permissions to match group
+          if (defaultGroup[0].permissions) {
+            await db.update(users)
+              .set({ permissions: defaultGroup[0].permissions })
+              .where(eq(users.id, userId));
+          }
+        }
+      }
+      
+      // Create an invitation email with a link to set password
+      const inviteUrl = `${process.env.APP_URL || 'http://localhost:3000'}/set-password?token=${token}&username=${encodeURIComponent(email)}`;
+      
+      const subject = 'Invitation to AKSES';
+      const body = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4f46e5;">You've been invited to AKSES!</h2>
+          <p>You have been invited to join AKSES, the financial technology platform that manages and creates investment deals for fintechs in emerging markets.</p>
+          <p>Click the button below to set your password and get started:</p>
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${inviteUrl}" style="background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Accept Invitation</a>
+          </div>
+          <p>If you didn't expect this invitation, you can safely ignore this email.</p>
+          <div style="margin-top: 20px; padding: 15px; background-color: #f3f4f6; border-radius: 5px;">
+            <p style="margin: 0;">Best regards,</p>
+            <p style="margin: 5px 0 0; font-weight: bold;">The AKSES Team</p>
+          </div>
+        </div>
+      `;
+      
+      // Send the invitation email
+      try {
+        await sendEmail({ to: email, subject, body });
+      } catch (emailError) {
+        console.error('Failed to send invitation email:', emailError);
+        // Continue even if email fails
+      }
+      
+      res.status(201).json({ 
+        message: 'User invited successfully',
+        user: { id: result[0].id, username: result[0].username }
+      });
+    } catch (error) {
+      console.error('Error inviting user:', error);
+      res.status(500).json({ message: 'Failed to invite user' });
+    }
+  });
+
+  // Permission Groups API Routes
+  
+  // Get all permission groups
+  app.get(`${apiPrefix}/permission-groups`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const groups = await db.select().from(permissionGroups).orderBy(permissionGroups.name);
+      res.json(groups);
+    } catch (error) {
+      console.error('Error fetching permission groups:', error);
+      res.status(500).json({ message: 'Failed to fetch permission groups' });
+    }
+  });
+
+  // Get a specific permission group
+  app.get(`${apiPrefix}/permission-groups/:id`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      if (isNaN(groupId)) {
+        return res.status(400).json({ message: 'Invalid group ID' });
+      }
+      
+      const groupResult = await db.select().from(permissionGroups).where(eq(permissionGroups.id, groupId));
+      
+      if (groupResult.length === 0) {
+        return res.status(404).json({ message: 'Permission group not found' });
+      }
+      
+      res.json(groupResult[0]);
+    } catch (error) {
+      console.error('Error fetching permission group:', error);
+      res.status(500).json({ message: 'Failed to fetch permission group' });
+    }
+  });
+
+  // Create a new permission group
+  app.post(`${apiPrefix}/permission-groups`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { name, description, permissions, is_default } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ message: 'Group name is required' });
+      }
+      
+      // Check if group with this name already exists
+      const existingGroup = await db.select().from(permissionGroups).where(eq(permissionGroups.name, name));
+      if (existingGroup.length > 0) {
+        return res.status(400).json({ message: 'Permission group with this name already exists' });
+      }
+      
+      // Ensure permissions is a string array
+      const permissionsArray: string[] = Array.isArray(permissions) 
+        ? permissions.map(p => String(p)) 
+        : [];
+      
+      // Build the data object manually
+      const groupData = {
+        name: name,
+        description: description || null,
+        permissions: permissionsArray,
+        is_default: is_default || false
+      };
+      
+      // If this is set as default, remove default flag from other groups
+      if (groupData.is_default) {
+        await db.update(permissionGroups)
+          .set({ is_default: false })
+          .where(eq(permissionGroups.is_default, true));
+      }
+      
+      const result = await db.insert(permissionGroups).values(groupData).returning();
+      
+      res.status(201).json(result[0]);
+    } catch (error) {
+      console.error('Error creating permission group:', error);
+      res.status(500).json({ message: 'Failed to create permission group' });
+    }
+  });
+
+  // Update a permission group
+  app.put(`${apiPrefix}/permission-groups/:id`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      if (isNaN(groupId)) {
+        return res.status(400).json({ message: 'Invalid group ID' });
+      }
+      
+      const { name, description, permissions, is_default } = req.body;
+      
+      // Check if group exists
+      const groupResult = await db.select().from(permissionGroups).where(eq(permissionGroups.id, groupId));
+      if (groupResult.length === 0) {
+        return res.status(404).json({ message: 'Permission group not found' });
+      }
+      
+      // Check if name is unique (if changed)
+      if (name && name !== groupResult[0].name) {
+        const existingGroup = await db.select().from(permissionGroups).where(eq(permissionGroups.name, name));
+        if (existingGroup.length > 0) {
+          return res.status(400).json({ message: 'Permission group with this name already exists' });
+        }
+      }
+      
+      let updateData: any = {};
+      
+      if (name) updateData.name = name;
+      if (description !== undefined) updateData.description = description;
+      if (permissions !== undefined) updateData.permissions = permissions;
+      if (is_default !== undefined) updateData.is_default = is_default;
+      
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: 'No data provided for update' });
+      }
+      
+      // If setting as default, remove default flag from other groups
+      if (updateData.is_default) {
+        await db.update(permissionGroups)
+          .set({ is_default: false })
+          .where(eq(permissionGroups.is_default, true));
+      }
+      
+      const result = await db.update(permissionGroups)
+        .set(updateData)
+        .where(eq(permissionGroups.id, groupId))
+        .returning();
+      
+      res.json(result[0]);
+    } catch (error) {
+      console.error('Error updating permission group:', error);
+      res.status(500).json({ message: 'Failed to update permission group' });
+    }
+  });
+
+  // Delete a permission group
+  app.delete(`${apiPrefix}/permission-groups/:id`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      if (isNaN(groupId)) {
+        return res.status(400).json({ message: 'Invalid group ID' });
+      }
+      
+      // Check if group exists
+      const groupResult = await db.select().from(permissionGroups).where(eq(permissionGroups.id, groupId));
+      if (groupResult.length === 0) {
+        return res.status(404).json({ message: 'Permission group not found' });
+      }
+      
+      // Delete all user associations first
+      await db.delete(userPermissionGroups).where(eq(userPermissionGroups.group_id, groupId));
+      
+      // Then delete the group
+      await db.delete(permissionGroups).where(eq(permissionGroups.id, groupId));
+      
+      res.json({ message: 'Permission group deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting permission group:', error);
+      res.status(500).json({ message: 'Failed to delete permission group' });
+    }
+  });
+
+  // Get users in a permission group
+  app.get(`${apiPrefix}/permission-groups/:id/users`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      if (isNaN(groupId)) {
+        return res.status(400).json({ message: 'Invalid group ID' });
+      }
+      
+      // Check if group exists
+      const groupResult = await db.select().from(permissionGroups).where(eq(permissionGroups.id, groupId));
+      if (groupResult.length === 0) {
+        return res.status(404).json({ message: 'Permission group not found' });
+      }
+      
+      // Get users in this group
+      const userResults = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          display_name: users.display_name,
+          is_admin: users.is_admin,
+          permissions: users.permissions,
+          created_at: users.created_at,
+          last_login: users.last_login
+        })
+        .from(users)
+        .innerJoin(userPermissionGroups, eq(users.id, userPermissionGroups.user_id))
+        .where(eq(userPermissionGroups.group_id, groupId));
+      
+      res.json(userResults);
+    } catch (error) {
+      console.error('Error fetching users in permission group:', error);
+      res.status(500).json({ message: 'Failed to fetch users in permission group' });
+    }
+  });
+
+  // Fix users with null passwords (admin only)
+  app.post(`${apiPrefix}/users/fix-null-passwords`, isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      // Find all users with null passwords
+      const usersWithNullPasswords = await db.select().from(users).where(sql`${users.password} IS NULL`);
+      
+      if (usersWithNullPasswords.length === 0) {
+        return res.json({ message: 'No users with null passwords found' });
+      }
+      
+      const updatedUsers = [];
+      
+      // Update each user with a temporary password
+      for (const user of usersWithNullPasswords) {
+        // Generate a temporary password
+        const tempPassword = crypto.randomBytes(16).toString('hex');
+        const salt = crypto.randomBytes(16).toString('hex');
+        const hashedPassword = crypto.createHash('sha256').update(tempPassword + salt).digest('hex');
+        const passwordWithSalt = `${hashedPassword}:${salt}`;
+        
+        // Update the user
+        await db.update(users)
+          .set({ password: passwordWithSalt })
+          .where(eq(users.id, user.id));
+        
+        updatedUsers.push({
+          id: user.id,
+          username: user.username
+        });
+        
+        // Send password reset email
+        try {
+          const token = await generateResetToken(user.username);
+          if (token) {
+            const displayName = user.display_name || user.username;
+            await sendPasswordResetEmail(user.username, displayName, token);
+          }
+        } catch (emailError) {
+          console.error(`Failed to send password reset email to ${user.username}:`, emailError);
+        }
+      }
+      
+      res.json({ 
+        message: `Fixed ${updatedUsers.length} users with null passwords`, 
+        users: updatedUsers 
+      });
+    } catch (error) {
+      console.error('Error fixing null passwords:', error);
+      res.status(500).json({ message: 'Failed to fix null passwords' });
     }
   });
 
