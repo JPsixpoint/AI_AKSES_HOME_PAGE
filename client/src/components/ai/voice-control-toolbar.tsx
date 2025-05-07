@@ -31,8 +31,22 @@ export function VoiceControlToolbar({
     transcript,
     listening,
     resetTranscript,
-    browserSupportsSpeechRecognition
-  } = useSpeechRecognition();
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable
+  } = useSpeechRecognition({
+    clearTranscriptOnListen: true,
+    commands: []
+  });
+  
+  // Log speech recognition status for debugging
+  useEffect(() => {
+    console.log("Speech recognition status:", {
+      browserSupport: browserSupportsSpeechRecognition,
+      microphoneAvailable: isMicrophoneAvailable,
+      isListening: listening,
+      currentTranscript: transcript
+    });
+  }, [browserSupportsSpeechRecognition, isMicrophoneAvailable, listening, transcript]);
 
   // Check if browser supports speech synthesis and load voices
   useEffect(() => {
@@ -203,7 +217,7 @@ export function VoiceControlToolbar({
   }, [speechSynthesisAvailable]);
 
   // Handle start/stop listening
-  const toggleListening = useCallback(() => {
+  const toggleListening = useCallback(async () => {
     if (!browserSupportsSpeechRecognition) {
       toast({
         title: "Speech Recognition Not Supported",
@@ -214,6 +228,7 @@ export function VoiceControlToolbar({
     }
 
     if (listening) {
+      console.log("Stopping speech recognition");
       SpeechRecognition.stopListening();
       // Only send non-empty transcripts
       if (transcript.trim()) {
@@ -221,8 +236,38 @@ export function VoiceControlToolbar({
       }
       resetTranscript();
     } else {
+      console.log("Starting speech recognition");
       resetTranscript();
-      SpeechRecognition.startListening({ continuous: true });
+      
+      // First explicitly request microphone permissions
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log("Microphone access granted:", stream.active);
+        
+        // Keep the stream active while listening
+        const tracks = stream.getAudioTracks();
+        if (tracks.length > 0) {
+          console.log("Audio track enabled:", tracks[0].enabled);
+        }
+        
+        // Start listening with explicit language settings
+        SpeechRecognition.startListening({ 
+          continuous: true,
+          language: 'en-US'
+        });
+        
+        toast({
+          title: "Microphone Active",
+          description: "Listening for your voice input...",
+        });
+      } catch (err) {
+        console.error("Microphone access error:", err);
+        toast({
+          title: "Microphone Error",
+          description: "Could not access your microphone. Please check your browser permissions.",
+          variant: "destructive"
+        });
+      }
     }
   }, [listening, transcript, onVoiceInput, resetTranscript, browserSupportsSpeechRecognition]);
 
@@ -321,14 +366,15 @@ export function VoiceControlToolbar({
       </div>
       
       {isListening && (
-        <div className="text-xs text-primary-lighter animate-pulse">
-          Listening...
-        </div>
-      )}
-      
-      {transcript && isListening && (
-        <div className="text-xs max-w-[250px] truncate">
-          {transcript}
+        <div className="flex flex-col">
+          <div className="text-xs text-primary-lighter animate-pulse">
+            Listening...
+          </div>
+          {transcript && (
+            <div className="text-xs max-w-[250px] text-white font-semibold mt-1 bg-black/20 px-2 py-1 rounded">
+              "{transcript}"
+            </div>
+          )}
         </div>
       )}
     </div>
