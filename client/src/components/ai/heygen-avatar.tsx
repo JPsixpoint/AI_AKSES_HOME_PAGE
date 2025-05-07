@@ -5,6 +5,9 @@ const HEYGEN_API_KEY = 'YzEwZmEyOWJmYjdlNGI0ZWE3MzFiMjUzZWUzMzZiNTQtMTc0NjU4NDc4
 const AVATAR_ID = 'Sophie_public';
 const VOICE_ID = 'c8e176c17f814004885fd590e03ff99f';
 
+// Fallback speech synthesis
+const useFallbackSpeech = true; // Set to true to use browser speech synthesis when HeyGen fails
+
 interface HeyGenSession {
   session_id: string;
   token: string;
@@ -28,6 +31,10 @@ export function HeyGenAvatar({ text, isVisible }: HeyGenAvatarProps) {
   const createHeyGenSession = async (): Promise<HeyGenSession> => {
     try {
       setIsLoading(true);
+      setError(null);
+      
+      console.log('Creating HeyGen session with API key:', HEYGEN_API_KEY.substring(0, 5) + '...');
+      
       const res = await fetch('https://api.heygen.com/v1/streaming.new', {
         method: 'POST',
         headers: {
@@ -46,17 +53,36 @@ export function HeyGenAvatar({ text, isVisible }: HeyGenAvatarProps) {
         })
       });
       
-      const data = await res.json();
+      // Log the raw response for debugging
+      const responseText = await res.text();
+      console.log('HeyGen API response:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse HeyGen API response:', e);
+        setError('Invalid response from HeyGen API');
+        setIsLoading(false);
+        throw new Error('Invalid response from HeyGen API');
+      }
+      
       setIsLoading(false);
       
-      if (data.data) {
+      if (data.data && data.data.session_id && data.data.token && data.data.ws_url) {
+        console.log('HeyGen session created successfully:', data.data.session_id);
         return data.data;
       } else {
-        throw new Error('Failed to create HeyGen session');
+        const errorMsg = data.error?.message || 'Failed to create HeyGen session';
+        console.error('HeyGen API error:', errorMsg);
+        setError(errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (error) {
       setIsLoading(false);
-      console.error('Error creating HeyGen session:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error creating HeyGen session';
+      console.error('Error creating HeyGen session:', errorMsg);
+      setError(errorMsg);
       throw error;
     }
   };
@@ -90,6 +116,7 @@ export function HeyGenAvatar({ text, isVisible }: HeyGenAvatarProps) {
           const newSession = await createHeyGenSession();
           setSession(newSession);
           setIsInitialized(true);
+          setError(null);
           
           // Attach WebSocket
           if (newSession.ws_url) {
@@ -97,13 +124,23 @@ export function HeyGenAvatar({ text, isVisible }: HeyGenAvatarProps) {
             socketRef.current = socket;
             
             socket.onmessage = (event) => {
-              const msg = JSON.parse(event.data);
-              if (msg.event === 'stream' && videoRef.current) {
-                const streamUrl = msg.data?.url;
-                if (streamUrl) {
-                  videoRef.current.src = streamUrl;
-                  videoRef.current.play().catch(e => console.error('Video play error:', e));
+              try {
+                const msg = JSON.parse(event.data);
+                if (msg.event === 'stream' && videoRef.current) {
+                  const streamUrl = msg.data?.url;
+                  if (streamUrl) {
+                    videoRef.current.src = streamUrl;
+                    videoRef.current.play().catch(e => {
+                      console.error('Video play error:', e);
+                      setError(`Could not play video: ${e.message}`);
+                    });
+                  }
+                } else if (msg.event === 'error') {
+                  console.error('WebSocket stream error:', msg.data);
+                  setError(`Stream error: ${msg.data?.message || 'Unknown error'}`);
                 }
+              } catch (e) {
+                console.error('Error parsing WebSocket message:', e);
               }
             };
             
@@ -113,14 +150,24 @@ export function HeyGenAvatar({ text, isVisible }: HeyGenAvatarProps) {
             
             socket.onerror = (error) => {
               console.error('WebSocket error:', error);
+              setError('Connection to avatar stream failed');
             };
             
-            socket.onclose = () => {
-              console.log('WebSocket closed');
+            socket.onclose = (event) => {
+              console.log('WebSocket closed with code:', event.code);
+              // Don't set error on normal closure (code 1000)
+              if (event.code !== 1000) {
+                setError(`Connection closed: ${event.reason || 'Unknown reason'}`);
+              }
             };
+          } else {
+            setError('No WebSocket URL provided by HeyGen API');
           }
         } catch (error) {
-          console.error('Error initializing HeyGen:', error);
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error initializing avatar';
+          console.error('Error initializing HeyGen:', errorMsg);
+          setError(errorMsg);
+          setIsInitialized(false); // Allow retrying
         }
       };
       
@@ -135,12 +182,89 @@ export function HeyGenAvatar({ text, isVisible }: HeyGenAvatarProps) {
     };
   }, [isVisible, isInitialized]);
 
-  // When text changes, speak with the avatar
-  useEffect(() => {
-    if (session && text && text.trim() !== '') {
-      speakWithHeyGen(session.session_id, session.token, text);
+  // Text-to-speech fallback using browser's Speech Synthesis API
+  const speakWithBrowser = (text: string) => {
+    if (!window.speechSynthesis) {
+      console.error('Browser speech synthesis not supported');
+      return;
     }
-  }, [text, session]);
+    
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Try to find a good English female voice
+    const voices = window.speechSynthesis.getVoices();
+    console.log('Available voices:', voices);
+    
+    const preferredVoices = [
+      'Samantha', // English US female (Apple)
+      'Google UK English Female',
+      'Microsoft Zira',
+      'en-US-female' // Generic
+    ];
+    
+    // Find the first preferred voice that's available
+    let selectedVoice = null;
+    for (const voiceName of preferredVoices) {
+      const voice = voices.find(v => 
+        v.name.includes(voiceName) || 
+        (v.name.toLowerCase().includes('female') && v.lang.startsWith('en'))
+      );
+      if (voice) {
+        selectedVoice = voice;
+        break;
+      }
+    }
+    
+    // If no preferred voice found, try any English female voice
+    if (!selectedVoice) {
+      selectedVoice = voices.find(v => v.lang.startsWith('en'));
+    }
+    
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+      console.log('Using voice:', selectedVoice.name);
+    }
+    
+    // Set speech parameters
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    // Log when speech starts and ends
+    utterance.onstart = () => console.log('Browser speech started');
+    utterance.onend = () => console.log('Browser speech ended');
+    utterance.onerror = (e) => console.error('Browser speech error:', e);
+    
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // When text changes, speak with the avatar or fallback to browser speech
+  // Track if we're using fallback speech
+  const [usingFallback, setUsingFallback] = useState<boolean>(false);
+  
+  useEffect(() => {
+    if (!text || text.trim() === '') return;
+
+    if (session && !error) {
+      // Use HeyGen if session is available and no errors
+      setUsingFallback(false);
+      speakWithHeyGen(session.session_id, session.token, text);
+    } else if (useFallbackSpeech) {
+      // Fallback to browser's speech synthesis
+      setUsingFallback(true);
+      console.log('Using browser speech synthesis fallback');
+      speakWithBrowser(text);
+    }
+  }, [text, session, error]);
+
+  // Function to retry connection
+  const handleRetry = () => {
+    setIsInitialized(false);
+    setError(null);
+  };
 
   if (!isVisible) {
     return null;
@@ -148,17 +272,48 @@ export function HeyGenAvatar({ text, isVisible }: HeyGenAvatarProps) {
 
   return (
     <div className="flex flex-col items-center justify-center">
-      {isLoading ? (
-        <div className="w-[300px] h-[300px] rounded-xl bg-black/30 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white"></div>
+      {error ? (
+        <div className="w-[300px] h-[300px] rounded-xl bg-black/30 flex flex-col items-center justify-center p-4 text-center">
+          <div className="text-red-500 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <p className="text-xs text-white/80 mb-2">Could not load AI avatar</p>
+          <p className="text-[10px] text-white/60 mb-4">{error}</p>
+          
+          <button 
+            onClick={handleRetry}
+            className="text-xs bg-primary-light hover:bg-primary-lighter text-white px-3 py-1 rounded-md transition-colors"
+          >
+            Retry Connection
+          </button>
+          
+          <p className="text-[10px] text-white/40 mt-2">
+            Using fallback voice synthesis
+          </p>
+        </div>
+      ) : isLoading ? (
+        <div className="w-[300px] h-[300px] rounded-xl bg-black/30 flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-2"></div>
+          <p className="text-xs text-white/80">Loading AI Avatar...</p>
+          <p className="text-[10px] text-white/60 mt-1">Connecting to HeyGen API</p>
         </div>
       ) : (
-        <video 
-          ref={videoRef}
-          autoPlay
-          muted={false}
-          className="w-[300px] h-[300px] rounded-xl bg-black/30"
-        />
+        <div className="relative">
+          <video 
+            ref={videoRef}
+            autoPlay
+            muted={false}
+            className="w-[300px] h-[300px] rounded-xl bg-black/30"
+            poster="/assets/avatar-placeholder.svg"
+          />
+          <div className="absolute bottom-2 right-2 bg-black/50 rounded-md px-2 py-1">
+            <p className="text-[10px] text-white/80">HeyGen AI</p>
+          </div>
+        </div>
       )}
     </div>
   );
