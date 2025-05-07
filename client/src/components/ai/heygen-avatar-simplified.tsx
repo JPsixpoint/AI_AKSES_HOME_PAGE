@@ -336,6 +336,14 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         utterance.onstart = () => {
           console.log('Fallback speech started');
           setIsSpeaking(true);
+          
+          // Restart video at the beginning of speech
+          if (backgroundVideoRef.current) {
+            backgroundVideoRef.current.currentTime = 0;
+            backgroundVideoRef.current.play().catch(err => {
+              console.error('Error starting video at speech start:', err);
+            });
+          }
         };
         
         utterance.onend = () => {
@@ -393,6 +401,18 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
             const chunkUtterance = new SpeechSynthesisUtterance(chunk);
             
             // Use default voice settings for simplicity
+            chunkUtterance.onstart = () => {
+              console.log(`Starting chunk ${currentChunk + 1}/${chunks.length}`);
+              
+              // Restart video at the beginning of each chunk
+              if (backgroundVideoRef.current) {
+                backgroundVideoRef.current.currentTime = 0;
+                backgroundVideoRef.current.play().catch(err => {
+                  console.error('Error starting video for chunk:', err);
+                });
+              }
+            };
+            
             chunkUtterance.onend = () => {
               currentChunk++;
               speakNextChunk();
@@ -439,7 +459,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
     }
   }, [isMuted]);
   
-  // Control the background video to only play once
+  // Control the background video
   useEffect(() => {
     const videoElement = backgroundVideoRef.current;
     if (!videoElement) return;
@@ -451,8 +471,8 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
       // Ensure it's muted for autoplay compatibility
       videoElement.muted = true;
       
-      // Set to only play once
-      videoElement.loop = false;
+      // Set to loop if needed for continuous motion
+      videoElement.loop = true;
       
       // Start playing
       videoElement.play().catch(err => {
@@ -472,6 +492,13 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
     // Handle video ended event
     const handleEnded = () => {
       console.log('Background video playback completed');
+      // Restart the video if it's not looping
+      if (!videoElement.loop) {
+        videoElement.currentTime = 0;
+        videoElement.play().catch(err => {
+          console.error('Error replaying background video:', err);
+        });
+      }
     };
     
     videoElement.addEventListener('ended', handleEnded);
@@ -480,6 +507,18 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
       videoElement.removeEventListener('ended', handleEnded);
     };
   }, [isVisible]);
+  
+  // Restart video when speaking state changes to true
+  useEffect(() => {
+    if (isSpeaking && backgroundVideoRef.current) {
+      console.log('Restarting video for speech animation');
+      // Reset the video to start from the beginning
+      backgroundVideoRef.current.currentTime = 0;
+      backgroundVideoRef.current.play().catch(err => {
+        console.error('Error replaying video for speech:', err);
+      });
+    }
+  }, [isSpeaking]);
   
   // Don't render if not visible
   if (!isVisible) {
