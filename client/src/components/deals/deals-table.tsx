@@ -89,7 +89,24 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
         <Table>
           <TableHeader className="bg-dark-surface border-b border-dark text-left">
             <TableRow>
-              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Company</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">
+                <div className="flex items-center justify-between">
+                  <span>Company</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="ml-2 p-1 h-6 w-6" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRefresh && onRefresh();
+                    }}
+                    disabled={isLoading}
+                    title="Refresh deals data"
+                  >
+                    <RefreshCwIcon className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+              </TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Country</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Credit Hub</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Lead</TableHead>

@@ -5,6 +5,8 @@ import * as schema from "@shared/schema";
 
 // This is the correct way neon config - DO NOT change this
 neonConfig.webSocketConstructor = ws;
+// Disable Neon's websocket protocol - use standard SQL queries
+neonConfig.useSecureWebSocket = false;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -12,5 +14,13 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Parse the DATABASE_URL to get connection parameters
+const dbUrl = new URL(process.env.DATABASE_URL);
+export const pool = new Pool({ 
+  host: dbUrl.hostname,
+  port: parseInt(dbUrl.port || '5432'),
+  user: dbUrl.username,
+  password: dbUrl.password,
+  database: dbUrl.pathname.substring(1) // Remove leading slash
+});
 export const db = drizzle({ client: pool, schema });
