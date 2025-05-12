@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { cn } from "@/lib/utils";
 import { DealsPipeline } from "@/components/deals/deals-pipeline";
 import { AIPreScreening } from "@/components/ai/ai-pre-screening";
+import AksesArchitecture from "@/pages/akses-architecture";
 
 // Define the tab types
 type TabType = 
@@ -28,7 +29,8 @@ type TabType =
   | "Pricer"
   | "Due Diligence"
   | "Org Settings"
-  | "Rag Databases";
+  | "Rag Databases"
+  | "AKSES Architecture";
 
 interface Tab {
   id: string;
@@ -63,6 +65,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   const tabOptions: Array<{type: TabType, title: string, description: string}> = [
     { type: "Pipeline", title: "Pipeline", description: "View and manage the deal pipeline" },
     { type: "AI PreScreening", title: "AI PreScreening", description: "AI-assisted pre-screening of potential deals" },
+    { type: "AKSES Architecture", title: "AKSES Architecture", description: "Three-Tiered AI Orchestration Architecture and system components" },
     { type: "Deal Information", title: "Deal Information", description: "View and edit detailed deal information" },
     { type: "Pricer", title: "Pricer", description: "Deal pricing and financial modeling tools" },
     { type: "Due Diligence", title: "Due Diligence", description: "Manage due diligence process and documents" },
@@ -245,7 +248,10 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
               {tab.type === "AI PreScreening" && (
                 <AIPreScreening initialDealId={(tab.data?.dealId as string) || selectedDealId || undefined} />
               )}
-              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && (
+              {tab.type === "AKSES Architecture" && (
+                <AksesArchitecture />
+              )}
+              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && tab.type !== "AKSES Architecture" && (
                 <div className="h-full flex items-center justify-center p-6">
                   <div className="text-center max-w-md mx-auto">
                     <h2 className="text-2xl font-semibold mb-3">{tab.title}</h2>
