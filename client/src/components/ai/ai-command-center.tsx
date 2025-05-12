@@ -68,6 +68,54 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  // Handle speech recognition results
+  const handleSpeechResult = (text: string) => {
+    console.log('Speech transcript:', text);
+    setTranscript(text);
+    
+    // Only set input if we're actively listening
+    if (voiceListening) {
+      setInput(text);
+    }
+  };
+  
+  // Handle speech recognition starting
+  const handleSpeechStart = () => {
+    console.log('Speech recognition started');
+    setVoiceListening(true);
+    toast({
+      title: "Voice Recognition Active",
+      description: "I'm listening to your voice now. Speak clearly.",
+      variant: "default",
+    });
+  };
+  
+  // Handle speech recognition ending
+  const handleSpeechEnd = () => {
+    console.log('Speech recognition ended');
+    
+    // If we have transcript and we're listening, send the message
+    if (transcript && voiceListening && aiStatus !== "processing") {
+      setInput(transcript);
+      handleSendMessage();
+      setTranscript("");
+    }
+    
+    setVoiceListening(false);
+  };
+  
+  // Handle speech recognition errors
+  const handleSpeechError = (error: any) => {
+    console.error('Speech recognition error:', error);
+    setVoiceListening(false);
+    
+    toast({
+      title: "Voice Recognition Error",
+      description: "There was a problem with voice recognition. Please try again or type your message.",
+      variant: "destructive",
+    });
+  };
 
   const { data: deals = [] } = useQuery<Deal[]>({
     queryKey: ["/api/deals"],
@@ -662,12 +710,61 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     ]);
   };
 
+  // Toggle speech recognition on/off
+  const toggleVoiceInput = () => {
+    setVoiceListening(prev => !prev);
+    
+    if (!voiceListening) {
+      toast({
+        title: "Voice Recognition Activated",
+        description: "I'm listening for your voice commands now. Speak clearly.",
+      });
+    } else {
+      toast({
+        title: "Voice Recognition Deactivated",
+        description: "Returning to text-only input mode.",
+      });
+    }
+  };
+
   return (
     <div className="w-full h-full pr-6 flex flex-col relative">
       <ConcentricPattern />
+      
+      {/* Speech recognition handler */}
+      <SpeechRecognitionHandler
+        onResult={handleSpeechResult}
+        onStart={handleSpeechStart}
+        onEnd={handleSpeechEnd}
+        onError={handleSpeechError}
+        enabled={voiceListening}
+      />
 
       <div className="z-10">
-        <h2 className="text-xl font-semibold mb-4">AI Command Center</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">AI Command Center</h2>
+          
+          {/* Voice toggle button */}
+          <button
+            onClick={toggleVoiceInput}
+            className={`p-2 rounded-full ${voiceListening ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
+            title={voiceListening ? "Disable voice input" : "Enable voice input"}
+          >
+            {voiceListening ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" x2="12" y1="19" y2="22"></line>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" x2="12" y1="19" y2="22"></line>
+              </svg>
+            )}
+          </button>
+        </div>
         
         <div className="flex flex-col items-center mb-6">
           {/* Avatar integration */}
