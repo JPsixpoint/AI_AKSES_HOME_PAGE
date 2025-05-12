@@ -12,7 +12,7 @@ import { AIMessage } from "./ai-message";
 import { UserMessage } from "./user-message";
 import { ConfirmationButtons } from "./confirmation-buttons";
 import { VoiceControlToolbar } from "./voice-control-toolbar";
-import { TextOnlyAvatar } from "./text-only-avatar";
+import { ElevenLabsVoiceWidget } from "./eleven-labs-voice-widget";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ConcentricPattern } from "../ui/concentric-pattern";
@@ -669,7 +669,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         <div className="flex flex-col items-center mb-6">
           {/* Avatar integration */}
           <div className="w-full mb-2">
-            <TextOnlyAvatar 
+            <ElevenLabsVoiceWidget 
               text={aiStatus === "speaking" ? lastAIMessage : null}
               isVisible={true}
             />

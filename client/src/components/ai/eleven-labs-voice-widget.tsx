@@ -168,22 +168,7 @@ export function ElevenLabsVoiceWidget({ text, isVisible }: ElevenLabsVoiceWidget
         </div>
       )}
       
-      <style jsx>{`
-        @keyframes voice-animation {
-          0% { height: 10px; }
-          50% { height: var(--random-height); }
-          100% { height: 10px; }
-        }
-        
-        .voice-bar {
-          --random-height: 10px;
-          transition: height 0.2s ease;
-        }
-        
-        .speaking .voice-bar {
-          animation: voice-animation 0.8s infinite;
-        }
-      `}</style>
+      {/* Custom styles are in voice-widget.css */}
     </div>
   );
 }
