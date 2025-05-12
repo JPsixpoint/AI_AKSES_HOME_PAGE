@@ -1,21 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  SendIcon,
-  PlusCircleIcon,
-  EditIcon,
-  SearchIcon,
-  BarChartIcon,
-} from "lucide-react";
-import { AIAvatar } from "./ai-avatar";
-import { AIMessage } from "./ai-message";
-import { UserMessage } from "./user-message";
-import { ConfirmationButtons } from "./confirmation-buttons";
-import { VoiceControlToolbar } from "./voice-control-toolbar";
-import { TextOnlyAvatar } from "./text-only-avatar";
 import { SpeechRecognitionHandler } from "./speech-recognition-handler";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { CommandLineInterface } from "./command-line-interface";
 import { ConcentricPattern } from "../ui/concentric-pattern";
 import { getAIResponse, parseAIResponse } from "@/lib/openai";
 import { useToast } from "@/hooks/use-toast";
@@ -69,6 +54,34 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
+  // Reference to store the auto-submit timer
+  const autoSubmitTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Clear auto-submit timer
+  const clearAutoSubmitTimer = () => {
+    if (autoSubmitTimerRef.current) {
+      clearTimeout(autoSubmitTimerRef.current);
+      autoSubmitTimerRef.current = null;
+    }
+  };
+  
+  // Auto-submit after a pause in speech
+  const setupAutoSubmitTimer = (text: string) => {
+    // Clear any existing timer
+    clearAutoSubmitTimer();
+    
+    // Only setup timer if we have text and we're not processing
+    if (text.trim() && voiceListening && aiStatus !== "processing") {
+      // Set a new timer to auto-submit after 1.5 seconds of no new speech
+      autoSubmitTimerRef.current = setTimeout(() => {
+        console.log('Auto-submitting voice input after pause:', text);
+        setInput(text);
+        handleSendMessage();
+        setTranscript("");
+      }, 1500); // 1.5 seconds pause
+    }
+  };
+  
   // Handle speech recognition results
   const handleSpeechResult = (text: string) => {
     console.log('Speech transcript:', text);
@@ -77,6 +90,9 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     // Only set input if we're actively listening
     if (voiceListening) {
       setInput(text);
+      
+      // Setup auto-submit timer
+      setupAutoSubmitTimer(text);
     }
   };
   
@@ -94,6 +110,9 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   // Handle speech recognition ending
   const handleSpeechEnd = () => {
     console.log('Speech recognition ended');
+    
+    // Clear any auto-submit timer
+    clearAutoSubmitTimer();
     
     // If we have transcript and we're listening, send the message
     if (transcript && voiceListening && aiStatus !== "processing") {
@@ -325,197 +344,93 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         setAIStatus("listening");
         return;
-      } else if (parsedResponse.type === "send_additional_email") {
-        // Handle request to send additional email
-        const additionalEmail = parsedResponse.data?.email;
+      } else if (parsedResponse.type === "start_prescreening" && parsedResponse.data) {
+        // Handle starting prescreening process
+        const { dealId, dealName } = parsedResponse.data;
         
-        if (additionalEmail) {
-          console.log("Sending additional email to:", additionalEmail);
-          
-          // Extract just the email addresses from the text to avoid including previous emails
-          const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-          const extractedEmails = additionalEmail.match(emailRegex);
-          
-          // Make sure we have extracted email addresses
-          if (extractedEmails && extractedEmails.length > 0) {
-            // Check if we have deal info stored in window
-            if (window.prescreeningDealInfo?.dealId) {
-              const dealId = window.prescreeningDealInfo.dealId;
-              const dealName = window.prescreeningDealInfo.dealName;
-              
-              // Open pre-screening tab and set email
-              try {
-                if (window.openPrescreeningTab) {
-                  window.openPrescreeningTab(dealId);
-                  // Set the email after a short delay to ensure the tab is open
-                  setTimeout(() => {
-                    if (window.setPreScreeningEmails) {
-                      // Send just the new email(s), not combined with previous ones
-                      const newEmailsString = extractedEmails.join(',');
-                      console.log("Raw additional email string being sent:", newEmailsString);
-                      window.setPreScreeningEmails(newEmailsString);
-                      console.log("Set additional pre-screening email:", newEmailsString);
-                    }
-                  }, 500);
-                }
-                
-                // Add message to confirm
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    role: "assistant",
-                    content: parsedResponse.message || `I'm sending the pre-screening email to ${extractedEmails.join(', ')}. You can track this in the AI Pre-Screening tab.`,
-                  },
-                ]);
-              } catch (error) {
-                console.error("Error setting additional email:", error);
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    role: "assistant",
-                    content: "I couldn't send the additional email. Please try opening the AI Pre-Screening tab manually and entering the email address there.",
-                  },
-                ]);
-              }
+        // Store the deal info in window for potential follow-up emails
+        if (window.prescreeningDealInfo) {
+          window.prescreeningDealInfo = {
+            dealId: dealId.toString(),
+            dealName: dealName
+          };
+        }
+        
+        // Check if a deal ID was found
+        if (dealId) {
+          // First open the pre-screening tab with this deal
+          try {
+            if (window.openPrescreeningTab) {
+              window.openPrescreeningTab(dealId.toString());
             }
-          } else {
-            // No deal info stored
+            
+            // Return a message asking for emails
             setMessages((prev) => [
               ...prev,
               {
                 role: "assistant",
-                content: "I need to know which deal you want to send the pre-screening email for. Please start by saying 'Start AI Pre-Screening on [Deal Name]'.",
-              },
+                content: `I've selected ${dealName} for pre-screening. Please enter the email address(es) of the person or people you want to send the pre-screening invitation to. You can enter multiple emails separated by commas.`,
+                data: {
+                  type: 'prescreening_started',
+                  dealId: dealId.toString(),
+                  dealName
+                }
+              }
+            ]);
+          } catch (error) {
+            console.error('Error opening pre-screening tab:', error);
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: "I couldn't open the AI Pre-Screening tab. Please try opening it manually and selecting the deal from there.",
+              }
             ]);
           }
-          
-          setAIStatus("listening");
-          return;
-        }
-      } else if (parsedResponse.type === "start_prescreening") {
-        console.log("Handling start_prescreening request:", parsedResponse.data);
-        
-        // Check if we have a dealId or dealName in the parsed response
-        let deal;
-        
-        if (parsedResponse.data?.dealId) {
-          // Try to find by ID first
-          const dealId = parsedResponse.data.dealId.toString().replace("#", "");
-          deal = deals.find(d => d.id === dealId);
-          console.log("Looking for deal by ID:", dealId, deal ? "found" : "not found");
-        } 
-        
-        // If no deal found by ID and we have a name, try to find by name
-        if (!deal && parsedResponse.data?.dealName) {
-          const dealName = parsedResponse.data.dealName.toLowerCase();
-          deal = deals.find(d => d.name?.toLowerCase().includes(dealName));
-          console.log("Looking for deal by name:", parsedResponse.data.dealName, deal ? "found" : "not found");
-        }
-        
-        // Try to find deal containing 'monet' in the name if all else fails
-        if (!deal && (parsedResponse.data?.dealName || '').toLowerCase().includes('monet')) {
-          deal = deals.find(d => d.name?.toLowerCase().includes('monet'));
-          console.log("Fallback search for 'monet':", deal ? "found" : "not found");
-        }
-        
-        if (deal) {
-          console.log("Found deal for pre-screening:", deal.id, deal.name);
-          const confirmationMessage = `Do you want to start the Pre-Screening process for ${deal.name || 'this deal'}?`;
-          
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: "I need your confirmation before starting the Pre-Screening process.",
-              pendingAction: {
-                type: "start_prescreening",
-                data: { dealId: deal.id, dealName: deal.name },
-                confirmationMessage
-              }
-            }
-          ]);
         } else {
-          // If we have a search term but couldn't find a match
-          const searchTerm = parsedResponse.data?.dealName || parsedResponse.data?.dealId || "the specified deal";
+          // No deal ID was found
           setMessages((prev) => [
             ...prev,
             {
               role: "assistant",
-              content: `I couldn't find a deal with the name ${searchTerm}. Please check the name and try again, or create a new deal first.`,
+              content: "I couldn't find a deal with that name. Please check the spelling or provide a different deal name.",
             }
           ]);
         }
         
         setAIStatus("listening");
         return;
-      } else if (
-        parsedResponse.type === "show_deal" &&
-        parsedResponse.data?.dealId
-      ) {
-        // Handle showing deal details (highlight in table)
-        const dealId = parseInt(
-          parsedResponse.data.dealId.toString().replace("#", ""),
-        );
-        if (onDealSelect) {
-          onDealSelect(dealId);
-        }
-
-        // Extract the human-readable message or create a fallback
-        const humanReadableMessage =
-          parsedResponse.message ||
-          "I found that deal and highlighted it in the table for you. Is there anything specific you'd like to know about it?";
-
-        // Add assistant message
+      } else if (parsedResponse.type === "select_deal" && parsedResponse.data?.id && onDealSelect) {
+        // Handle deal selection for viewing
+        const dealId = parsedResponse.data.id.toString().replace("#", "");
+        onDealSelect(dealId);
+        
+        // Also add a response message
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: humanReadableMessage,
-            data: parsedResponse.data,
-          },
-        ]);
-      } else {
-        // Create a human-readable message even if parsing failed
-        let humanReadableMessage = parsedResponse.message;
-
-        // If no message was extracted but we have raw content, create a friendly response
-        if (!humanReadableMessage) {
-          // Clean any JSON-like or code-block content to present a clean message
-          let cleanedResponse = aiResponse
-            .replace(/```json[\s\S]*?```/g, "")
-            .replace(/```[\s\S]*?```/g, "")
-            .trim();
-
-          // If it's a JSON string that wasn't properly parsed, don't show it to the user
-          if (
-            cleanedResponse.startsWith("{") &&
-            cleanedResponse.endsWith("}")
-          ) {
-            humanReadableMessage =
-              "I understand your request. Is there anything specific you'd like me to help you with?";
-          } else {
-            humanReadableMessage =
-              cleanedResponse ||
-              "I understand your request. Is there anything specific you'd like me to help you with?";
+            content: parsedResponse.message || `I've selected deal #${dealId} for viewing.`
           }
-        }
-
-        // Add regular assistant message
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: humanReadableMessage,
-            data: {
-              followUpQuestions: parsedResponse.followUpQuestions || [],
-            },
-          },
         ]);
+        
+        setAIStatus("listening");
+        return;
       }
+      
+      // For all other response types, just add the message
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: parsedResponse.message || aiResponse,
+          data: parsedResponse.type !== "message" ? { type: parsedResponse.type, ...parsedResponse.data } : undefined
+        },
+      ]);
 
-      setAIStatus("listening");
+      setAIStatus("speaking");
     } catch (error) {
-      console.error("Error processing AI request:", error);
+      console.error("Error sending message:", error);
       setMessages((prev) => [
         ...prev,
         {
@@ -525,201 +440,190 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         },
       ]);
       setAIStatus("error");
+      
+      // Reset to listening after a delay
+      setTimeout(() => {
+        setAIStatus("listening");
+      }, 3000);
+    }
+  };
+  
+  // Handle command buttons
+  const handleQuickCommand = (command: string) => {
+    setInput(command);
+    handleSendMessage();
+  };
+
+  // Handle confirmation of create deal action
+  const handleConfirmCreateDeal = async (dealData: any) => {
+    try {
+      setAIStatus("processing");
+      const result = await createDealMutation.mutateAsync(dealData);
+      
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Success! I've created a new deal for ${dealData.company}. The deal ID is #${result.id}.`,
+        },
+      ]);
+      
+      setAIStatus("speaking");
+    } catch (error) {
+      console.error("Error creating deal:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "I encountered an error while trying to create the deal. Please try again.",
+        },
+      ]);
+      setAIStatus("error");
+      
+      // Reset to listening after a delay
+      setTimeout(() => {
+        setAIStatus("listening");
+      }, 3000);
     }
   };
 
-  const handleQuickCommand = (command: string) => {
-    setInput(command);
-  };
-  
-  // Handle voice input from the toolbar
-  const handleVoiceInput = (text: string) => {
-    if (text.trim()) {
-      setInput(text);
-      // Optional: Automatically send the message after a brief delay
-      // to give user time to see what was transcribed
+  // Handle confirmation of update deal action
+  const handleConfirmUpdateDeal = async (updateData: any) => {
+    try {
+      setAIStatus("processing");
+      const { id, ...dealData } = updateData;
+      await updateDealMutation.mutateAsync({ id, deal: dealData });
+      
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Success! I've updated deal #${id} with the new information.`,
+        },
+      ]);
+      
+      setAIStatus("speaking");
+    } catch (error) {
+      console.error("Error updating deal:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "I encountered an error while trying to update the deal. Please try again.",
+        },
+      ]);
+      setAIStatus("error");
+      
+      // Reset to listening after a delay
       setTimeout(() => {
-        handleSendMessage();
-      }, 300);
+        setAIStatus("listening");
+      }, 3000);
     }
   };
-  
-  // Handle confirmation of actions like creating or updating deals
-  const handleActionConfirmation = async (actionType: string, actionData: any) => {
-    setAIStatus("processing");
-    
+
+  // Handle start prescreening action
+  const handleStartPrescreening = async (data: any) => {
     try {
-      if (actionType === "create_deal") {
-        // Clean up deal data to ensure it matches schema requirements
-        const dealData = {
-          name: actionData.company || actionData.name,
-          priority: actionData.priority || "medium",
-          country: actionData.country || actionData.region,
-          lead: actionData.lead || actionData.leadInvestor,
-          creditHub: actionData.creditHub || "LATAM", // Use valid value from schema
-          stage: actionData.stage || actionData.status || "Pre-Screening",
-          updates: [], // JSON array of updates
-          members: [], // JSON array of member strings
-          preScreening: {}, // Empty object for pre-screening data
-          aiScreening: [], // Empty array for AI screening data
-          createdBy: null // Set createdBy to null instead of undefined
+      const { dealId, dealName } = data;
+      
+      // Store the deal info in window for potential follow-up emails
+      if (window.prescreeningDealInfo) {
+        window.prescreeningDealInfo = {
+          dealId: dealId.toString(),
+          dealName: dealName
         };
-        
-        console.log("Submitting deal data:", dealData);
-        const newDeal = await createDealMutation.mutateAsync(dealData);
-        
-        // Add confirmation message
-        setMessages((prev) => [
-          ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
-          {
-            role: "assistant",
-            content: `Deal for ${newDeal.name} has been created successfully.`,
-            data: {
-              type: "deal_details",
-              deal: newDeal,
-              followUpQuestions: ["Would you like to update any information?", "Do you want to view all deals?"]
-            }
-          }
-        ]);
-        
-        toast({
-          title: "Deal Created",
-          description: `${newDeal.name} deal has been created.`,
-        });
-      } 
-      else if (actionType === "update_deal") {
-        // Execute the update deal action
-        const { id, ...dealData } = actionData;
-        const updatedDeal = await updateDealMutation.mutateAsync({
-          id,
-          deal: dealData
-        });
-        
-        // Add confirmation message
-        setMessages((prev) => [
-          ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
-          {
-            role: "assistant",
-            content: `Deal #${id} has been updated successfully.`,
-            data: {
-              type: "deal_details",
-              deal: updatedDeal,
-              followUpQuestions: ["Would you like to make other changes?", "Do you want to view all deals?"]
-            }
-          }
-        ]);
-        
-        toast({
-          title: "Deal Updated",
-          description: `${updatedDeal.name} deal has been updated.`,
-        });
       }
-      else if (actionType === "start_prescreening") {
-        // Show AI Pre-Screening in a new tab
-        const { dealId, dealName } = actionData;
+      
+      // Check if a deal ID was found
+      if (dealId) {
+        // First open the pre-screening tab with this deal
+        if (window.openPrescreeningTab) {
+          window.openPrescreeningTab(dealId.toString());
+        }
         
-        console.log("Confirming pre-screening action for deal:", dealId, dealName);
-        console.log("Window openPrescreeningTab function exists:", !!window.openPrescreeningTab);
-        
-        // Here we would typically communicate with the TabsSystem to open a new tab
+        // Add a response message
         setMessages((prev) => [
-          ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
+          ...prev,
           {
             role: "assistant",
-            content: `I've started the Pre-Screening process for ${dealName || 'the selected deal'}. Please provide the email addresses for the recipients (separated by commas).`,
+            content: `I've selected ${dealName} for pre-screening. Please enter the email address(es) of the person or people you want to send the pre-screening invitation to. You can enter multiple emails separated by commas.`,
             data: {
-              type: "prescreening_started",
-              dealId,
+              type: 'prescreening_started',
+              dealId: dealId.toString(),
               dealName
             }
           }
         ]);
-        
-        toast({
-          title: "Pre-Screening Started",
-          description: `Pre-Screening process initiated for ${dealName || 'selected deal'}.`,
-        });
-        
-        // Store deal info globally for access by future email commands
-        try {
-          window.prescreeningDealInfo = {
-            dealId,
-            dealName
-          };
-          console.log("Stored prescreening deal info in window object:", { dealId, dealName });
-        } catch (error) {
-          console.error("Error storing deal info on window:", error);
-        }
-        
-        // Try to open the AI Pre-Screening tab via the exposed window method
-        try {
-          // This is a global method exposed by the TabsSystem component
-          console.log("Attempting to open pre-screening tab for deal:", dealId);
-          if (window.openPrescreeningTab) {
-            window.openPrescreeningTab(dealId);
-            console.log("Called openPrescreeningTab successfully");
-          } else {
-            console.error("openPrescreeningTab method not found on window object");
-            // Fallback to just selecting the deal if the tab function isn't available
-            if (onDealSelect) {
-              onDealSelect(dealId);
-              console.log("Used onDealSelect fallback");
-            }
+      } else {
+        // No deal ID was found
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "I couldn't find a deal with that name. Please check the spelling or provide a different deal name.",
           }
-        } catch (error) {
-          console.error("Error opening prescreening tab:", error);
-        }
+        ]);
       }
-      
-      setAIStatus("listening");
     } catch (error) {
-      console.error(`Error executing ${actionType}:`, error);
-      
-      // Provide more helpful error messages depending on the action type
-      let errorMessage = `I couldn't complete the requested action. Please try again or check your information.`;
-      
-      if (actionType === "start_prescreening") {
-        errorMessage = "I couldn't start the pre-screening process. Please make sure you've selected a valid deal and try again with a command like 'Start pre-screening for [deal name]'.";
-      } else if (actionType === "create_deal") {
-        errorMessage = "I couldn't create the deal. Please check that all required information is provided and try again.";
-      } else if (actionType === "update_deal") {
-        errorMessage = "I couldn't update the deal. Please check that you're specifying a valid deal ID and try again.";
-      }
-      
+      console.error("Error starting prescreening:", error);
       setMessages((prev) => [
-        ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
+        ...prev,
         {
           role: "assistant",
-          content: errorMessage,
-        }
+          content: "I encountered an error while trying to start the pre-screening process. Please try again.",
+        },
       ]);
-      
-      setAIStatus("error");
     }
   };
   
-  // Handle cancellation of pending actions
-  const handleActionCancellation = () => {
-    // Remove the message with the pending action and add a cancellation message
-    setMessages((prev) => [
-      ...prev.filter(m => !m.pendingAction), // Remove the confirmation message
+  // Function to handle manually sending a voice input
+  const handleVoiceInput = (text: string) => {
+    setInput(text);
+    handleSendMessage();
+  };
+  
+  // Function to reset/end current chat
+  const handleEndChat = () => {
+    // Reset messages to just the initial greeting
+    setMessages([
       {
         role: "assistant",
-        content: "Action cancelled. Is there anything else you'd like to do?",
-      }
+        content: "Welcome to AKSES. I can help you manage your investment deals. What would you like to do today?",
+      },
     ]);
+    setInput("");
+    setTranscript("");
+    setLastAIMessage(null);
+    setAIStatus("listening");
+    
+    toast({
+      title: "Chat Reset",
+      description: "The conversation has been reset.",
+    });
   };
 
   // Toggle speech recognition on/off
   const toggleVoiceInput = () => {
-    setVoiceListening(prev => !prev);
+    const newState = !voiceListening;
+    setVoiceListening(newState);
     
-    if (!voiceListening) {
+    if (newState) {
+      // Turning on voice recognition
       toast({
         title: "Voice Recognition Activated",
         description: "I'm listening for your voice commands now. Speak clearly.",
       });
     } else {
+      // Turning off voice recognition
+      clearAutoSubmitTimer(); // Clean up any pending auto-submit
+      
+      // If we have transcript when turning off, use it
+      if (transcript && aiStatus !== "processing") {
+        setInput(transcript);
+      }
+      
+      setTranscript(""); // Clear the transcript
+      
       toast({
         title: "Voice Recognition Deactivated",
         description: "Returning to text-only input mode.",
@@ -728,7 +632,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   };
 
   return (
-    <div className="w-full h-full pr-6 flex flex-col relative">
+    <div className="w-full h-full flex flex-col relative">
       <ConcentricPattern />
       
       {/* Speech recognition handler */}
@@ -740,190 +644,18 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         enabled={voiceListening}
       />
 
-      <div className="z-10">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">AI Command Center</h2>
-          
-          {/* Voice toggle button */}
-          <button
-            onClick={toggleVoiceInput}
-            className={`p-2 rounded-full ${voiceListening ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}
-            title={voiceListening ? "Disable voice input" : "Enable voice input"}
-          >
-            {voiceListening ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
-                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" x2="12" y1="19" y2="22"></line>
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" x2="12" y1="19" y2="22"></line>
-              </svg>
-            )}
-          </button>
-        </div>
+      <div className="z-10 flex-grow">
+        <h2 className="text-xl font-semibold mb-4">AI Command Center</h2>
         
-        <div className="flex flex-col items-center mb-6">
-          {/* Avatar integration */}
-          <div className="w-full mb-2">
-            <TextOnlyAvatar 
-              text={aiStatus === "speaking" ? lastAIMessage : null}
-              isVisible={true}
-            />
-          </div>
-          
-          {/* Status indicators */}
-          <div className="flex items-center justify-center gap-3 mt-2">
-            <div className={`rounded-full h-2 w-2 ${
-              aiStatus === "listening" 
-                ? "bg-green-500 animate-pulse" 
-                : "bg-gray-500"
-            }`}>
-              <span className="sr-only">Listening</span>
-            </div>
-            <div className={`rounded-full h-2 w-2 ${
-              aiStatus === "processing" 
-                ? "bg-yellow-500 animate-pulse" 
-                : "bg-gray-500"
-            }`}>
-              <span className="sr-only">Processing</span>
-            </div>
-            <div className={`rounded-full h-2 w-2 ${
-              aiStatus === "speaking" 
-                ? "bg-blue-500 animate-pulse" 
-                : "bg-gray-500"
-            }`}>
-              <span className="sr-only">Speaking</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="gradient-border bg-dark-lighter flex-1 overflow-hidden flex flex-col mb-4 z-10">
-        <VoiceControlToolbar 
-          onVoiceInput={handleVoiceInput}
-          aiMessage={lastAIMessage}
-          isProcessing={aiStatus === "processing"}
+        {/* Command Line Interface */}
+        <CommandLineInterface 
+          messages={messages}
+          onSendMessage={handleSendMessage}
+          onEndChat={handleEndChat}
+          isListening={voiceListening}
+          toggleListening={toggleVoiceInput}
+          isSpeaking={aiStatus === "speaking"}
         />
-        <div className="p-4 overflow-y-auto flex-1">
-          <AnimatePresence>
-            {messages.map((message, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="mb-4"
-              >
-                {message.role === "assistant" ? (
-                  <AIMessage
-                    content={message.content}
-                    data={message.data}
-                    pendingAction={message.pendingAction}
-                    onSelect={handleQuickCommand}
-                    onConfirm={handleActionConfirmation}
-                    onCancel={handleActionCancellation}
-                  />
-                ) : (
-                  <UserMessage content={message.content} />
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          <div ref={messagesEndRef} />
-        </div>
-
-        <div className="p-3 border-t border-dark-surface">
-          {/* Voice transcript indicator */}
-          {voiceListening && transcript && (
-            <div className="mb-2 p-2 bg-primary/10 border border-primary/20 rounded-md animate-pulse">
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                <span className="font-semibold">Voice input: </span> 
-                {transcript}
-              </p>
-            </div>
-          )}
-          
-          <div className="relative">
-            <textarea
-              placeholder={voiceListening ? "Listening for voice input..." : "Type your command or question..."}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              className={`w-full bg-dark rounded-lg pl-4 pr-10 py-3 text-sm focus:outline-none focus:ring-1 ${voiceListening ? 'ring-1 ring-primary border-primary/40' : 'ring-primary-light'} resize-y min-h-[50px] max-h-[150px] text-black`}
-              style={{ overflow: "auto" }}
-            />
-            <div className="absolute right-3 bottom-3">
-              <Button
-                variant="ghost"
-                className="text-primary-light hover:text-primary-lighter transition-colors"
-                onClick={handleSendMessage}
-                disabled={aiStatus === "processing"}
-              >
-                <SendIcon className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex mt-2 space-x-2 overflow-x-auto py-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="px-3 py-1 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
-              onClick={() => handleQuickCommand("Create new deal")}
-            >
-              Create new deal
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="px-3 py-1 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
-              onClick={() => handleQuickCommand("Update deal status")}
-            >
-              Update deal status
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="px-3 py-1 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
-              onClick={() => handleQuickCommand("Generate report")}
-            >
-              Generate report
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="z-10">
-        <h3 className="text-sm font-medium mb-2 text-muted-foreground">
-          AI Assistant Capabilities
-        </h3>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="bg-dark-surface p-3 rounded-lg flex items-center">
-            <PlusCircleIcon className="h-4 w-4 text-primary-light mr-2" />
-            <span className="text-xs">Create Deals</span>
-          </div>
-          <div className="bg-dark-surface p-3 rounded-lg flex items-center">
-            <EditIcon className="h-4 w-4 text-primary-light mr-2" />
-            <span className="text-xs">Update Info</span>
-          </div>
-          <div className="bg-dark-surface p-3 rounded-lg flex items-center">
-            <SearchIcon className="h-4 w-4 text-primary-light mr-2" />
-            <span className="text-xs">Search Deals</span>
-          </div>
-          <div className="bg-dark-surface p-3 rounded-lg flex items-center">
-            <BarChartIcon className="h-4 w-4 text-primary-light mr-2" />
-            <span className="text-xs">Analytics</span>
-          </div>
-        </div>
       </div>
     </div>
   );

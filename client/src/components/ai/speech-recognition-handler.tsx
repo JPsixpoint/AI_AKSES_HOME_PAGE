@@ -31,6 +31,25 @@ export function SpeechRecognitionHandler({
     if (!SpeechRecognition) {
       console.error('Speech recognition not supported in this browser');
       if (onError) onError('Speech recognition not supported');
+      
+      // Attempt to detect browser
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isFirefox = navigator.userAgent.indexOf("Firefox") > -1;
+      const isEdge = navigator.userAgent.indexOf("Edg") > -1;
+      
+      // Provide more specific error message
+      let browserMessage = 'Your browser does not support speech recognition. ';
+      if (isSafari) {
+        browserMessage += 'Safari has limited support for speech recognition.';
+      } else if (isFirefox) {
+        browserMessage += 'Firefox requires enabling speech recognition in settings.';
+      } else if (isEdge) {
+        browserMessage += 'Some versions of Edge may not fully support this feature.';
+      } else {
+        browserMessage += 'Please try using Chrome for best compatibility.';
+      }
+      
+      if (onError) onError(browserMessage);
       return;
     }
 
