@@ -3,10 +3,10 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
-// This is the correct way neon config - DO NOT change this
+// Configure Neon to work correctly
 neonConfig.webSocketConstructor = ws;
-// Disable Neon's websocket protocol - use standard SQL queries
 neonConfig.useSecureWebSocket = false;
+neonConfig.pipelineConnect = false; // Disable pipeline mode which can cause connection issues
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -14,13 +14,11 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Parse the DATABASE_URL to get connection parameters
-const dbUrl = new URL(process.env.DATABASE_URL);
+// Use direct connection string instead of parsed URL
 export const pool = new Pool({ 
-  host: dbUrl.hostname,
-  port: parseInt(dbUrl.port || '5432'),
-  user: dbUrl.username,
-  password: dbUrl.password,
-  database: dbUrl.pathname.substring(1) // Remove leading slash
+  connectionString: process.env.DATABASE_URL,
+  connectionTimeoutMillis: 5000, // 5 seconds timeout
+  max: 20, // Maximum number of clients the pool should contain
+  idleTimeoutMillis: 30000 // Close idle clients after 30 seconds
 });
 export const db = drizzle({ client: pool, schema });
