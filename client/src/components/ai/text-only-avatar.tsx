@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import './animation.css';
 
 // Interface for component props
 interface TextOnlyAvatarProps {
