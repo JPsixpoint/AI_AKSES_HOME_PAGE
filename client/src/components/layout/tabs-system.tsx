@@ -169,17 +169,40 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
       addNewTab("AI PreScreening", "AI PreScreening", dealId ? { dealId } : undefined);
     }
   }, [tabs]);
+  
+  // Method to open AKSES Architecture tab
+  const openArchitectureTab = useCallback(() => {
+    console.log("Opening AKSES Architecture tab");
+    
+    // Find existing architecture tab
+    const existingTab = tabs.find(tab => tab.type === "AKSES Architecture");
+    if (existingTab) {
+      console.log("Found existing AKSES Architecture tab:", existingTab.id);
+      setActiveTabId(existingTab.id);
+    } else {
+      console.log("Creating new AKSES Architecture tab");
+      // Create a new tab
+      addNewTab("AKSES Architecture", "AKSES Architecture");
+    }
+  }, [tabs]);
 
-  // Update the ref
+  // Update the refs
   useEffect(() => {
     tabsRef.current.openPrescreeningTab = openPrescreeningTab;
-  }, [openPrescreeningTab]);
+    tabsRef.current.openArchitectureTab = openArchitectureTab;
+  }, [openPrescreeningTab, openArchitectureTab]);
   
-  // Expose the method to the parent component via props
+  // Expose the methods to the parent component via props
   useEffect(() => {
     // Expose the tab opening methods via window for easy access from anywhere
     (window as any).openPrescreeningTab = openPrescreeningTab;
-  }, [openPrescreeningTab]);
+    (window as any).openArchitectureTab = openArchitectureTab;
+    
+    return () => {
+      delete (window as any).openPrescreeningTab;
+      delete (window as any).openArchitectureTab;
+    };
+  }, [openPrescreeningTab, openArchitectureTab]);
   
   return (
     <div className="flex flex-col h-full relative">

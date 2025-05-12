@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { Button } from "../ui/button";
-import { Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, BookOpen } from "lucide-react";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { toast } from "@/hooks/use-toast";
