@@ -837,9 +837,19 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         </div>
 
         <div className="p-3 border-t border-dark-surface">
+          {/* Voice transcript indicator */}
+          {voiceListening && transcript && (
+            <div className="mb-2 p-2 bg-primary/10 border border-primary/20 rounded-md animate-pulse">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                <span className="font-semibold">Voice input: </span> 
+                {transcript}
+              </p>
+            </div>
+          )}
+          
           <div className="relative">
             <textarea
-              placeholder="Type your command or question..."
+              placeholder={voiceListening ? "Listening for voice input..." : "Type your command or question..."}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -848,7 +858,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                   handleSendMessage();
                 }
               }}
-              className="w-full bg-dark rounded-lg pl-4 pr-10 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light resize-y min-h-[50px] max-h-[150px] text-black"
+              className={`w-full bg-dark rounded-lg pl-4 pr-10 py-3 text-sm focus:outline-none focus:ring-1 ${voiceListening ? 'ring-1 ring-primary border-primary/40' : 'ring-primary-light'} resize-y min-h-[50px] max-h-[150px] text-black`}
               style={{ overflow: "auto" }}
             />
             <div className="absolute right-3 bottom-3">
