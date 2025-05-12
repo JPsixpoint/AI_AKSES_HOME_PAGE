@@ -12,7 +12,8 @@ import { AIMessage } from "./ai-message";
 import { UserMessage } from "./user-message";
 import { ConfirmationButtons } from "./confirmation-buttons";
 import { VoiceControlToolbar } from "./voice-control-toolbar";
-import { ElevenLabsVoiceWidget } from "./eleven-labs-voice-widget";
+import { TextOnlyAvatar } from "./text-only-avatar";
+import { SpeechRecognitionHandler } from "./speech-recognition-handler";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ConcentricPattern } from "../ui/concentric-pattern";
@@ -62,6 +63,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   const [input, setInput] = useState("");
   const [aiStatus, setAIStatus] = useState<AIStatus>("listening");
   const [lastAIMessage, setLastAIMessage] = useState<string | null>(null);
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -669,7 +672,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         <div className="flex flex-col items-center mb-6">
           {/* Avatar integration */}
           <div className="w-full mb-2">
-            <ElevenLabsVoiceWidget 
+            <TextOnlyAvatar 
               text={aiStatus === "speaking" ? lastAIMessage : null}
               isVisible={true}
             />
