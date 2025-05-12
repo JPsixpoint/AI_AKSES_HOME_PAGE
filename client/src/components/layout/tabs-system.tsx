@@ -48,7 +48,11 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   // Ref for imperative tab opening
   const tabsRef = useRef<{
     openPrescreeningTab: (dealId?: string) => void;
-  }>({openPrescreeningTab: () => {}});
+    openArchitectureTab: () => void;
+  }>({
+    openPrescreeningTab: () => {},
+    openArchitectureTab: () => {}
+  });
   // Track open tabs
   const [tabs, setTabs] = useState<Tab[]>([
     { id: "default-pipeline", type: "Pipeline", title: "Pipeline" }

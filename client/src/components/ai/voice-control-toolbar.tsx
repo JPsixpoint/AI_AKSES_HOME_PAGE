@@ -233,6 +233,19 @@ export function VoiceControlToolbar({
     setIsSpeechEnabled(!isSpeechEnabled);
   }, [isSpeechEnabled, speechSynthesisAvailable]);
 
+  // Open AKSES Architecture tab
+  const openArchitectureTab = useCallback(() => {
+    if ((window as any).openArchitectureTab) {
+      (window as any).openArchitectureTab();
+    } else {
+      toast({
+        title: "Tab Navigation Failed",
+        description: "Unable to open the AKSES Architecture tab.",
+        variant: "destructive"
+      });
+    }
+  }, []);
+
   return (
     <div className="flex items-center justify-between p-2 border-b border-dark-surface">
       <div className="flex items-center gap-3">
@@ -263,6 +276,16 @@ export function VoiceControlToolbar({
           ) : (
             <VolumeX className="h-5 w-5" />
           )}
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-full text-blue-400 hover:text-blue-300"
+          onClick={openArchitectureTab}
+          title="Open AKSES Architecture"
+        >
+          <BookOpen className="h-5 w-5" />
         </Button>
       </div>
       
