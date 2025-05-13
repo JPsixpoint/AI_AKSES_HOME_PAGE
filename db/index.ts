@@ -5,24 +5,16 @@ import { sqliteDb, sqliteDbOperations } from './sqlite';
 
 let usingSqliteFallback = false;
 
-// Configure the database connection - prioritize the Replit DATABASE_URL
-const useConnectionString = process.env.DATABASE_URL ? true : false;
+// Use the specific Neon database URL
+const NEON_DATABASE_URL = "postgresql://scale_owner:uMLhi5Va0Sdx@ep-white-breeze-a5zu57ak-pooler.us-east-2.aws.neon.tech/scale?sslmode=require";
 
-// Create a connection config object either from connection string or individual params
-const connectionConfig = useConnectionString 
-  ? { 
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL?.includes('amazonaws.com') ? {
-        rejectUnauthorized: false
-      } : undefined
-    }
-  : {
-      host: process.env.PGHOST,
-      port: parseInt(process.env.PGPORT || '5432'),
-      user: process.env.PGUSER,
-      password: process.env.PGPASSWORD,
-      database: process.env.PGDATABASE
-    };
+// Configure the database connection - prioritize the specified Neon URL
+const connectionConfig = { 
+  connectionString: NEON_DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+};
 
 // Set pool configuration
 const poolConfig = {
@@ -50,12 +42,8 @@ pool.on('error', (err) => {
 export const db = drizzle(pool, { schema });
 
 // Log the connection attempt (safely)
-if (useConnectionString) {
-  console.log("Connecting to database with connection string:", 
-    process.env.DATABASE_URL?.replace(/(postgresql:\/\/[^:]+:)[^@]+(@.*)/, "$1****$2"));
-} else {
-  console.log(`Connecting to database at ${process.env.PGHOST}:${process.env.PGPORT} as ${process.env.PGUSER}`);
-}
+console.log("Connecting to Neon database:", 
+  NEON_DATABASE_URL.replace(/(postgresql:\/\/[^:]+:)[^@]+(@.*)/, "$1****$2"));
 
 // Function to verify database connection
 export async function verifyDatabaseConnection() {
