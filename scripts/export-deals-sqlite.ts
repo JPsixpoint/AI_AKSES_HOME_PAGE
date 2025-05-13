@@ -9,7 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { verifyDatabaseConnection } from '../db';
 import { sqliteDb, sqliteDeals } from '../db/sqlite';
-import { executeQuery } from '../db';
+import { pool } from '../db';
 
 interface DealRecord {
   id: string;
@@ -35,8 +35,9 @@ async function exportDeals() {
       throw new Error('Cannot connect to PostgreSQL database');
     }
     
-    // Fetch all deals from PostgreSQL
-    const deals = await executeQuery('SELECT * FROM akses_deals ORDER BY id DESC');
+    // Fetch all deals from PostgreSQL using pool directly
+    const result = await pool.query('SELECT * FROM akses_deals ORDER BY id DESC');
+    const deals = result.rows;
     console.log(`Retrieved ${deals.length} deals from PostgreSQL`);
     
     if (deals.length === 0) {

@@ -67,19 +67,29 @@ pool.on('error', (err) => {
     // Force reseeding to get real data from CSV if the database exists but is empty
     try {
       // Clear the existing SQLite database to force a fresh import
-      const sqlite = require('better-sqlite3')('./db/akses.db');
-      sqlite.exec('DELETE FROM akses_deals');
-      console.log('Cleared existing SQLite database to force fresh import from CSV');
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Only clear if we have the better data source available
+      const jsonPath = path.join(process.cwd(), 'attached_assets', 'deals-sqlite.json');
+      
+      if (fs.existsSync(jsonPath)) {
+        const sqlite = require('better-sqlite3')('./db/akses.db');
+        sqlite.exec('DELETE FROM akses_deals');
+        console.log('Cleared existing SQLite database to force fresh import from exported data');
+      } else {
+        console.log('No exported data found, will not clear existing SQLite database');
+      }
     } catch (err) {
       console.error('Error clearing SQLite database:', err);
     }
     
-    // Seed the database with real data from CSV
+    // Seed the database with real data from JSON/CSV
     seedSqliteDatabase()
       .then(() => {
         console.log('SQLite database prepared with real data for fallback');
       })
-      .catch(seedErr => {
+      .catch((seedErr: any) => {
         console.error('Error seeding SQLite database:', seedErr);
       });
   }
