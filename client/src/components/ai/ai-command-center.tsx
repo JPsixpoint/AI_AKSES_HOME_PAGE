@@ -97,24 +97,13 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage && lastMessage.role === "assistant") {
       setLastAIMessage(lastMessage.content);
-      // Also set speech status
+      // Set speech status to speaking
       setAIStatus("speaking");
       
-      // Calculate a reasonable speaking time based on message length
-      // Average human speaking rate is about 150 words per minute, or 2.5 words per second
-      const words = lastMessage.content.split(/\s+/).length;
-      const speakingTimeMs = Math.max(4000, words * 400); // Min 4 seconds, then 400ms per word
-      
-      console.log(`Speaking time: ${speakingTimeMs}ms for ${words} words`);
-      
-      // Reset to listening after the calculated delay
-      const timer = setTimeout(() => {
-        setAIStatus("listening");
-        // Clear the lastAIMessage after speaking is complete
-        setLastAIMessage(null);
-      }, speakingTimeMs);
-      
-      return () => clearTimeout(timer);
+      // No need for manual timing - the ElevenLabsAvatar component will handle the timing
+      // based on actual audio playback events. The audio player triggers onEnd when playback completes.
+      // We'll leave this in the speaking state until the avatar signals completion through
+      // its event handlers.
     }
   }, [messages]);
 

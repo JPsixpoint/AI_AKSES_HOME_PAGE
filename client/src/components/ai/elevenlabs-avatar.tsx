@@ -5,12 +5,14 @@ import { generateSpeech, streamSpeech, PREMIUM_VOICES } from '@/lib/elevenlabs';
 interface ElevenLabsAvatarProps {
   text: string | null;
   isVisible: boolean;
+  onSpeechStart?: () => void;
+  onSpeechEnd?: () => void;
 }
 
 /**
  * ElevenLabs Avatar component with enhanced voice synthesis
  */
-export function ElevenLabsAvatar({ text, isVisible }: ElevenLabsAvatarProps) {
+export function ElevenLabsAvatar({ text, isVisible, onSpeechStart, onSpeechEnd }: ElevenLabsAvatarProps) {
   // States
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +45,9 @@ export function ElevenLabsAvatar({ text, isVisible }: ElevenLabsAvatarProps) {
             if (!isMounted) return;
             setIsSpeaking(true);
             setIsLoading(false);
+            
+            // Call onSpeechStart callback if provided
+            onSpeechStart?.();
             
             // Restart video at the beginning of speech
             if (backgroundVideoRef.current) {
