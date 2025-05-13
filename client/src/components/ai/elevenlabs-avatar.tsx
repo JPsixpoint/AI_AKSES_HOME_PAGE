@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { generateSpeech, streamSpeech, PREMIUM_VOICES } from '@/lib/elevenlabs';
+import { generateSpeech, streamSpeech, PREMIUM_VOICES, DEFAULT_VOICE_ID } from '@/lib/elevenlabs';
 
 // Interface for component props
 interface ElevenLabsAvatarProps {
@@ -36,10 +36,10 @@ export function ElevenLabsAvatar({ text, isVisible, onSpeechStart, onSpeechEnd }
         
         console.log('Starting ElevenLabs speech for text:', text.substring(0, 30) + '...');
         
-        // Use BELLA voice by default for a natural female voice
+        // Use the specified voice ID for a high-quality voice
         await streamSpeech(
           text,
-          PREMIUM_VOICES.BELLA,
+          DEFAULT_VOICE_ID, // Using the default voice ID that's set to your custom voice
           // On started
           () => {
             if (!isMounted) return;

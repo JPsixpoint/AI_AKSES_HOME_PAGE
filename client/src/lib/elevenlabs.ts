@@ -27,8 +27,8 @@ export const PREMIUM_VOICES = {
   JESSIE: 'ZQe5CZNOzWyzPSCn5a3c' // Male, American, Young & bright
 };
 
-// Default voice and settings
-export const DEFAULT_VOICE_ID = PREMIUM_VOICES.BELLA;
+// Use environment voice ID if available
+export const DEFAULT_VOICE_ID = 'lLgB6ZeIe84FSJa9pO1a'; // Use your specific voice ID
 export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   stability: 0.5,
   similarity_boost: 0.75,

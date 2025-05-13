@@ -35,8 +35,12 @@ export const elevenLabsController = {
         return res.status(500).json({ message: "ElevenLabs API key not configured" });
       }
       
+      // Get voice ID from environment variables or use the one provided
+      const elevenLabsVoiceId = process.env.ELEVENLABS_VOICE_ID || voiceId || 'bella';
+      console.log(`Using ElevenLabs Voice ID: ${elevenLabsVoiceId}`);
+      
       // ElevenLabs API endpoint
-      const apiUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId || 'bella'}`;
+      const apiUrl = `https://api.elevenlabs.io/v1/text-to-speech/${elevenLabsVoiceId}`;
       
       // Make the API request
       const response = await fetch(apiUrl, {
