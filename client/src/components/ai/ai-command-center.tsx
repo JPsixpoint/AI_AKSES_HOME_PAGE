@@ -660,6 +660,16 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           <ElevenLabsAvatar 
             text={aiStatus === "speaking" ? lastAIMessage : null}
             isVisible={true}
+            onSpeechStart={() => {
+              // Update status when speech starts
+              setAIStatus("speaking");
+            }}
+            onSpeechEnd={() => {
+              // Reset to listening state when speech ends
+              setAIStatus("listening");
+              // Clear the lastAIMessage after speaking is complete
+              setLastAIMessage(null);
+            }}
           />
         </div>
         

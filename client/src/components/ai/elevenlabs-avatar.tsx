@@ -62,6 +62,9 @@ export function ElevenLabsAvatar({ text, isVisible, onSpeechStart, onSpeechEnd }
             if (!isMounted) return;
             setIsSpeaking(false);
             
+            // Call onSpeechEnd callback if provided
+            onSpeechEnd?.();
+            
             // Pause the video when speech ends
             if (backgroundVideoRef.current) {
               backgroundVideoRef.current.pause();
@@ -76,6 +79,10 @@ export function ElevenLabsAvatar({ text, isVisible, onSpeechStart, onSpeechEnd }
             setIsSpeaking(false);
             setIsLoading(false);
             
+            // Call onSpeechEnd callback on error
+            // We're not calling it immediately because we're going to fallback
+            // to browser speech synthesis which will call it when complete
+            
             // Fall back to browser speech synthesis
             fallbackToWebSpeech(text);
           }
@@ -85,6 +92,9 @@ export function ElevenLabsAvatar({ text, isVisible, onSpeechStart, onSpeechEnd }
         console.error('Error generating speech with ElevenLabs:', err);
         setError(err instanceof Error ? err.message : String(err));
         setIsLoading(false);
+        
+        // We're not calling onSpeechEnd immediately because we're going to fallback
+        // to browser speech synthesis which will call it when complete
         
         // Fall back to browser speech synthesis
         fallbackToWebSpeech(text);
@@ -189,6 +199,9 @@ export function ElevenLabsAvatar({ text, isVisible, onSpeechStart, onSpeechEnd }
       utterance.onstart = () => {
         setIsSpeaking(true);
         
+        // Call onSpeechStart callback if provided
+        onSpeechStart?.();
+        
         // Restart video at the beginning of speech
         if (backgroundVideoRef.current) {
           backgroundVideoRef.current.currentTime = 0;
@@ -201,6 +214,9 @@ export function ElevenLabsAvatar({ text, isVisible, onSpeechStart, onSpeechEnd }
       utterance.onend = () => {
         setIsSpeaking(false);
         
+        // Call onSpeechEnd callback if provided
+        onSpeechEnd?.();
+        
         // Pause the video when speech ends
         if (backgroundVideoRef.current) {
           backgroundVideoRef.current.pause();
@@ -210,6 +226,9 @@ export function ElevenLabsAvatar({ text, isVisible, onSpeechStart, onSpeechEnd }
       utterance.onerror = (event) => {
         console.error('Web speech synthesis error:', event);
         setIsSpeaking(false);
+        
+        // Call onSpeechEnd callback on error
+        onSpeechEnd?.();
       };
       
       // Start speaking
