@@ -660,15 +660,17 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   };
 
   return (
-    <div className="w-full h-full pr-6 flex flex-col relative">
-      <ConcentricPattern />
+    <div className="w-full h-full pr-6 flex flex-col relative" style={{ isolation: "isolate" }}>
+      <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+        <ConcentricPattern />
+      </div>
 
-      <div className="z-10">
+      <div style={{ position: "relative", zIndex: 1 }}>
         <h2 className="text-xl font-semibold mb-4">AI Command Center</h2>
         
         <div className="flex flex-col items-center mb-6">
           {/* Avatar integration */}
-          <div className="w-full mb-2 relative isolate">
+          <div className="w-full mb-2 relative" style={{ isolation: "isolate", zIndex: 1 }}>
             <HeyGenAvatarSimplified 
               text={aiStatus === "speaking" ? lastAIMessage : null}
               isVisible={true}

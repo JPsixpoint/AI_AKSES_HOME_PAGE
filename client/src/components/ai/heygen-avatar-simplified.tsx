@@ -534,15 +534,16 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
   }
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="relative w-[300px] h-[300px] rounded-xl overflow-hidden bg-[#353b64]">
+    <div className="flex flex-col items-center justify-center" style={{ isolation: 'isolate' }}>
+      <div className="relative w-[300px] h-[300px] rounded-xl overflow-hidden bg-[#353b64]" style={{ isolation: 'isolate' }}>
         {/* Background Video - Always present across all states */}
         <video 
           ref={backgroundVideoRef}
           autoPlay
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover z-10"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ zIndex: 1 }}
           src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
         />
         
@@ -554,13 +555,15 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
             autoPlay
             playsInline
             muted={isMuted}
-            className="absolute inset-0 w-full h-full object-cover z-20"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ zIndex: 2 }}
           />
         )}
         
         {/* Error state - Only show retry button on hover */}
         {error && (
-          <div className="absolute bottom-2 right-2 opacity-0 hover:opacity-100 transition-opacity duration-300 z-30">
+          <div className="absolute bottom-2 right-2 opacity-0 hover:opacity-100 transition-opacity duration-300" 
+               style={{ zIndex: 10 }}>
             <button 
               onClick={() => {
                 setError(null);
@@ -583,7 +586,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         
         {/* Loading state - Just a subtle indicator */}
         {isLoading && (
-          <div className="absolute bottom-2 left-2 z-30">
+          <div className="absolute bottom-2 left-2" style={{ zIndex: 10 }}>
             <div className="animate-pulse w-3 h-3 rounded-full bg-blue-500/30"></div>
           </div>
         )}
@@ -591,7 +594,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
         {/* Removed Speech Animation Overlay */}
         
         {/* Mute Control */}
-        <div className="absolute top-2 right-2 z-30">
+        <div className="absolute top-2 right-2" style={{ zIndex: 10 }}>
           <button 
             onClick={() => setIsMuted(!isMuted)}
             className="bg-black/70 hover:bg-black/90 rounded-full p-2 transition-colors"
