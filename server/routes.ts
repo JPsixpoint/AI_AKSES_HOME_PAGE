@@ -14,8 +14,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     apiKey: process.env.OPENAI_API_KEY || "mock_key_for_development",
   });
   
-  // Set up Resend client
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  // Set up Resend client (if API key is available)
+  let resend: Resend | null = null;
+  if (process.env.RESEND_API_KEY) {
+    try {
+      resend = new Resend(process.env.RESEND_API_KEY);
+      console.log("Resend client initialized successfully");
+    } catch (error) {
+      console.error("Failed to initialize Resend client:", error);
+    }
+  } else {
+    console.log("No RESEND_API_KEY found in environment, email features will be disabled");
+  }
 
   // API Routes
   const apiPrefix = "/api";
