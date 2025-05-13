@@ -687,8 +687,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 bg-dark-lighter rounded-lg flex flex-col">
+      {/* Main Chat Area - with grey border to match original design */}
+      <div className="flex-1 bg-dark-lighter rounded-lg flex flex-col border border-gray-700">
         {/* Toolbar */}
         <VoiceControlToolbar 
           onVoiceInput={handleVoiceInput}
@@ -696,8 +696,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           isProcessing={aiStatus === "processing"}
         />
         
-        {/* Messages */}
-        <div className="flex-1 p-3 overflow-y-auto">
+        {/* Messages - with border styling to match screenshot */}
+        <div className="flex-1 px-2 py-3 overflow-y-auto">
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
@@ -725,8 +725,11 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           <div ref={messagesEndRef} />
         </div>
         
-        {/* Input Area */}
-        <div className="border-t border-gray-700 p-3">
+        {/* Divider line as in screenshot */}
+        <div className="border-t border-gray-700 mx-2"></div>
+        
+        {/* Input Area - with dark background as in screenshot */}
+        <div className="p-3">
           {/* Input Box */}
           <div className="relative mb-3">
             <div className="flex items-center relative">
@@ -740,25 +743,25 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                     handleSendMessage();
                   }
                 }}
-                className="flex-1 bg-white dark:bg-gray-800 rounded-md pl-3 pr-9 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 h-10 resize-none text-black"
+                className="flex-1 bg-dark-lighter dark:bg-gray-800 rounded-md border border-gray-700 pl-3 pr-9 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light h-10 resize-none text-gray-200"
               />
               <button 
                 type="button"
                 onClick={handleSendMessage}
                 disabled={aiStatus === "processing"}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-600 p-1 rounded-full"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary-light hover:text-primary-lighter p-1 rounded-full"
               >
-                <SendIcon className="h-4 w-4" />
+                <SendIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
           
-          {/* Action Buttons */}
-          <div className="bg-dark-surface rounded-md p-2 flex justify-center gap-3">
+          {/* Action Buttons - styled to match screenshot */}
+          <div className="flex justify-between gap-2">
             <Button
               variant="ghost"
               size="sm"
-              className="text-xs text-white hover:bg-blue-400/10"
+              className="flex-1 text-xs text-white hover:bg-gray-700"
               onClick={() => handleQuickCommand("Create new deal")}
             >
               Create deal
@@ -766,7 +769,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="text-xs text-white hover:bg-blue-400/10"
+              className="flex-1 text-xs text-white hover:bg-gray-700"
               onClick={() => handleQuickCommand("Update deal status")}
             >
               Update status
@@ -774,7 +777,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="text-xs text-white hover:bg-blue-400/10"
+              className="flex-1 text-xs text-white hover:bg-gray-700"
               onClick={() => handleQuickCommand("Generate report")}
             >
               Report
