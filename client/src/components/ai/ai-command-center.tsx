@@ -743,7 +743,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                     handleSendMessage();
                   }
                 }}
-                className="flex-1 bg-dark-lighter dark:bg-gray-800 rounded-md border border-gray-700 pl-3 pr-9 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light h-10 resize-none text-gray-200"
+                className="flex-1 bg-dark-lighter dark:bg-gray-800 rounded-md border border-gray-700 pl-3 pr-9 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light h-10 resize-none text-white"
               />
               <button 
                 type="button"
