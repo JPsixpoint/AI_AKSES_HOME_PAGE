@@ -535,7 +535,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
 
   return (
     <div className="flex flex-col items-center justify-center" style={{ isolation: 'isolate' }}>
-      <div className="relative w-[300px] h-[300px] rounded-xl overflow-hidden bg-[#353b64]" style={{ isolation: 'isolate' }}>
+      <div className="relative w-[220px] h-[220px] rounded-xl overflow-hidden bg-[#353b64]" style={{ isolation: 'isolate' }}>
         {/* Background Video - Always present across all states */}
         <video 
           ref={backgroundVideoRef}

@@ -666,34 +666,34 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
       </div>
 
       <div style={{ position: "relative", zIndex: 1 }}>
-        <h2 className="text-xl font-semibold mb-4">AI Command Center</h2>
+        <h2 className="text-lg font-semibold mb-2">AI Command Center</h2>
         
-        <div className="flex flex-col items-center mb-6">
+        <div className="flex flex-col items-center mb-2">
           {/* Avatar integration */}
-          <div className="w-full mb-2 relative" style={{ isolation: "isolate", zIndex: 1 }}>
+          <div className="w-full mb-1 relative" style={{ isolation: "isolate", zIndex: 1 }}>
             <HeyGenAvatarSimplified 
               text={aiStatus === "speaking" ? lastAIMessage : null}
               isVisible={true}
             />
           </div>
           
-          {/* Status indicators */}
-          <div className="flex items-center justify-center gap-3 mt-2">
-            <div className={`rounded-full h-2 w-2 ${
+          {/* Status indicators - more compact */}
+          <div className="flex items-center justify-center gap-1.5 mt-1 h-3">
+            <div className={`rounded-full h-1.5 w-1.5 ${
               aiStatus === "listening" 
                 ? "bg-green-500 animate-pulse" 
                 : "bg-gray-500"
             }`}>
               <span className="sr-only">Listening</span>
             </div>
-            <div className={`rounded-full h-2 w-2 ${
+            <div className={`rounded-full h-1.5 w-1.5 ${
               aiStatus === "processing" 
                 ? "bg-yellow-500 animate-pulse" 
                 : "bg-gray-500"
             }`}>
               <span className="sr-only">Processing</span>
             </div>
-            <div className={`rounded-full h-2 w-2 ${
+            <div className={`rounded-full h-1.5 w-1.5 ${
               aiStatus === "speaking" 
                 ? "bg-blue-500 animate-pulse" 
                 : "bg-gray-500"
@@ -710,7 +710,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           aiMessage={lastAIMessage}
           isProcessing={aiStatus === "processing"}
         />
-        <div className="p-3 overflow-y-auto flex-1 max-h-[calc(100vh-400px)]" style={{ minHeight: "30vh" }}>
+        <div className="p-3 overflow-y-auto flex-1 max-h-[calc(100vh-320px)]" style={{ minHeight: "35vh" }}>
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
