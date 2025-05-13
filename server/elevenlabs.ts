@@ -1,34 +1,18 @@
 import { Request, Response } from 'express';
+import fetch from 'node-fetch';
 
-// Define types for ElevenLabs API
 interface Voice {
   voice_id: string;
   name: string;
   category: string;
 }
 
-/**
- * Server-side controller for ElevenLabs API
- * This provides secure access to ElevenLabs services without exposing API keys in the client
- */
-
-// Preset voice IDs
-const PREMIUM_VOICES = {
-  BELLA: 'EXAVITQu4vr4xnSDxMaL', // Female, American, Speaks with a soft tone
-  RACHEL: '21m00Tcm4TlvDq8ikWAM', // Female, American, Professional and neutral
-  DOMI: 'AZnzlk1XvdvUeBnXmlld', // Female, American, Deep and clear
-  ELLI: 'MF3mGyEYCl7XYWbV9V6O', // Female, American, Soft and breathy
-  GRACE: 'oWAxZDx7w5VEj9dCyTzz', // Female, British, Calm and sophisticated
-  JESSIE: 'ZQe5CZNOzWyzPSCn5a3c' // Male, American, Young & bright
-};
-
-// Default voice settings
-const DEFAULT_VOICE_SETTINGS = {
-  stability: 0.5,
-  similarity_boost: 0.75,
-  style: 0.5,
-  use_speaker_boost: true
-};
+interface VoiceSettings {
+  stability: number;
+  similarity_boost: number;
+  style?: number;
+  use_speaker_boost?: boolean;
+}
 
 /**
  * ElevenLabs controller for server-side API requests
@@ -39,25 +23,22 @@ export const elevenLabsController = {
    */
   generateSpeech: async (req: Request, res: Response) => {
     try {
-      // Validate the API key
+      const { text, voiceId, modelId, voiceSettings } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({ message: "Missing text parameter" });
+      }
+      
+      // Get API key from environment variables
       const apiKey = process.env.ELEVENLABS_API_KEY;
       if (!apiKey) {
-        console.error('ElevenLabs API key not found in environment variables');
-        return res.status(500).json({ error: 'API key not configured' });
+        return res.status(500).json({ message: "ElevenLabs API key not configured" });
       }
-
-      // Get parameters from request
-      const { text, voiceId = PREMIUM_VOICES.BELLA } = req.body;
-
-      if (!text) {
-        return res.status(400).json({ error: 'No text provided' });
-      }
-
-      console.log(`Generating speech for text: "${text.substring(0, 30)}..."`);
-
-      // Make the API request to ElevenLabs
-      const apiUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
       
+      // ElevenLabs API endpoint
+      const apiUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId || 'bella'}`;
+      
+      // Make the API request
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -67,63 +48,80 @@ export const elevenLabsController = {
         },
         body: JSON.stringify({
           text,
-          model_id: 'eleven_monolingual_v1',
-          voice_settings: DEFAULT_VOICE_SETTINGS
+          model_id: modelId || 'eleven_monolingual_v1',
+          voice_settings: voiceSettings || {
+            stability: 0.5,
+            similarity_boost: 0.75
+          }
         })
       });
-
+      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error('ElevenLabs API error:', errorData || response.statusText);
-        return res.status(response.status).json({ 
-          error: `ElevenLabs API error: ${response.status} ${response.statusText}`,
+        const errorData = await response.text();
+        console.error('ElevenLabs API error:', response.status, errorData);
+        return res.status(response.status).json({
+          message: `ElevenLabs API error: ${response.status} ${response.statusText}`,
           details: errorData
         });
       }
-
-      // Get audio data
+      
+      // Get the binary audio data
       const audioBuffer = await response.arrayBuffer();
       
-      // Set appropriate headers
-      res.set('Content-Type', 'audio/mpeg');
-      res.set('Content-Length', audioBuffer.byteLength.toString());
+      // Set appropriate headers for audio streaming
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Content-Length', audioBuffer.byteLength);
       
-      // Send the audio data
-      res.send(Buffer.from(audioBuffer));
+      // Send the audio data to the client
+      res.end(Buffer.from(audioBuffer));
+      
     } catch (error) {
-      console.error('Error in ElevenLabs generateSpeech:', error);
-      res.status(500).json({ error: 'Failed to generate speech', details: String(error) });
+      console.error('Error generating speech with ElevenLabs:', error);
+      res.status(500).json({
+        message: 'Failed to generate speech',
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   },
-
+  
   /**
    * Get list of available voices from ElevenLabs
    */
   getVoices: async (_req: Request, res: Response) => {
     try {
+      // Get API key from environment variables
       const apiKey = process.env.ELEVENLABS_API_KEY;
       if (!apiKey) {
-        return res.status(500).json({ error: 'API key not configured' });
+        return res.status(500).json({ message: "ElevenLabs API key not configured" });
       }
-
+      
+      // Make the API request
       const response = await fetch('https://api.elevenlabs.io/v1/voices', {
         headers: {
           'Accept': 'application/json',
           'xi-api-key': apiKey
         }
       });
-
+      
       if (!response.ok) {
-        return res.status(response.status).json({ 
-          error: `Failed to get voices: ${response.status} ${response.statusText}` 
+        const errorData = await response.text();
+        console.error('ElevenLabs API error:', response.status, errorData);
+        return res.status(response.status).json({
+          message: `ElevenLabs API error: ${response.status} ${response.statusText}`,
+          details: errorData
         });
       }
-
+      
+      // Parse and return the voices data
       const data = await response.json();
-      res.json(data.voices || []);
+      res.json(data);
+      
     } catch (error) {
       console.error('Error fetching ElevenLabs voices:', error);
-      res.status(500).json({ error: 'Failed to fetch voices', details: String(error) });
+      res.status(500).json({
+        message: 'Failed to fetch voices',
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 };

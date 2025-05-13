@@ -13,6 +13,7 @@ import { UserMessage } from "./user-message";
 import { ConfirmationButtons } from "./confirmation-buttons";
 import { VoiceControlToolbar } from "./voice-control-toolbar";
 import { HeyGenAvatarSimplified } from "./heygen-avatar-simplified";
+import { ElevenLabsAvatar } from "./elevenlabs-avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ConcentricPattern } from "../ui/concentric-pattern";
@@ -665,9 +666,9 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
       <div className="bg-dark-lighter rounded-lg p-2 mb-2">
         <h2 className="text-lg font-semibold mb-2">AI Command Center</h2>
         
-        {/* Avatar */}
+        {/* Avatar - using ElevenLabs for better voice quality */}
         <div className="rounded-lg shadow-sm overflow-hidden">
-          <HeyGenAvatarSimplified 
+          <ElevenLabsAvatar 
             text={aiStatus === "speaking" ? lastAIMessage : null}
             isVisible={true}
           />
