@@ -20,55 +20,27 @@ export type User = typeof users.$inferSelect;
 
 // Deals table (using the akses_deals table)
 export const deals = pgTable("akses_deals", {
-  id: varchar("id", { length: 24 }).primaryKey(),
-  name: text("name"), // Company name
+  id: text("id").primaryKey(),
+  name: text("name").notNull(), // Company name
   priority: text("priority"),
   country: text("country"),
   lead: text("lead"), // Lead person's email
   creditHub: text("credit_hub"), // Credit hub region (LATAM, EMENA, SSA, APAC)
-  stage: text("stage").notNull().default("Pre-Screening"), // Deal stage (Pass, Re-Engage, Pre-Screening, etc.)
-  updates: json("updates").$type<any[]>().default([]), // Array of update objects
-  members: json("members").$type<string[]>().default([]), // Team members associated
-  preScreening: json("pre_screening").$type<Record<string, any>>().default({}), // Pre-screening data
-  aiScreening: json("ai_screening").$type<{
-    timestamp: string;
-    initiatingUser: string;
-    recipientEmails: string[];
-    emailContent: string;
-    additionalContext: string;
-    status: "sent" | "not_sent";
-    trackingData: {
-      status: "sent" | "opened" | "interacting" | "completed" | "abandoned";
-      progress: number;
-      lastInteraction: string;
-    };
-  }[]>().default([]), // AI Screening process data
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  createdBy: integer("created_by").references(() => users.id),
+  stage: text("stage"), // Deal stage (Pass, Re-Engage, Pre-Screening, etc.)
+  updates: json("updates"), // Array of update objects
+  preScreening: json("pre_screening"), // Pre-screening data
+  members: json("members").$type<string[]>(), // Team members associated as array
 });
 
-export const dealsRelations = relations(deals, ({ one }) => ({
-  creator: one(users, {
-    fields: [deals.createdBy],
-    references: [users.id],
-  }),
-}));
+// No direct relation to users table
+export const dealsRelations = relations(deals, ({}) => ({}));
 
 export const insertDealSchema = createInsertSchema(deals, {
   name: (schema) => schema.min(2, "Company name must be at least 2 characters"),
-  stage: (schema) => schema.refine(
-    val => ["Pre-Screening", "Lead", "Due Diligence & U/W", "Term Sheet Negotiation", "Closed - Won", "Closed - Lost", "Pass", "Re-Engage"].includes(val),
-    "Invalid stage"
-  ),
-  creditHub: (schema) => schema.refine(
-    val => ["LATAM", "EMENA", "SSA", "APAC"].includes(val),
-    "Invalid credit hub"
-  )
+  stage: (schema) => schema.optional(),
+  creditHub: (schema) => schema.optional()
 }).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true
+  id: true 
 });
 
 export type InsertDeal = z.infer<typeof insertDealSchema>;
