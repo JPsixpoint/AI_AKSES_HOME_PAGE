@@ -74,13 +74,13 @@ export function AIMessage({ content, data, pendingAction, onSelect, onConfirm, o
   };
   
   return (
-    <div className="flex">
-      <Avatar className="h-8 w-8 rounded-full bg-primary-light flex-shrink-0 flex items-center justify-center">
+    <div className="flex mb-4">
+      <Avatar className="h-8 w-8 rounded-full bg-primary-light flex-shrink-0 flex items-center justify-center mt-1">
         <AvatarFallback>
           <Orbit className="h-4 w-4" />
         </AvatarFallback>
       </Avatar>
-      <div className="ml-3 bg-dark-surface p-3 rounded-lg rounded-tl-none max-w-[95%]">
+      <div className="ml-3 bg-dark-surface p-3 rounded-lg rounded-tl-none max-w-full flex-1">
         <div className="text-sm markdown-content text-white break-words">
           <ReactMarkdown>{content}</ReactMarkdown>
         </div>

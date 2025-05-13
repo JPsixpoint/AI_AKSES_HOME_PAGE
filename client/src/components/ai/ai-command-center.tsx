@@ -670,7 +670,12 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         <div className="flex flex-col items-center mb-2">
           {/* Avatar integration */}
-          <div className="w-full mb-1 relative z-20" style={{ isolation: "isolate" }}>
+          <div className="w-full mb-1 relative z-20" style={{ 
+            isolation: "isolate", 
+            borderRadius: '0.5rem', 
+            overflow: 'hidden',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}>
             <HeyGenAvatarSimplified 
               text={aiStatus === "speaking" ? lastAIMessage : null}
               isVisible={true}
@@ -704,13 +709,13 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         </div>
       </div>
 
-      <div className="gradient-border bg-dark-lighter flex-1 overflow-hidden flex flex-col mb-2 z-10 mt-1">
+      <div className="relative gradient-border bg-dark-lighter flex-1 overflow-hidden flex flex-col mb-2 z-10 mt-1" style={{ borderRadius: '0.5rem' }}>
         <VoiceControlToolbar 
           onVoiceInput={handleVoiceInput}
           aiMessage={lastAIMessage}
           isProcessing={aiStatus === "processing"}
         />
-        <div className="p-3 overflow-y-auto flex-1 max-h-[calc(100vh-320px)]" style={{ minHeight: "35vh" }}>
+        <div className="p-3 overflow-y-auto flex-1 h-[calc(100vh-370px)]" style={{ minHeight: "30vh", scrollBehavior: "smooth" }}>
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
@@ -738,7 +743,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="px-3 py-2 border-t border-dark-surface">
+        <div className="px-3 pt-2 pb-3 border-t border-dark-surface">
           <div className="relative mb-3">
             <textarea
               placeholder="Type your command or question..."
@@ -750,7 +755,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                   handleSendMessage();
                 }
               }}
-              className="w-full bg-gray-100 dark:bg-dark rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light resize-none h-[40px] text-black"
+              className="w-full bg-gray-100 dark:bg-dark rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light resize-none h-[40px] text-black shadow-sm"
               style={{ overflow: "auto" }}
             />
             <div className="absolute right-3 bottom-2">
@@ -766,27 +771,27 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             </div>
           </div>
 
-          <div className="flex justify-center mt-1 space-x-3 overflow-x-auto px-2">
+          <div className="flex justify-center space-x-3 overflow-x-auto px-2 py-1 mt-2 bg-dark-surface rounded-lg">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="px-3 py-1 h-7 bg-dark-surface rounded-full text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="px-3 py-1 h-8 text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
               onClick={() => handleQuickCommand("Create new deal")}
             >
               Create deal
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="px-3 py-1 h-7 bg-dark-surface rounded-full text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="px-3 py-1 h-8 text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
               onClick={() => handleQuickCommand("Update deal status")}
             >
               Update status
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="px-3 py-1 h-7 bg-dark-surface rounded-full text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="px-3 py-1 h-8 text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
               onClick={() => handleQuickCommand("Generate report")}
             >
               Report
