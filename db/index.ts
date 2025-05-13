@@ -5,10 +5,12 @@ import { sqliteDb, sqliteDbOperations } from './sqlite';
 
 let usingSqliteFallback = false;
 
-// Configure database connection - load from environment variables
-// This ensures it works in both development and deployment
+// Use the specific Neon database URL provided by the user
+const NEON_DATABASE_URL = "postgresql://scale_owner:uMLhi5Va0Sdx@ep-white-breeze-a5zu57ak-pooler.us-east-2.aws.neon.tech/scale?sslmode=require";
+
+// Configure database connection with the exact Neon URL
 const connectionConfig = { 
-  connectionString: process.env.DATABASE_URL,
+  connectionString: NEON_DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }
@@ -40,8 +42,8 @@ pool.on('error', (err) => {
 export const db = drizzle(pool, { schema });
 
 // Log the connection attempt (safely)
-console.log("Connecting to database:", 
-  process.env.DATABASE_URL?.replace(/(postgresql:\/\/[^:]+:)[^@]+(@.*)/, "$1****$2"));
+console.log("Connecting to Neon database:", 
+  NEON_DATABASE_URL.replace(/(postgresql:\/\/[^:]+:)[^@]+(@.*)/, "$1****$2"));
 
 // Function to verify database connection
 export async function verifyDatabaseConnection() {
