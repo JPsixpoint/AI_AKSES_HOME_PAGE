@@ -33,7 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const apiPrefix = "/api";
   
   // Add a health check endpoint for deployment - required for Replit deployment
-  app.get('/', async (req, res) => {
+  app.get('/health', async (req, res) => {
     try {
       // Simple health check that responds quickly
       return res.status(200).json({
