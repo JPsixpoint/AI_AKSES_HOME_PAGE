@@ -289,4 +289,9 @@
   input, textarea, select {
     color: black !important;
   }
+  
+  /* Override for AI Command Center input */
+  .command-input {
+    color: white !important;
+  }
 }
