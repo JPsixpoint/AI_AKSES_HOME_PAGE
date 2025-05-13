@@ -1,4 +1,16 @@
-import { Voice, VoiceSettings } from 'elevenlabs';
+// Define types for ElevenLabs API
+interface Voice {
+  voice_id: string;
+  name: string;
+  category: string;
+}
+
+interface VoiceSettings {
+  stability: number;
+  similarity_boost: number;
+  style?: number;
+  use_speaker_boost?: boolean;
+}
 
 /**
  * ElevenLabs API client
@@ -53,21 +65,21 @@ export async function generateSpeech(
   try {
     console.log('Generating speech with ElevenLabs for text:', text.substring(0, 30) + '...');
     
-    // ElevenLabs API endpoint
-    const apiUrl = 'https://api.elevenlabs.io/v1/text-to-speech/' + voiceId;
+    // Use our server endpoint to avoid exposing API key in client
+    const apiUrl = '/api/elevenlabs/text-to-speech';
     
     // Make the API request
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
-        'Content-Type': 'application/json',
-        'xi-api-key': process.env.ELEVENLABS_API_KEY || ''
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         text,
-        model_id: 'eleven_monolingual_v1',
-        voice_settings: DEFAULT_VOICE_SETTINGS
+        voiceId,
+        modelId: 'eleven_monolingual_v1',
+        voiceSettings: DEFAULT_VOICE_SETTINGS
       })
     });
 
@@ -103,10 +115,9 @@ export async function generateSpeech(
  */
 export async function getAvailableVoices(): Promise<Voice[]> {
   try {
-    const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+    const response = await fetch('/api/elevenlabs/voices', {
       headers: {
-        'Accept': 'application/json',
-        'xi-api-key': process.env.ELEVENLABS_API_KEY || ''
+        'Accept': 'application/json'
       }
     });
 

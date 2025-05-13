@@ -1,5 +1,11 @@
 import { Request, Response } from 'express';
-import { Voice } from 'elevenlabs';
+
+// Define types for ElevenLabs API
+interface Voice {
+  voice_id: string;
+  name: string;
+  category: string;
+}
 
 /**
  * Server-side controller for ElevenLabs API

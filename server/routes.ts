@@ -33,6 +33,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // HeyGen Avatar token endpoint
   app.get(`${apiPrefix}/heygen/token`, heygenController.getToken);
+  
+  // ElevenLabs endpoints
+  app.post(`${apiPrefix}/elevenlabs/text-to-speech`, elevenLabsController.generateSpeech);
+  app.get(`${apiPrefix}/elevenlabs/voices`, elevenLabsController.getVoices);
 
   // AI Chat route
   app.post(`${apiPrefix}/ai/chat`, async (req, res) => {
