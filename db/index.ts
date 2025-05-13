@@ -2,19 +2,35 @@ import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
-// Use the environment variable if available, otherwise use the hardcoded value
-const DATABASE_URL = process.env.DATABASE_URL || "postgresql://scale_owner:uMLhi5Va0Sdx@ep-white-breeze-a5zu57ak-pooler.us-east-2.aws.neon.tech/scale?sslmode=require";
+// Configure the database connection - prioritize the Replit DATABASE_URL
+const useConnectionString = process.env.DATABASE_URL ? true : false;
 
-// Configure the PostgreSQL connection pool with proper settings
-export const pool = new Pool({ 
-  connectionString: DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false // This helps with Neon database connections in some environments
-  },
-  max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
-  connectionTimeoutMillis: 10000, // How long to try to connect before timing out
-});
+// Create a connection config object either from connection string or individual params
+const connectionConfig = useConnectionString 
+  ? { 
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL?.includes('amazonaws.com') ? {
+        rejectUnauthorized: false
+      } : undefined
+    }
+  : {
+      host: process.env.PGHOST,
+      port: parseInt(process.env.PGPORT || '5432'),
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      database: process.env.PGDATABASE
+    };
+
+// Set pool configuration
+const poolConfig = {
+  ...connectionConfig,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000
+};
+
+// Create the pool
+export const pool = new Pool(poolConfig);
 
 // Log connection events to help debug issues
 pool.on('connect', () => {
@@ -22,11 +38,31 @@ pool.on('connect', () => {
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
+  console.error('Unexpected error on database connection:', err);
 });
 
 // Create Drizzle instance
 export const db = drizzle(pool, { schema });
 
-// Log the connection attempt with masked credentials
-console.log("Connecting to database:", DATABASE_URL.replace(/(postgresql:\/\/[^:]+:)[^@]+(@.*)/, "$1****$2"));
+// Log the connection attempt (safely)
+if (useConnectionString) {
+  console.log("Connecting to database with connection string:", 
+    process.env.DATABASE_URL?.replace(/(postgresql:\/\/[^:]+:)[^@]+(@.*)/, "$1****$2"));
+} else {
+  console.log(`Connecting to database at ${process.env.PGHOST}:${process.env.PGPORT} as ${process.env.PGUSER}`);
+}
+
+// Function to verify database connection and table existence
+export async function verifyDatabaseConnection() {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    console.log('Database connection verified:', result.rows[0]);
+    return true;
+  } catch (error) {
+    console.error('Failed to connect to database:', error);
+    return false;
+  }
+}
+
+// Initialize connection check
+verifyDatabaseConnection();
