@@ -660,30 +660,30 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   };
 
   return (
-    <div className="w-full h-full pr-4 flex flex-col relative" style={{ isolation: "isolate", minWidth: "280px" }}>
-      <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+    <div className="flex flex-col w-full h-full box-border" style={{ minWidth: "280px" }}>
+      {/* Background Pattern */}
+      <div className="absolute left-0 right-0 top-0 bottom-0 overflow-hidden -z-10">
         <ConcentricPattern />
       </div>
 
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <h2 className="text-lg font-semibold mb-2">AI Command Center</h2>
-        
-        <div className="flex flex-col items-center mb-2">
-          {/* Avatar integration */}
-          <div className="w-full mb-1 relative z-20" style={{ 
-            isolation: "isolate", 
-            borderRadius: '0.5rem', 
-            overflow: 'hidden',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-          }}>
+      {/* Header */}
+      <div className="flex-none pb-2">
+        <h2 className="text-lg font-semibold">AI Command Center</h2>
+      </div>
+      
+      {/* Avatar Container */}
+      <div className="flex-none pb-3">
+        <div className="flex flex-col items-center">
+          {/* Avatar */}
+          <div className="w-full rounded-lg overflow-hidden shadow-md">
             <HeyGenAvatarSimplified 
               text={aiStatus === "speaking" ? lastAIMessage : null}
               isVisible={true}
             />
           </div>
           
-          {/* Status indicators - more compact */}
-          <div className="flex items-center justify-center gap-1.5 mt-1 h-3">
+          {/* Status indicators */}
+          <div className="flex items-center justify-center gap-1.5 mt-1">
             <div className={`rounded-full h-1.5 w-1.5 ${
               aiStatus === "listening" 
                 ? "bg-green-500 animate-pulse" 
@@ -709,13 +709,15 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         </div>
       </div>
 
-      <div className="relative gradient-border bg-dark-lighter flex-1 overflow-hidden flex flex-col mb-2 z-10 mt-1" style={{ borderRadius: '0.5rem' }}>
+      {/* Main Chat Container */}
+      <div className="flex-1 flex flex-col border border-gray-700 bg-dark-lighter rounded-lg overflow-hidden">
         <VoiceControlToolbar 
           onVoiceInput={handleVoiceInput}
           aiMessage={lastAIMessage}
           isProcessing={aiStatus === "processing"}
         />
-        <div className="p-3 overflow-y-auto flex-1 h-[calc(100vh-370px)]" style={{ minHeight: "30vh", scrollBehavior: "smooth" }}>
+        {/* Messages container - using flex-1 to fill available space */}
+        <div className="p-3 overflow-y-auto flex-1" style={{ scrollBehavior: "smooth" }}>
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
@@ -743,7 +745,9 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="px-3 pt-2 pb-3 border-t border-dark-surface">
+        {/* Input and actions area */}
+        <div className="flex-none border-t border-dark-surface p-3">
+          {/* Input with send button */}
           <div className="relative mb-3">
             <textarea
               placeholder="Type your command or question..."
@@ -755,13 +759,12 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                   handleSendMessage();
                 }
               }}
-              className="w-full bg-gray-100 dark:bg-dark rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light resize-none h-[40px] text-black shadow-sm"
-              style={{ overflow: "auto" }}
+              className="w-full bg-gray-100 dark:bg-dark rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light resize-none h-10 text-black"
             />
-            <div className="absolute right-3 bottom-2">
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
               <Button
                 variant="ghost"
-                className="text-primary-light hover:text-primary-lighter transition-colors"
+                className="text-primary-light hover:text-primary-lighter transition-colors h-8 w-8 p-0"
                 onClick={handleSendMessage}
                 disabled={aiStatus === "processing"}
                 size="sm"
@@ -771,7 +774,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             </div>
           </div>
 
-          <div className="flex justify-center space-x-3 overflow-x-auto px-2 py-1 mt-2 bg-dark-surface rounded-lg">
+          {/* Quick action buttons */}
+          <div className="flex justify-center gap-2 py-2 bg-dark-surface rounded-lg">
             <Button
               variant="ghost"
               size="sm"
