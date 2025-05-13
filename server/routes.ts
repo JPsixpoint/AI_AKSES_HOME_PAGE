@@ -120,87 +120,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(`${apiPrefix}/deals/statistics`, async (req, res) => {
     try {
       // Import necessary database functions
-      const { executeQuery, sqliteDbOperations } = await import('@db');
+      const { pool, sqliteDbOperations, usingSqliteFallback } = await import('@db');
       
-      // Execute the query with SQLite fallback
-      const stats = await executeQuery(
-        // PostgreSQL query
-        `
-        WITH total AS (
-          SELECT COUNT(*) as count FROM akses_deals
-        ),
-        stages AS (
-          SELECT stage, COUNT(*) as count FROM akses_deals GROUP BY stage
-        ),
-        hubs AS (
-          SELECT credit_hub, COUNT(*) as count FROM akses_deals GROUP BY credit_hub
-        )
-        SELECT * FROM total
-        `,
-        [],
-        // SQLite fallback operation
-        () => sqliteDbOperations.getStatistics()
-      );
-      
-      // If using SQLite fallback, the response format is different
-      if (stats.totalDeals !== undefined) {
-        // We have SQLite format response (already formatted)
-        return res.status(200).json(stats);
+      // If using SQLite fallback, return SQLite statistics
+      if (usingSqliteFallback) {
+        const sqliteStats = sqliteDbOperations.getStatistics();
+        return res.status(200).json(sqliteStats);
       }
       
-      // Otherwise, we need to process the PostgreSQL response
-      // Get total count
-      const totalDeals = parseInt(stats[0]?.count || '0');
-      
-      // Get stage counts
-      const stageResult = await executeQuery(
-        `SELECT stage, COUNT(*) as count FROM akses_deals GROUP BY stage`,
-        [],
-        () => [] // SQLite fallback handled above
-      );
-      
-      const stageStats = stageResult.reduce((acc: Record<string, number>, row: any) => {
-        acc[row.stage || 'Unknown'] = parseInt(row.count);
-        return acc;
-      }, {});
-      
-      // Get credit hub counts
-      const creditHubResult = await executeQuery(
-        `SELECT credit_hub, COUNT(*) as count FROM akses_deals GROUP BY credit_hub`,
-        [],
-        () => [] // SQLite fallback handled above
-      );
-      
-      const creditHubStats = creditHubResult.reduce((acc: Record<string, number>, row: any) => {
-        acc[row.credit_hub || 'Unknown'] = parseInt(row.count);
-        return acc;
-      }, {});
-      
-      // Get counts for specific stages we're interested in
-      const dueDiligenceCount = stageStats['Due Diligence & U/W'] || 0;
-      const prescreeningCount = stageStats['Pre-Screening'] || 0;
-      const leadCount = stageStats['Lead'] || 0;
-      const closedCount = (stageStats['Closed - Won'] || 0) + (stageStats['Closed - Lost'] || 0);
-      
-      // Static statistic changes for demonstration
-      const valueChangePercent = 12;
-      const newDealsThisMonth = 3;
-      const dueDiligenceChangeWeekly = 0;
-      const completedThisQuarter = 2;
-      
-      return res.status(200).json({
-        totalDeals,
-        stageStats,
-        creditHubStats,
-        dueDiligenceCount,
-        prescreeningCount,
-        leadCount,
-        closedCount,
-        valueChangePercent,
-        newDealsThisMonth,
-        dueDiligenceChangeWeekly,
-        completedThisQuarter
-      });
+      // Using PostgreSQL - get statistics directly
+      try {
+        console.log("Connected to PostgreSQL database");
+        
+        // Get total count
+        const totalResult = await pool.query('SELECT COUNT(*) as count FROM akses_deals');
+        const totalDeals = parseInt(totalResult.rows[0]?.count || '0');
+        
+        // Get stage counts
+        const stageResult = await pool.query('SELECT stage, COUNT(*) as count FROM akses_deals GROUP BY stage');
+        const stageStats = stageResult.rows.reduce((acc: Record<string, number>, row: any) => {
+          acc[row.stage || 'Unknown'] = parseInt(row.count);
+          return acc;
+        }, {});
+        
+        // Get credit hub counts
+        const creditHubResult = await pool.query('SELECT credit_hub, COUNT(*) as count FROM akses_deals GROUP BY credit_hub');
+        const creditHubStats = creditHubResult.rows.reduce((acc: Record<string, number>, row: any) => {
+          acc[row.credit_hub || 'Unknown'] = parseInt(row.count);
+          return acc;
+        }, {});
+        
+        // Get counts for specific stages we're interested in
+        const dueDiligenceCount = stageStats['Due Diligence & U/W'] || 0;
+        const prescreeningCount = stageStats['Pre-Screening'] || 0;
+        const leadCount = stageStats['Lead'] || 0;
+        const closedCount = (stageStats['Closed - Won'] || 0) + (stageStats['Closed - Lost'] || 0);
+        
+        // Static statistic changes for demonstration
+        const valueChangePercent = 12;
+        const newDealsThisMonth = 3;
+        const dueDiligenceChangeWeekly = 0;
+        const completedThisQuarter = 2;
+        
+        return res.status(200).json({
+          totalDeals,
+          stageStats,
+          creditHubStats,
+          dueDiligenceCount,
+          prescreeningCount,
+          leadCount,
+          closedCount,
+          valueChangePercent,
+          newDealsThisMonth,
+          dueDiligenceChangeWeekly,
+          completedThisQuarter
+        });
+      } catch (pgError) {
+        console.error("PostgreSQL error:", pgError);
+        
+        // Fall back to SQLite statistics
+        const sqliteStats = sqliteDbOperations.getStatistics();
+        return res.status(200).json(sqliteStats);
+      }
     } catch (error) {
       console.error("Error fetching deal statistics:", error);
       return res.status(500).json({ 
@@ -216,28 +197,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Fetching deals with query params:", req.query);
       
       // Import necessary database functions
-      const { executeQuery, sqliteDbOperations } = await import('@db');
+      const { pool, sqliteDbOperations, usingSqliteFallback } = await import('@db');
       
       // Extract query parameters for filtering
       const { stage, priority, creditHub, country, lead } = req.query;
       
-      // For SQLite fallback, we need special handling
-      if (stage || priority || creditHub || country || lead) {
-        // If we have filters, we'll need to apply them to both databases
-        const sqliteFallbackOperation = () => {
-          // Get all deals from SQLite
-          const allDeals = sqliteDbOperations.getAllDeals();
-          
-          // Apply filters manually (simplified for demonstration)
-          return allDeals.filter((deal: any) => {
-            if (stage && stage !== 'all' && deal.stage !== stage) return false;
-            if (priority && priority !== 'all' && deal.priority !== priority) return false;
-            if (creditHub && creditHub !== 'all' && deal.credit_hub !== creditHub) return false;
-            if (country && country !== 'all' && deal.country !== country) return false;
-            if (lead && deal.lead !== lead) return false;
-            return true;
-          });
-        };
+      // If we're using SQLite fallback, use the SQLite logic
+      if (usingSqliteFallback) {
+        const allDeals = sqliteDbOperations.getAllDeals();
+        
+        // Apply filters if needed
+        const filteredDeals = allDeals.filter((deal: any) => {
+          if (stage && stage !== 'all' && deal.stage !== stage) return false;
+          if (priority && priority !== 'all' && deal.priority !== priority) return false;
+          if (creditHub && creditHub !== 'all' && deal.credit_hub !== creditHub) return false;
+          if (country && country !== 'all' && deal.country !== country) return false;
+          if (lead && deal.lead !== lead) return false;
+          return true;
+        });
+        
+        console.log(`Retrieved ${filteredDeals.length} deals from SQLite database`);
+        return res.status(200).json(filteredDeals);
+      }
+      
+      // Using PostgreSQL - build query
+      try {
+        console.log("Connected to PostgreSQL database");
         
         // Build PostgreSQL query
         let query = "SELECT * FROM akses_deals";
@@ -284,23 +269,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log("Executing SQL query:", query, "with params:", params);
         
-        // Execute query with fallback
-        const allDeals = await executeQuery(query, params, sqliteFallbackOperation);
+        // Execute direct PostgreSQL query
+        const result = await pool.query(query, params);
         
-        console.log(`Retrieved ${allDeals.length} deals from database`);
+        // Process the data to match our app's expected format
+        const allDeals = result.rows.map(deal => {
+          return {
+            id: deal.id,
+            name: deal.name,
+            priority: deal.priority,
+            country: deal.country,
+            lead: deal.lead,
+            credit_hub: deal.credit_hub,
+            stage: deal.stage,
+            updates: typeof deal.updates === 'string' ? JSON.parse(deal.updates) : deal.updates,
+            members: Array.isArray(deal.members) ? deal.members : [],
+            pre_screening: typeof deal.pre_screening === 'string' ? JSON.parse(deal.pre_screening) : deal.pre_screening || {},
+            ai_screening: deal.ai_screening || [],
+            // Add these fields to ensure compatibility with our app
+            created_at: deal.created_at || new Date().toISOString(),
+            updated_at: deal.updated_at || new Date().toISOString(),
+          };
+        });
         
+        console.log(`Retrieved ${allDeals.length} deals from PostgreSQL database`);
         return res.status(200).json(allDeals);
-      } 
-      else {
-        // No filters, execute simple query
-        const allDeals = await executeQuery(
-          "SELECT * FROM akses_deals ORDER BY id DESC", 
-          [], 
-          () => sqliteDbOperations.getAllDeals()
-        );
+      } catch (pgError) {
+        console.error("PostgreSQL error:", pgError);
         
-        console.log(`Retrieved ${allDeals.length} deals from database`);
-        
+        // Fall back to SQLite
+        const allDeals = sqliteDbOperations.getAllDeals();
+        console.log(`Falling back to SQLite - retrieved ${allDeals.length} deals`);
         return res.status(200).json(allDeals);
       }
     } catch (error) {
