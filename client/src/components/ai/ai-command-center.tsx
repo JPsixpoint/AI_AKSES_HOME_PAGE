@@ -660,71 +660,51 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   };
 
   return (
-    <div className="flex flex-col w-full h-full box-border" style={{ minWidth: "280px" }}>
-      {/* Background Pattern */}
-      <div className="absolute left-0 right-0 top-0 bottom-0 overflow-hidden -z-10">
-        <ConcentricPattern />
-      </div>
-
-      {/* Header */}
-      <div className="flex-none pb-2">
-        <h2 className="text-lg font-semibold">AI Command Center</h2>
-      </div>
-      
-      {/* Avatar Container */}
-      <div className="flex-none pb-3">
-        <div className="flex flex-col items-center">
-          {/* Avatar */}
-          <div className="w-full rounded-lg overflow-hidden shadow-md">
-            <HeyGenAvatarSimplified 
-              text={aiStatus === "speaking" ? lastAIMessage : null}
-              isVisible={true}
-            />
-          </div>
-          
-          {/* Status indicators */}
-          <div className="flex items-center justify-center gap-1.5 mt-1">
-            <div className={`rounded-full h-1.5 w-1.5 ${
-              aiStatus === "listening" 
-                ? "bg-green-500 animate-pulse" 
-                : "bg-gray-500"
-            }`}>
-              <span className="sr-only">Listening</span>
-            </div>
-            <div className={`rounded-full h-1.5 w-1.5 ${
-              aiStatus === "processing" 
-                ? "bg-yellow-500 animate-pulse" 
-                : "bg-gray-500"
-            }`}>
-              <span className="sr-only">Processing</span>
-            </div>
-            <div className={`rounded-full h-1.5 w-1.5 ${
-              aiStatus === "speaking" 
-                ? "bg-blue-500 animate-pulse" 
-                : "bg-gray-500"
-            }`}>
-              <span className="sr-only">Speaking</span>
-            </div>
-          </div>
+    <div className="w-full h-full flex flex-col">
+      {/* Header and Avatar */}
+      <div className="bg-dark-lighter rounded-lg p-2 mb-2">
+        <h2 className="text-lg font-semibold mb-2">AI Command Center</h2>
+        
+        {/* Avatar */}
+        <div className="rounded-lg shadow-sm overflow-hidden">
+          <HeyGenAvatarSimplified 
+            text={aiStatus === "speaking" ? lastAIMessage : null}
+            isVisible={true}
+          />
+        </div>
+        
+        {/* Status indicators */}
+        <div className="flex items-center justify-center gap-2 mt-2 mb-1">
+          <div className={`rounded-full w-1.5 h-1.5 ${
+            aiStatus === "listening" ? "bg-green-500 animate-pulse" : "bg-gray-500"
+          }`} />
+          <div className={`rounded-full w-1.5 h-1.5 ${
+            aiStatus === "processing" ? "bg-yellow-500 animate-pulse" : "bg-gray-500"
+          }`} />
+          <div className={`rounded-full w-1.5 h-1.5 ${
+            aiStatus === "speaking" ? "bg-blue-500 animate-pulse" : "bg-gray-500"
+          }`} />
         </div>
       </div>
 
-      {/* Main Chat Container */}
-      <div className="flex-1 flex flex-col border border-gray-700 bg-dark-lighter rounded-lg overflow-hidden">
+      {/* Main Chat Area */}
+      <div className="flex-1 bg-dark-lighter rounded-lg flex flex-col">
+        {/* Toolbar */}
         <VoiceControlToolbar 
           onVoiceInput={handleVoiceInput}
           aiMessage={lastAIMessage}
           isProcessing={aiStatus === "processing"}
         />
-        {/* Messages container - using flex-1 to fill available space */}
-        <div className="p-3 overflow-y-auto flex-1" style={{ scrollBehavior: "smooth" }}>
+        
+        {/* Messages */}
+        <div className="flex-1 p-3 overflow-y-auto">
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
                 className="mb-3"
               >
                 {message.role === "assistant" ? (
@@ -744,42 +724,41 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           </AnimatePresence>
           <div ref={messagesEndRef} />
         </div>
-
-        {/* Input and actions area */}
-        <div className="flex-none border-t border-dark-surface p-3">
-          {/* Input with send button */}
+        
+        {/* Input Area */}
+        <div className="border-t border-gray-700 p-3">
+          {/* Input Box */}
           <div className="relative mb-3">
-            <textarea
-              placeholder="Type your command or question..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              className="w-full bg-gray-100 dark:bg-dark rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light resize-none h-10 text-black"
-            />
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-              <Button
-                variant="ghost"
-                className="text-primary-light hover:text-primary-lighter transition-colors h-8 w-8 p-0"
+            <div className="flex items-center relative">
+              <textarea
+                placeholder="Type your command or question..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                className="flex-1 bg-white dark:bg-gray-800 rounded-md pl-3 pr-9 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 h-10 resize-none text-black"
+              />
+              <button 
+                type="button"
                 onClick={handleSendMessage}
                 disabled={aiStatus === "processing"}
-                size="sm"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-600 p-1 rounded-full"
               >
                 <SendIcon className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
           </div>
-
-          {/* Quick action buttons */}
-          <div className="flex justify-center gap-2 py-2 bg-dark-surface rounded-lg">
+          
+          {/* Action Buttons */}
+          <div className="bg-dark-surface rounded-md p-2 flex justify-center gap-3">
             <Button
               variant="ghost"
               size="sm"
-              className="px-3 py-1 h-8 text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="text-xs text-white hover:bg-blue-400/10"
               onClick={() => handleQuickCommand("Create new deal")}
             >
               Create deal
@@ -787,7 +766,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="px-3 py-1 h-8 text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="text-xs text-white hover:bg-blue-400/10"
               onClick={() => handleQuickCommand("Update deal status")}
             >
               Update status
@@ -795,7 +774,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="px-3 py-1 h-8 text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="text-xs text-white hover:bg-blue-400/10"
               onClick={() => handleQuickCommand("Generate report")}
             >
               Report
