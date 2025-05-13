@@ -668,7 +668,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         <div className="flex flex-col items-center mb-6">
           {/* Avatar integration */}
-          <div className="w-full mb-2">
+          <div className="w-full mb-2 relative isolate">
             <HeyGenAvatarSimplified 
               text={aiStatus === "speaking" ? lastAIMessage : null}
               isVisible={true}
