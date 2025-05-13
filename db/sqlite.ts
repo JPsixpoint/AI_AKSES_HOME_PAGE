@@ -50,11 +50,142 @@ function generateMongoId() {
   return Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 }
 
-// Seed the SQLite database with some sample data if it's empty
+// Seed the SQLite database with real data from JSON, CSV or sample data as fallback
 export async function seedSqliteDatabase() {
   const count = sqliteDb.select({ count: sql`count(*)` }).from(sqliteDeals).all();
   if (count.length === 0 || count[0].count === 0) {
-    // Create some sample data
+    try {
+      // First try to import from JSON (most reliable format)
+      console.log("SQLite database is empty. Attempting to import real data...");
+      
+      const fs = require('fs');
+      const path = require('path');
+      
+      // First try the pre-exported JSON which is more reliable
+      const jsonPath = path.join(process.cwd(), 'attached_assets', 'deals-sqlite.json');
+      
+      if (fs.existsSync(jsonPath)) {
+        console.log("Found deals-sqlite.json file, importing data...");
+        
+        try {
+          const dealsData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+          
+          if (Array.isArray(dealsData) && dealsData.length > 0) {
+            console.log(`Inserting ${dealsData.length} deals from JSON into SQLite...`);
+            
+            // Insert in batches to avoid potential memory issues
+            const batchSize = 50;
+            for (let i = 0; i < dealsData.length; i += batchSize) {
+              const batch = dealsData.slice(i, i + batchSize);
+              for (const deal of batch) {
+                try {
+                  sqliteDb.insert(sqliteDeals).values(deal).run();
+                } catch (err) {
+                  console.error(`Error inserting deal ${deal.name}:`, err);
+                }
+              }
+              console.log(`Inserted batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(dealsData.length/batchSize)}`);
+            }
+            
+            console.log(`Successfully imported ${dealsData.length} deals from JSON into SQLite`);
+            return;
+          }
+        } catch (jsonError) {
+          console.error("Error parsing JSON file, trying CSV:", jsonError);
+        }
+      }
+      
+      // Fall back to CSV if JSON import fails
+      const csvParser = require('csv-parser');
+      const csvPath = path.join(process.cwd(), 'attached_assets', 'deals.csv');
+      
+      if (fs.existsSync(csvPath)) {
+        console.log("Found deals.csv file, importing data...");
+        
+        const dealsFromCsv: any[] = [];
+        
+        // Parse the CSV file
+        await new Promise<void>((resolve, reject) => {
+          fs.createReadStream(csvPath)
+            .pipe(csvParser())
+            .on('data', (row: any) => {
+              try {
+                // Clean and normalize the data
+                const formattedUpdates = typeof row.updates === 'string' ? 
+                  (row.updates.startsWith('[object Object]') ? 
+                    JSON.stringify([{ date: new Date().toISOString(), content: "Imported from CSV" }]) : 
+                    row.updates) : 
+                  JSON.stringify([]);
+                
+                const formattedPreScreening = typeof row.pre_screening === 'string' ? 
+                  (row.pre_screening.startsWith('[object Object]') ? 
+                    JSON.stringify({}) : 
+                    row.pre_screening) : 
+                  JSON.stringify({});
+                
+                const formattedMembers = typeof row.members === 'string' ? 
+                  (row.members === '[]' ? row.members : 
+                   (row.members.startsWith('[') ? row.members : JSON.stringify([]))) : 
+                  JSON.stringify([]);
+                
+                const deal = {
+                  id: row.id || generateMongoId(),
+                  name: row.name || `Unknown Deal ${generateMongoId().substring(0, 6)}`,
+                  priority: row.priority || "Medium",
+                  country: row.country || "",
+                  lead: row.lead || "",
+                  credit_hub: row.credit_hub || "",
+                  stage: row.stage || "Lead",
+                  updates: formattedUpdates,
+                  members: formattedMembers,
+                  pre_screening: formattedPreScreening,
+                  ai_screening: JSON.stringify([])
+                };
+                
+                dealsFromCsv.push(deal);
+              } catch (err) {
+                console.error("Error processing CSV row:", err);
+              }
+            })
+            .on('end', () => {
+              console.log(`Parsed ${dealsFromCsv.length} deals from CSV`);
+              resolve();
+            })
+            .on('error', (err: any) => {
+              console.error("Error reading CSV:", err);
+              reject(err);
+            });
+        });
+        
+        if (dealsFromCsv.length > 0) {
+          console.log(`Inserting ${dealsFromCsv.length} deals from CSV into SQLite...`);
+          
+          // Insert in batches to avoid potential memory issues
+          const batchSize = 50;
+          for (let i = 0; i < dealsFromCsv.length; i += batchSize) {
+            const batch = dealsFromCsv.slice(i, i + batchSize);
+            for (const deal of batch) {
+              try {
+                sqliteDb.insert(sqliteDeals).values(deal).run();
+              } catch (err) {
+                console.error(`Error inserting deal ${deal.name}:`, err);
+              }
+            }
+            console.log(`Inserted batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(dealsFromCsv.length/batchSize)}`);
+          }
+          
+          console.log(`Successfully imported ${dealsFromCsv.length} deals from CSV into SQLite`);
+          return;
+        }
+      } else {
+        console.log("deals.csv not found in attached_assets folder, falling back to sample data");
+      }
+    } catch (importError) {
+      console.error("Error importing from data files, falling back to sample data:", importError);
+    }
+    
+    // Create some sample data as fallback
+    console.log("Using sample fallback data for SQLite database");
     const dealsData = [
       {
         id: generateMongoId(),

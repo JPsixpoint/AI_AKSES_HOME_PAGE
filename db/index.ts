@@ -51,10 +51,38 @@ pool.on('error', (err) => {
     console.error('IP RESTRICTION ERROR: The deployment server IP address is not allowed to connect to Neon.');
     console.error('To fix this, add the Replit IP to your Neon allowed list in the Neon console.');
     console.error('Alternatively, you can use the direct-neon.ts module with the serverless driver.');
+    console.error('Replit Deployment IP is likely 2600:1900:0:2d00::300 (IPv6)');
+  } else if (err.message && err.message.includes('endpoint is disabled')) {
+    console.error('ENDPOINT DISABLED: Your Neon database endpoint appears to be disabled or suspended.');
+    console.error('Check your Neon database console to ensure your endpoint is active.');
   }
   
-  usingSqliteFallback = true;
-  console.log('Falling back to SQLite database');
+  if (!usingSqliteFallback) {
+    usingSqliteFallback = true;
+    console.log('Switching to SQLite database with imported real data');
+    
+    // Import the SQLite modules and ensure database is seeded with real data
+    const { sqliteDb, sqliteDeals, seedSqliteDatabase } = require('./sqlite');
+    
+    // Force reseeding to get real data from CSV if the database exists but is empty
+    try {
+      // Clear the existing SQLite database to force a fresh import
+      const sqlite = require('better-sqlite3')('./db/akses.db');
+      sqlite.exec('DELETE FROM akses_deals');
+      console.log('Cleared existing SQLite database to force fresh import from CSV');
+    } catch (err) {
+      console.error('Error clearing SQLite database:', err);
+    }
+    
+    // Seed the database with real data from CSV
+    seedSqliteDatabase()
+      .then(() => {
+        console.log('SQLite database prepared with real data for fallback');
+      })
+      .catch(seedErr => {
+        console.error('Error seeding SQLite database:', seedErr);
+      });
+  }
 });
 
 // Create Drizzle instance
