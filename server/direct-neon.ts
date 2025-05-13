@@ -86,8 +86,21 @@ export async function getDealsDirectly(): Promise<Deal[]> {
         updatedAt: new Date(),
       };
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching deals directly from Neon:", error);
+    
+    // Check if this is an IP restriction error - common in deploys
+    if (error && typeof error === 'object' && error.message) {
+      if (error.message.includes('not allowed to connect') && error.message.includes('IP address')) {
+        console.error('IP RESTRICTION ERROR: This deployment server IP is not allowed in your Neon database settings.');
+        console.error('Add the Replit deployment IP to your Neon database allowed list in the Neon console.');
+        console.error('The typical Replit IPv6 is something like 2600:1900:0:2d00::300');
+      } else if (error.message.includes('endpoint is disabled')) {
+        console.error('ENDPOINT DISABLED: Your Neon database endpoint appears to be disabled or suspended.');
+        console.error('Check your Neon database console to ensure your endpoint is active.');
+      }
+    }
+    
     return [];
   }
 }
@@ -144,8 +157,21 @@ export async function getDealsStatisticsDirectly() {
       dueDiligenceChangeWeekly: 0,
       completedThisQuarter: 2
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching deal statistics directly from Neon:", error);
+    
+    // Check if this is an IP restriction error - common in deploys
+    if (error && typeof error === 'object' && error.message) {
+      if (error.message.includes('not allowed to connect') && error.message.includes('IP address')) {
+        console.error('IP RESTRICTION ERROR: This deployment server IP is not allowed in your Neon database settings.');
+        console.error('Add the Replit deployment IP to your Neon database allowed list in the Neon console.');
+        console.error('The typical Replit IPv6 is something like 2600:1900:0:2d00::300');
+      } else if (error.message.includes('endpoint is disabled')) {
+        console.error('ENDPOINT DISABLED: Your Neon database endpoint appears to be disabled or suspended.');
+        console.error('Check your Neon database console to ensure your endpoint is active.');
+      }
+    }
+    
     return null;
   }
 }

@@ -45,6 +45,14 @@ pool.on('connect', () => {
 
 pool.on('error', (err) => {
   console.error('Unexpected error on database connection:', err);
+  
+  // Check if this is an IP restriction error
+  if (err.message && err.message.includes('not allowed to connect') && err.message.includes('IP address')) {
+    console.error('IP RESTRICTION ERROR: The deployment server IP address is not allowed to connect to Neon.');
+    console.error('To fix this, add the Replit IP to your Neon allowed list in the Neon console.');
+    console.error('Alternatively, you can use the direct-neon.ts module with the serverless driver.');
+  }
+  
   usingSqliteFallback = true;
   console.log('Falling back to SQLite database');
 });
