@@ -43,18 +43,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { messages, model } = req.body;
       
+      console.log("Received AI chat request with model:", model);
+      
       if (!messages || !Array.isArray(messages)) {
-        return res.status(400).json({ message: "Invalid messages format" });
+        console.error("Invalid messages format:", req.body);
+        return res.status(400).json({ 
+          message: "Invalid messages format",
+          choices: [{ 
+            message: { 
+              content: "I encountered an error processing your request. Invalid message format.",
+              role: "assistant" 
+            },
+            finish_reason: "stop"
+          }]
+        });
       }
       
-      // For development, can return mock responses if no API key
-      if (process.env.OPENAI_API_KEY === "mock_key_for_development") {
+      // Log OpenAI key status without exposing the key
+      const hasValidAPIKey = !!process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "mock_key_for_development";
+      console.log("OpenAI API key available:", hasValidAPIKey);
+      
+      // For development or missing API key, return a useful response
+      if (!hasValidAPIKey) {
+        console.log("Using mock response due to missing API key");
         return res.status(200).json({
           id: "mock-response-id",
           choices: [
             {
               message: {
-                content: "This is a mock response from the AI. In production, this would use the OpenAI API.",
+                content: "This is a mock response from the AI. An OpenAI API key is required.",
                 role: "assistant",
               },
               finish_reason: "stop",
@@ -63,16 +80,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      console.log("Sending request to OpenAI:", { model: model || "gpt-4o", messageCount: messages.length });
+      
       const response = await openai.chat.completions.create({
         model: model || "gpt-4o",
         messages,
         temperature: 0.7,
       });
       
+      console.log("Received response from OpenAI:", { 
+        id: response.id,
+        model: response.model,
+        contentLength: response.choices[0]?.message?.content?.length || 0
+      });
+      
       return res.status(200).json(response);
     } catch (error) {
       console.error("Error processing AI chat request:", error);
-      return res.status(500).json({ message: "Failed to process AI request" });
+      
+      // Create a well-formed error response that the client can handle
+      return res.status(200).json({
+        id: "error-response",
+        choices: [
+          {
+            message: {
+              content: "I'm sorry, I encountered an error processing your request. Please try again or contact support if the issue persists.",
+              role: "assistant",
+            },
+            finish_reason: "stop",
+          },
+        ],
+      });
     }
   });
 
@@ -146,6 +184,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all deals from the akses_deals table
   app.get(`${apiPrefix}/deals`, async (req, res) => {
     try {
+      console.log("Fetching deals with query params:", req.query);
+      
       // Extract query parameters for filtering
       const { stage, priority, creditHub, country, lead } = req.query;
       
@@ -192,9 +232,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add ordering
       query += " ORDER BY id DESC";
       
+      console.log("Executing SQL query:", query, "with params:", params);
+      
+      // First check if we can connect to the database and if the table exists
+      try {
+        const tableCheck = await pool.query("SELECT to_regclass('akses_deals') IS NOT NULL as exists");
+        const tableExists = tableCheck.rows[0]?.exists;
+        
+        if (!tableExists) {
+          console.error("The akses_deals table does not exist in the database");
+          return res.status(500).json({ 
+            error: "Database schema error", 
+            message: "The deals table does not exist. Please contact support." 
+          });
+        }
+      } catch (dbError) {
+        console.error("Failed to check if table exists:", dbError);
+      }
+      
       // Execute query
       const result = await pool.query(query, params);
       const allDeals = result.rows;
+      
+      console.log(`Retrieved ${allDeals.length} deals from database`);
       
       return res.status(200).json(allDeals);
     } catch (error) {
