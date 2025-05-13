@@ -136,35 +136,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching deal statistics:", error);
-      
-      // Return placeholder statistics when database is unavailable
-      const placeholderStats = {
-        totalDeals: 12,
-        stageStats: [
-          { stage: "Pre-Screening", count: 3 },
-          { stage: "Lead", count: 4 },
-          { stage: "Due Diligence & U/W", count: 2 },
-          { stage: "Term Sheet Negotiation", count: 1 },
-          { stage: "Closed - Won", count: 1 },
-          { stage: "Closed - Lost", count: 1 }
-        ],
-        creditHubStats: [
-          { credit_hub: "LATAM", count: 4 },
-          { credit_hub: "EMENA", count: 3 },
-          { credit_hub: "SSA", count: 2 },
-          { credit_hub: "APAC", count: 3 }
-        ],
-        dueDiligenceCount: 2,
-        prescreeningCount: 3,
-        leadCount: 4,
-        closedCount: 2,
-        valueChangePercent: 15,
-        newDealsThisMonth: 3,
-        dueDiligenceChangeWeekly: 0,
-        completedThisQuarter: 2
-      };
-      
-      return res.status(200).json(placeholderStats);
+      return res.status(500).json({ 
+        error: "Database error", 
+        message: "Could not fetch deal statistics from the database. Please try again later." 
+      });
     }
   });
   
@@ -224,43 +199,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json(allDeals);
     } catch (error) {
       console.error("Error fetching deals:", error);
-      // Return placeholder data when database is unavailable
-      const placeholderDeals = [
-        {
-          id: "placeholder-1",
-          name: "Example Deal 1",
-          priority: "High",
-          country: "United States",
-          lead: "contact@example.com",
-          credit_hub: "LATAM",
-          stage: "Pre-Screening",
-          updates: JSON.stringify([{
-            date: new Date().toISOString(),
-            content: "Database connection currently unavailable. Using placeholder data."
-          }]),
-          pre_screening: null,
-          members: JSON.stringify(["team@example.com"]),
-          ai_screening: null
-        },
-        {
-          id: "placeholder-2",
-          name: "Example Deal 2",
-          priority: "Medium",
-          country: "Canada",
-          lead: "contact2@example.com",
-          credit_hub: "APAC",
-          stage: "Due Diligence & U/W",
-          updates: JSON.stringify([{
-            date: new Date().toISOString(),
-            content: "Database connection currently unavailable. Using placeholder data."
-          }]),
-          pre_screening: null,
-          members: JSON.stringify(["team@example.com"]),
-          ai_screening: null
-        }
-      ];
-      
-      return res.status(200).json(placeholderDeals);
+      return res.status(500).json({ 
+        error: "Database error", 
+        message: "Could not fetch deals from the database. Please try again later." 
+      });
     }
   });
   
@@ -284,27 +226,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json(deal);
     } catch (error) {
       console.error(`Error fetching deal with ID ${req.params.id}:`, error);
-      
-      // Return placeholder data when database is unavailable
-      // Use the ID from the request params for the placeholder
-      const placeholderDeal = {
-        id: req.params.id,
-        name: "Example Deal",
-        priority: "High",
-        country: "United States",
-        lead: "contact@example.com",
-        credit_hub: "LATAM",
-        stage: "Pre-Screening",
-        updates: JSON.stringify([{
-          date: new Date().toISOString(),
-          content: "Database connection currently unavailable. Using placeholder data."
-        }]),
-        pre_screening: JSON.stringify({}),
-        members: JSON.stringify(["team@example.com"]),
-        ai_screening: JSON.stringify([])
-      };
-      
-      return res.status(200).json(placeholderDeal);
+      return res.status(500).json({ 
+        error: "Database error", 
+        message: "Could not fetch deal details from the database. Please try again later."
+      });
     }
   });
   

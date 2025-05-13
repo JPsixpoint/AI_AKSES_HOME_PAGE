@@ -52,9 +52,16 @@ export function ElevenLabsAvatar({ text, isVisible, onSpeechStart, onSpeechEnd }
             // Restart video at the beginning of speech
             if (backgroundVideoRef.current) {
               backgroundVideoRef.current.currentTime = 0;
-              backgroundVideoRef.current.play().catch(err => {
-                console.error('Error starting video at speech start:', err);
-              });
+              
+              // Handle autoplay restrictions by using muted attribute and checking if we can play
+              const playPromise = backgroundVideoRef.current.play();
+              
+              if (playPromise !== undefined) {
+                playPromise.catch(err => {
+                  console.log('Video autoplay prevented by browser. This is normal before user interaction.');
+                  // Don't show error since this is expected behavior
+                });
+              }
             }
           },
           // On ended
@@ -205,9 +212,16 @@ export function ElevenLabsAvatar({ text, isVisible, onSpeechStart, onSpeechEnd }
         // Restart video at the beginning of speech
         if (backgroundVideoRef.current) {
           backgroundVideoRef.current.currentTime = 0;
-          backgroundVideoRef.current.play().catch(err => {
-            console.error('Error starting video at speech start:', err);
-          });
+          
+          // Handle autoplay restrictions with fallback speech
+          const playPromise = backgroundVideoRef.current.play();
+          
+          if (playPromise !== undefined) {
+            playPromise.catch(err => {
+              console.log('Video autoplay prevented by browser in fallback mode. Requires user interaction.');
+              // Don't show error since this is expected behavior
+            });
+          }
         }
       };
       
@@ -304,8 +318,8 @@ export function ElevenLabsAvatar({ text, isVisible, onSpeechStart, onSpeechEnd }
           </div>
         )}
         
-        {/* Error message */}
-        {error && !isLoading && (
+        {/* Error message - don't show autoplay errors */}
+        {error && !isLoading && !error.includes('play()') && (
           <div className="absolute bottom-2 left-2 right-2 bg-red-500/70 text-white text-xs p-1 rounded">
             Error: {error}
           </div>
