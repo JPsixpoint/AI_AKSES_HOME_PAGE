@@ -1,22 +1,18 @@
 /**
  * Direct Neon Database Access
  * 
- * This module provides a direct HTTP fetch-based connection to the Neon database
+ * This module provides a direct serverless connection to the Neon database
  * as a fallback mechanism when the PostgreSQL connection fails.
  * 
- * Neon provides a HTTP API that can be used to execute SQL queries directly.
+ * Using @neondatabase/serverless to handle direct HTTP connections without requiring
+ * a full PostgreSQL client, which is more reliable in serverless/Replit environments.
  */
 
 import { Deal } from "@shared/schema";
+import type { QueryResultRow } from "@neondatabase/serverless";
 
-// IMPORTANT: Use the exact Neon database information
-const NEON_PROJECT_ID = "ep-white-breeze-a5zu57ak"; // Extract from URL
-const NEON_DATABASE = "scale";
-const NEON_USER = "scale_owner";
-const NEON_PASSWORD = "uMLhi5Va0Sdx";
-const NEON_HOST = "ep-white-breeze-a5zu57ak-pooler.us-east-2.aws.neon.tech";
-
-interface NeonDeal {
+// Define the structure of a deal record from the Neon database
+interface NeonDealRecord extends QueryResultRow {
   id: string;
   name: string;
   priority: string;
@@ -24,9 +20,9 @@ interface NeonDeal {
   lead: string;
   credit_hub: string;
   stage: string;
-  updates: any;
-  pre_screening: any;
-  members: any;
+  updates: string | Record<string, any>;
+  pre_screening: string | Record<string, any>;
+  members: string | any[];
 }
 
 /**
@@ -35,116 +31,95 @@ interface NeonDeal {
  */
 export async function getDealsDirectly(): Promise<Deal[]> {
   try {
-    console.log("Attempting to fetch deals directly from Neon via HTTP");
+    console.log("Attempting to fetch deals directly from Neon Serverless");
     
-    // Build the connection URL
-    const url = `https://${NEON_HOST}/sql`;
+    // Use the @neondatabase/serverless package
+    const { neon } = await import('@neondatabase/serverless');
     
-    // Execute a query to get data from Neon
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${Buffer.from(`${NEON_USER}:${NEON_PASSWORD}`).toString('base64')}`
-      },
-      body: JSON.stringify({
-        query: "SELECT * FROM akses_deals ORDER BY id DESC LIMIT 100"
-      })
+    // Create a SQL function using the DATABASE_URL environment variable
+    // We need the ! to tell TypeScript that we know this exists
+    const sql = neon(process.env.DATABASE_URL!);
+    
+    // Execute the query through the Neon serverless driver
+    const rows = await sql<NeonDealRecord[]>`
+      SELECT * FROM akses_deals 
+      ORDER BY id DESC 
+      LIMIT 100
+    `;
+    
+    console.log(`Retrieved ${rows?.length || 0} deals directly from Neon Serverless`);
+    
+    // Transform the data to our expected format with normalized field names
+    return rows.map(deal => {
+      // Parse JSON strings if necessary
+      const updates = typeof deal.updates === 'string' 
+        ? JSON.parse(deal.updates) 
+        : (deal.updates || {});
+        
+      const preScreening = typeof deal.pre_screening === 'string'
+        ? JSON.parse(deal.pre_screening)
+        : (deal.pre_screening || {});
+        
+      const members = Array.isArray(deal.members) 
+        ? deal.members 
+        : (typeof deal.members === 'string' ? JSON.parse(deal.members) : []);
+      
+      // Return a normalized deal object with both snake_case and camelCase fields
+      return {
+        id: deal.id,
+        name: deal.name,
+        priority: deal.priority,
+        country: deal.country,
+        lead: deal.lead,
+        credit_hub: deal.credit_hub,  
+        creditHub: deal.credit_hub,   
+        stage: deal.stage,
+        updates: updates,
+        members: members,
+        pre_screening: preScreening,
+        preScreening: preScreening,
+        ai_screening: [],
+        aiScreening: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
     });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch from Neon: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log(`Retrieved ${data.rows?.length || 0} deals directly from Neon via HTTP`);
-    
-    // Transform data to our expected format - normalize field names for consistency
-    return (data.rows || []).map((deal: NeonDeal) => ({
-      id: deal.id,
-      name: deal.name,
-      priority: deal.priority,
-      country: deal.country,
-      lead: deal.lead,
-      credit_hub: deal.credit_hub,   // Original field from database
-      creditHub: deal.credit_hub,    // Normalized field for Drizzle schema
-      stage: deal.stage,
-      updates: typeof deal.updates === 'string' ? JSON.parse(deal.updates) : deal.updates,
-      members: Array.isArray(deal.members) ? deal.members : [],
-      pre_screening: typeof deal.pre_screening === 'string' ? JSON.parse(deal.pre_screening) : deal.pre_screening || {},
-      preScreening: typeof deal.pre_screening === 'string' ? JSON.parse(deal.pre_screening) : deal.pre_screening || {},
-      ai_screening: [],
-      aiScreening: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }));
   } catch (error) {
     console.error("Error fetching deals directly from Neon:", error);
     return [];
   }
 }
 
-// Function to get deals statistics
+/**
+ * Get deal statistics directly from Neon
+ * This uses the serverless driver for better reliability in Replit
+ */
 export async function getDealsStatisticsDirectly() {
   try {
-    console.log("Attempting to fetch deal statistics directly from Neon via HTTP");
+    console.log("Attempting to fetch deal statistics directly from Neon Serverless");
     
-    // Build the connection URL
-    const url = `https://${NEON_HOST}/sql`;
+    // Import the neon serverless package
+    const { neon } = await import('@neondatabase/serverless');
     
-    // Execute a query to get total count
-    const countResponse = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${Buffer.from(`${NEON_USER}:${NEON_PASSWORD}`).toString('base64')}`
-      },
-      body: JSON.stringify({
-        query: "SELECT COUNT(*) as count FROM akses_deals"
-      })
-    });
+    // Create a SQL function using the DATABASE_URL environment variable
+    const sql = neon(process.env.DATABASE_URL!);
     
-    if (!countResponse.ok) {
-      throw new Error(`Failed to fetch from Neon: ${countResponse.status} ${countResponse.statusText}`);
-    }
-    
-    const countData = await countResponse.json();
-    const totalDeals = parseInt(countData.rows[0]?.count || '0');
+    // Get total count of deals
+    const countResult = await sql`SELECT COUNT(*) as count FROM akses_deals`;
+    const totalDeals = parseInt(countResult[0]?.count || '0');
     
     // Get stage statistics
-    const stageResponse = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${Buffer.from(`${NEON_USER}:${NEON_PASSWORD}`).toString('base64')}`
-      },
-      body: JSON.stringify({
-        query: "SELECT stage, COUNT(*) as count FROM akses_deals GROUP BY stage"
-      })
-    });
-    
-    const stageData = await stageResponse.json();
-    const stageStats = (stageData.rows || []).reduce((acc: Record<string, number>, row: any) => {
+    const stageResult = await sql`SELECT stage, COUNT(*) as count FROM akses_deals GROUP BY stage`;
+    const stageStats = stageResult.reduce((acc: Record<string, number>, row: any) => {
       acc[row.stage || 'Unknown'] = parseInt(row.count);
       return acc;
     }, {});
     
     // Get credit hub statistics
-    const hubResponse = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${Buffer.from(`${NEON_USER}:${NEON_PASSWORD}`).toString('base64')}`
-      },
-      body: JSON.stringify({
-        query: "SELECT credit_hub, COUNT(*) as count FROM akses_deals GROUP BY credit_hub"
-      })
-    });
-    
-    const hubData = await hubResponse.json();
-    const creditHubStats = (hubData.rows || []).reduce((acc: Record<string, number>, row: any) => {
+    const hubResult = await sql`SELECT credit_hub, COUNT(*) as count FROM akses_deals GROUP BY credit_hub`;
+    const creditHubStats = hubResult.reduce((acc: Record<string, number>, row: any) => {
       acc[row.credit_hub || 'Unknown'] = parseInt(row.count);
       return acc;
     }, {});
@@ -163,7 +138,7 @@ export async function getDealsStatisticsDirectly() {
       prescreeningCount,
       leadCount,
       closedCount,
-      // Static metrics
+      // Static metrics for dashboard display
       valueChangePercent: 12,
       newDealsThisMonth: 3,
       dueDiligenceChangeWeekly: 0,
