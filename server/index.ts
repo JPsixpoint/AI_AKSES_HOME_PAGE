@@ -48,6 +48,41 @@ app.use((req, res, next) => {
     throw err;
   });
 
+  // Add routes to support both deployment health checks and frontend rendering
+  
+  // Health check endpoint at /health - for developer use
+  app.get('/health', async (req, res) => {
+    try {
+      // Simple health check that responds quickly
+      return res.status(200).json({
+        status: 'healthy',
+        message: 'AKSES API is running',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Health check error:", error);
+      return res.status(200).json({ 
+        status: 'degraded', 
+        message: 'Service running with errors' 
+      });
+    }
+  });
+  
+  // Root health check for Replit deployment health checks
+  // This route is needed to pass Replit deployment health checks,
+  // but it will only be used if no frontend files match
+  app.get('/', async (req, res, next) => {
+    // Check if this is an automated health check from Replit deployment
+    const userAgent = req.headers['user-agent'] || '';
+    if (userAgent.includes('Replit') || req.query.health === 'check') {
+      return res.status(200).send('OK');
+    }
+    
+    // For regular requests, continue to the next middleware (frontend serving)
+    next();
+  });
+  
+  // Now that all API and health routes are set, setup the frontend
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes

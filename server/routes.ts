@@ -29,26 +29,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("No RESEND_API_KEY found in environment, email features will be disabled");
   }
 
-  // API Routes
+  // API Routes 
   const apiPrefix = "/api";
-  
-  // Add a health check endpoint for deployment - required for Replit deployment
-  app.get('/health', async (req, res) => {
-    try {
-      // Simple health check that responds quickly
-      return res.status(200).json({
-        status: 'healthy',
-        message: 'AKSES API is running',
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error("Health check error:", error);
-      return res.status(200).json({ 
-        status: 'degraded', 
-        message: 'Service running with errors' 
-      });
-    }
-  });
 
   // HeyGen Avatar token endpoint
   app.get(`${apiPrefix}/heygen/token`, heygenController.getToken);
