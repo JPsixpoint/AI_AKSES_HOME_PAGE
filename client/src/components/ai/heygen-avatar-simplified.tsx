@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import StreamingAvatar, { StreamingEvents, StartAvatarRequest } from '@heygen/streaming-avatar';
+import StreamingAvatar, { StreamingEvents } from '@heygen/streaming-avatar';
 import { getAvatarConfig, AVATAR_CONFIG } from '@/lib/heygen-client';
 
 // Interface for component props
@@ -30,7 +30,6 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
     if (!isVisible) return;
     
     let isMounted = true;
-    let sessionId: string | null = null;
     
     const initializeAvatar = async () => {
       try {
@@ -104,68 +103,47 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
           setIsSpeaking(false);
         });
         
-        // Listen for session events (the actual event name may vary by SDK version)
-        try {
-          avatarRef.current.on('session_created' as any, (event: any) => {
-            if (!isMounted) return;
-            console.log('Session created:', event.detail);
-            sessionId = event.detail?.session_id;
-          });
-        } catch (e) {
-          console.log('Session created event not supported in this SDK version');
-        }
-        
         avatarRef.current.on(StreamingEvents.STREAM_DISCONNECTED, () => {
           if (!isMounted) return;
           console.log('Stream disconnected');
         });
         
         try {
-          // Start avatar with basic configuration - trying compatible approaches
+          // Start avatar with basic configuration
+          console.log('Attempting to start avatar with param object');
+          // Cast to any to bypass type checking since SDK types may vary by version
+          const startParams = {
+            avatar_id: AVATAR_CONFIG.avatarId,
+            voice_id: AVATAR_CONFIG.voiceId
+          } as any;
+          
           try {
-            // Start with various methods - SDK compatibility varies by version
-            try {
-              // Method 1: Try createStartAvatar with params
-              console.log('Attempting to start avatar with param object');
-              // Cast to any to bypass type checking since SDK types may vary by version
-              const startParams = {
-                avatar_id: AVATAR_CONFIG.avatarId,
-                voice_id: AVATAR_CONFIG.voiceId
-              } as any;
-              await avatarRef.current.createStartAvatar(startParams);
-            } catch (e) {
-              // Method 2: Try createStartAvatar with empty object for SDK compatibility
-              console.log('First start method failed, trying alternative method');
-              await avatarRef.current.createStartAvatar({} as any);
-            }
-          } catch (error) {
-            console.error('All start methods failed:', error);
-            throw error;
+            await avatarRef.current.createStartAvatar(startParams);
+          } catch (e) {
+            // Try alternative method for SDK compatibility
+            console.log('First start method failed, trying alternative method');
+            await avatarRef.current.createStartAvatar({} as any);
           }
           
           if (!isMounted) return;
           console.log('Avatar created and started successfully');
         } catch (err: any) {
-          console.error('Failed to create/start avatar:', err);
-          if (!isMounted) return;
+          console.error('All start methods failed:', err);
           throw err;
         }
       } catch (err: any) {
         console.error('Avatar initialization error:', err);
         
         // Log more detailed error information
-        const errorDetails = {
+        console.error('Detailed error information:', {
           name: err?.name,
           message: err?.message,
           status: err?.status,
           responseText: err?.responseText,
           stack: err?.stack
-        };
-        console.error('Detailed error information:', errorDetails);
+        });
         
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
         
         // Create a more descriptive error message
         let errorMessage = 'Failed to initialize avatar';
@@ -216,46 +194,6 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
     // Since we're having issues with the HeyGen API, let's directly use the fallback speech synthesis
     setUsingFallback(true);
     speakWithFallback(text);
-    
-    // This commented code is the original attempt to use HeyGen Avatar
-    /*
-    // Only attempt HeyGen speaking if we have an avatar reference
-    if (avatarRef.current) {
-      const speakWithAvatar = async () => {
-        try {
-          console.log('Making avatar speak:', text);
-          
-          // Try to use avatar to speak
-          await avatarRef.current!.speak({
-            text
-          });
-          
-          return true;
-        } catch (err) {
-          console.error('Error making avatar speak:', err);
-          
-          // Log detailed error information
-          if (err instanceof Error) {
-            console.error('Error details:', {
-              name: err.name,
-              message: err.message,
-              stack: err.stack,
-              ...(err as any) // Capture any additional properties
-            });
-          }
-          
-          setUsingFallback(true);
-          speakWithFallback(text);
-          return false;
-        }
-      };
-      
-      speakWithAvatar();
-    } else {
-      setUsingFallback(true);
-      speakWithFallback(text);
-    }
-    */
   }, [text, isVisible, isMuted]);
   
   // Fallback speech synthesis
@@ -373,11 +311,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
           setIsSpeaking(false);
           
           // If there's an error, try our manual approach for chunking
-          try {
-            speakInChunks(text);
-          } catch (chunkedError) {
-            console.error('Even chunked speech failed:', chunkedError);
-          }
+          speakInChunks(text);
         };
         
         // Speak the text
@@ -397,7 +331,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
           }
         };
         
-        // Start the keepAlive timer regardless - if there's no speech it will just not continue
+        // Start the keepAlive timer
         setTimeout(keepAlive, 2000);
       };
       
@@ -517,128 +451,43 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
     const videoElement = backgroundVideoRef.current;
     if (!videoElement) return;
     
-    videoElement.addEventListener('loadeddata', () => {
-      // Ensure video starts from the beginning
-      videoElement.currentTime = 0;
-      
-      // Ensure it's muted for autoplay compatibility
-      videoElement.muted = true;
-      
-      // Don't loop the video
-      videoElement.loop = false;
-      
-      // Start playing
-      videoElement.play().catch(err => {
-        console.error('Error playing background video:', err);
-      });
-    });
-    
-    // Play/pause the video based on visibility
-    if (isVisible) {
-      videoElement.play().catch(err => {
-        console.error('Error playing background video:', err);
-      });
-    } else {
-      videoElement.pause();
-    }
-    
-    // Handle video ended event
     const handleEnded = () => {
       console.log('Background video playback completed');
-      // Don't automatically restart the video when it ends
-      // Only speaking events should trigger a restart
     };
     
     videoElement.addEventListener('ended', handleEnded);
     
+    // Clean up
     return () => {
       videoElement.removeEventListener('ended', handleEnded);
     };
-  }, [isVisible]);
+  }, []);
   
-  // Restart video when speaking state changes to true
-  useEffect(() => {
-    if (isSpeaking && backgroundVideoRef.current) {
-      console.log('Restarting video for speech animation');
-      // Reset the video to start from the beginning
-      backgroundVideoRef.current.currentTime = 0;
-      backgroundVideoRef.current.play().catch(err => {
-        console.error('Error replaying video for speech:', err);
-      });
-    }
-  }, [isSpeaking]);
-  
-  // Don't render if not visible
-  if (!isVisible) {
-    return null;
-  }
-
   return (
-    <div className="flex flex-col items-center justify-center" style={{ isolation: 'isolate' }}>
-      <div className="relative w-[220px] h-[220px] rounded-xl overflow-hidden bg-[#353b64]" style={{ isolation: 'isolate' }}>
-        {/* Background Video - Always present across all states */}
-        <video 
+    <div className={`relative flex items-center justify-center ${isVisible ? '' : 'hidden'}`}>
+      <div className="relative w-48 h-48 md:w-56 md:h-56 overflow-hidden rounded-full">
+        {/* Background video for simulating talking avatar */}
+        <video
           ref={backgroundVideoRef}
-          autoPlay
+          className="absolute inset-0 w-full h-full object-cover"
+          src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ zIndex: 1 }}
-          src="https://sixpoint-web-assets.s3.us-east-1.amazonaws.com/summit2025/SQUARE.mp4"
-        />
+        ></video>
         
-        {/* HeyGen Avatar Video - Only shown when active and not using fallback */}
-        {!isLoading && !error && !usingFallback && (
-          <video 
-            ref={videoRef}
-            id="heygen-video"
-            autoPlay
-            playsInline
-            muted={isMuted}
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ zIndex: 2 }}
-          />
-        )}
+        {/* Main avatar video (from HeyGen) */}
+        <video
+          ref={videoRef}
+          className={`absolute inset-0 w-full h-full object-cover ${usingFallback ? 'hidden' : ''}`}
+          autoPlay
+          playsInline
+        ></video>
         
-        {/* Error state - Only show retry button on hover */}
-        {error && (
-          <div className="absolute bottom-2 right-2 opacity-0 hover:opacity-100 transition-opacity duration-300" 
-               style={{ zIndex: 10 }}>
-            <button 
-              onClick={() => {
-                setError(null);
-                setIsLoading(true);
-                if (avatarRef.current) {
-                  try {
-                    avatarRef.current.stopAvatar();
-                  } catch (e) {
-                    console.error('Error stopping avatar during retry:', e);
-                  }
-                  avatarRef.current = null;
-                }
-              }}
-              className="text-[10px] bg-black/50 hover:bg-black/70 text-white px-2 py-1 rounded-sm transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-        
-        {/* Loading state - Just a subtle indicator */}
-        {isLoading && (
-          <div className="absolute bottom-2 left-2" style={{ zIndex: 10 }}>
-            <div className="animate-pulse w-3 h-3 rounded-full bg-blue-500/30"></div>
-          </div>
-        )}
-        
-        {/* Removed Speech Animation Overlay */}
-        
-        {/* Mute Control */}
-        <div className="absolute top-2 right-2" style={{ zIndex: 10 }}>
-          <button 
+        {/* Mute/unmute button */}
+        <div className="absolute bottom-2 left-2 z-20">
+          <button
+            className="bg-black/50 rounded-full p-2 hover:bg-black/70 transition-colors"
             onClick={() => setIsMuted(!isMuted)}
-            className="bg-black/70 hover:bg-black/90 rounded-full p-2 transition-colors"
-            aria-label={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? (
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
