@@ -279,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if deal exists
-      const checkResult = await pool.query('SELECT * FROM pipeline WHERE id = $1', [id]);
+      const checkResult = await pool.query('SELECT * FROM akses_deals WHERE id = $1', [id]);
       
       if (checkResult.rows.length === 0) {
         return res.status(404).json({ message: "Deal not found" });
@@ -309,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const setClauses = Object.keys(updates).map((key, index) => `${key} = $${index + 2}`);
       const values = [id, ...Object.values(updates)];
       
-      const query = `UPDATE pipeline SET ${setClauses.join(', ')} WHERE id = $1 RETURNING *`;
+      const query = `UPDATE akses_deals SET ${setClauses.join(', ')} WHERE id = $1 RETURNING *`;
       const result = await pool.query(query, values);
       
       if (result.rows.length === 0) {
@@ -334,14 +334,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if deal exists
-      const checkResult = await pool.query('SELECT * FROM pipeline WHERE id = $1', [id]);
+      const checkResult = await pool.query('SELECT * FROM akses_deals WHERE id = $1', [id]);
       
       if (checkResult.rows.length === 0) {
         return res.status(404).json({ message: "Deal not found" });
       }
       
       // Delete the deal
-      await pool.query('DELETE FROM pipeline WHERE id = $1', [id]);
+      await pool.query('DELETE FROM akses_deals WHERE id = $1', [id]);
       
       return res.status(204).send();
     } catch (error) {
@@ -364,7 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if deal exists
-      const checkResult = await pool.query('SELECT * FROM pipeline WHERE id = $1', [dealId]);
+      const checkResult = await pool.query('SELECT * FROM akses_deals WHERE id = $1', [dealId]);
       
       if (checkResult.rows.length === 0) {
         return res.status(404).json({ message: "Deal not found" });
@@ -448,7 +448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       aiScreeningData.push(screeningEntry);
       
       // Update the deal with new AI screening data
-      const updateQuery = `UPDATE pipeline SET ai_screening = $1 WHERE id = $2 RETURNING *`;
+      const updateQuery = `UPDATE akses_deals SET ai_screening = $1 WHERE id = $2 RETURNING *`;
       const updateResult = await pool.query(updateQuery, [JSON.stringify(aiScreeningData), dealId]);
       
       if (updateResult.rows.length === 0) {
@@ -580,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if deal exists
-      const checkResult = await pool.query('SELECT * FROM pipeline WHERE id = $1', [dealId]);
+      const checkResult = await pool.query('SELECT * FROM akses_deals WHERE id = $1', [dealId]);
       
       if (checkResult.rows.length === 0) {
         return res.status(404).json({ message: "Deal not found" });
