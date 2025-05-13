@@ -704,13 +704,13 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         </div>
       </div>
 
-      <div className="gradient-border bg-dark-lighter flex-1 overflow-hidden flex flex-col mb-4 z-10">
+      <div className="gradient-border bg-dark-lighter flex-1 overflow-hidden flex flex-col mb-2 z-10">
         <VoiceControlToolbar 
           onVoiceInput={handleVoiceInput}
           aiMessage={lastAIMessage}
           isProcessing={aiStatus === "processing"}
         />
-        <div className="p-4 overflow-y-auto flex-1">
+        <div className="p-3 overflow-y-auto flex-1 max-h-[calc(100vh-400px)]" style={{ minHeight: "30vh" }}>
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
@@ -718,7 +718,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="mb-4"
+                className="mb-3"
               >
                 {message.role === "assistant" ? (
                   <AIMessage
@@ -738,7 +738,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-3 border-t border-dark-surface">
+        <div className="p-2 border-t border-dark-surface">
           <div className="relative">
             <textarea
               placeholder="Type your command or question..."
@@ -750,7 +750,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                   handleSendMessage();
                 }
               }}
-              className="w-full bg-dark rounded-lg pl-4 pr-10 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light resize-y min-h-[50px] max-h-[150px] text-black"
+              className="w-full bg-dark rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light resize-none h-[40px] text-black"
               style={{ overflow: "auto" }}
             />
             <div className="absolute right-3 bottom-3">
@@ -765,55 +765,31 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             </div>
           </div>
 
-          <div className="flex mt-2 space-x-2 overflow-x-auto py-1">
+          <div className="flex mt-1 space-x-1 overflow-x-auto">
             <Button
               variant="outline"
               size="sm"
-              className="px-3 py-1 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="px-2 py-0.5 h-6 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
               onClick={() => handleQuickCommand("Create new deal")}
             >
-              Create new deal
+              Create deal
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="px-3 py-1 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="px-2 py-0.5 h-6 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
               onClick={() => handleQuickCommand("Update deal status")}
             >
-              Update deal status
+              Update status
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="px-3 py-1 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="px-2 py-0.5 h-6 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
               onClick={() => handleQuickCommand("Generate report")}
             >
-              Generate report
+              Report
             </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="z-10">
-        <h3 className="text-sm font-medium mb-2 text-muted-foreground">
-          AI Assistant Capabilities
-        </h3>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="bg-dark-surface p-3 rounded-lg flex items-center">
-            <PlusCircleIcon className="h-4 w-4 text-primary-light mr-2" />
-            <span className="text-xs">Create Deals</span>
-          </div>
-          <div className="bg-dark-surface p-3 rounded-lg flex items-center">
-            <EditIcon className="h-4 w-4 text-primary-light mr-2" />
-            <span className="text-xs">Update Info</span>
-          </div>
-          <div className="bg-dark-surface p-3 rounded-lg flex items-center">
-            <SearchIcon className="h-4 w-4 text-primary-light mr-2" />
-            <span className="text-xs">Search Deals</span>
-          </div>
-          <div className="bg-dark-surface p-3 rounded-lg flex items-center">
-            <BarChartIcon className="h-4 w-4 text-primary-light mr-2" />
-            <span className="text-xs">Analytics</span>
           </div>
         </div>
       </div>
