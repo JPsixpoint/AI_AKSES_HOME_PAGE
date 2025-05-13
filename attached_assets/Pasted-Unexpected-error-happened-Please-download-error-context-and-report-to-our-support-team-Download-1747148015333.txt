@@ -1,0 +1,105 @@
+Unexpected error happened 😕
+
+Please download error context and report to our support team
+
+Download Error Context
+Server error (HTTP status 500): {"message":"Control plane request failed: endpoint is disabled","code":"","detail":null,"hint":null,"position":null,"internalPosition":null,"internalQuery":null,"severity":"","where":null,"table":null,"column":null,"schema":null,"dataType":null,"constraint":null,"file":null,"line":null,"routine":null}
+NeonDbError: Server error (HTTP status 500): {"message":"Control plane request failed: endpoint is disabled","code":"","detail":null,"hint":null,"position":null,"internalPosition":null,"internalQuery":null,"severity":"","where":null,"table":null,"column":null,"schema":null,"dataType":null,"constraint":null,"file":null,"line":null,"routine":null}
+    at execute (https://cdn.replit.com/_next/static/chunks/8017.7fe68bbb21c497e3.js:11:8303)
+
+Include Drizzle local storage
+
+{
+  "drizzle-version": "3.0.0",
+  "drizzle-playground": {
+    "state": {
+      "currentFile": "sql",
+      "drizzleValue": null,
+      "sqlValue": null,
+      "showRecordsAsJson": false,
+      "drizzleResult": "{\"json\":null}",
+      "sqlResult": "{\"json\":null}"
+    },
+    "version": 0
+  },
+  "drizzle-global": {
+    "state": {
+      "showCounts": false,
+      "flatSchemas": false,
+      "dataFormats": null,
+      "expandSubviews": false
+    },
+    "version": 0
+  },
+  "drizzle-db-39799844-postgresql://neondb_owner:npg_ZsA1akVPI7wb@ep-late-dream-a4ambj47.us-east-1.aws.neon.tech/neondb?sslmode=require": {
+    "state": {
+      "styleMode": "default",
+      "currentPage": "main",
+      "filterViews": {
+        "public.pipeline": [
+          {
+            "id": "filter-view-public.pipeline-axXX_boi3CgPLMBGJRBOD",
+            "name": "View 1",
+            "filters": [],
+            "columnSettings": {
+              "id": {
+                "width": 289.3125
+              },
+              "ai_screening": {
+                "width": 366.70703125
+              },
+              "pre_screening": {
+                "width": 341.90625
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 200
+            },
+            "sort": {
+              "column": "name",
+              "type": "ASC"
+            }
+          }
+        ]
+      },
+      "isSidebarOpen": true,
+      "isShowSidebarContent": true,
+      "filtersVisible": false,
+      "sidebarWidth": 282,
+      "currentSchemaName": "public",
+      "currentTable": {
+        "id": "filter-view-public.pipeline-axXX_boi3CgPLMBGJRBOD",
+        "type": "table",
+        "name": "pipeline",
+        "schema": "public",
+        "createdRecords": [],
+        "editedFields": [],
+        "filters": [],
+        "pagination": {
+          "limit": 50,
+          "offset": 200
+        },
+        "records": [],
+        "sort": {
+          "column": "name",
+          "type": "ASC"
+        },
+        "columnSettings": {
+          "id": {
+            "width": 289.3125
+          },
+          "ai_screening": {
+            "width": 366.70703125
+          },
+          "pre_screening": {
+            "width": 341.90625
+          }
+        },
+        "historyId": "twAXTnyoW1XzSBnQiW-M_",
+        "executionTime": 271.9000000022352
+      }
+    },
+    "version": 1
+  }
+}
