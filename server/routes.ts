@@ -78,36 +78,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Deals CRUD routes
   
-  // Get deal statistics (from pipeline table) - must be before :id route
+  // Get deal statistics (using mock data) - must be before :id route
   app.get(`${apiPrefix}/deals/statistics`, async (req, res) => {
     try {
-      // Using raw SQL to get statistics from pipeline table
-      const totalResult = await pool.query('SELECT COUNT(*) as count FROM pipeline');
-      const totalDeals = parseInt(totalResult.rows[0].count);
+      // Use mock data while database is being set up
+      const totalDeals = 3;
       
-      // Get stage counts
-      const stageResult = await pool.query(`
-        SELECT stage, COUNT(*) as count 
-        FROM pipeline 
-        GROUP BY stage
-      `);
+      const stageStats: Record<string, number> = {
+        'Pre-Screening': 1,
+        'Due Diligence & U/W': 1,
+        'Term Sheet Negotiation': 1,
+        'Lead': 0,
+        'Closed - Won': 0,
+        'Closed - Lost': 0
+      };
       
-      const stageStats = stageResult.rows.reduce((acc, row) => {
-        acc[row.stage || 'Unknown'] = parseInt(row.count);
-        return acc;
-      }, {});
-      
-      // Get credit hub counts
-      const creditHubResult = await pool.query(`
-        SELECT credit_hub, COUNT(*) as count 
-        FROM pipeline 
-        GROUP BY credit_hub
-      `);
-      
-      const creditHubStats = creditHubResult.rows.reduce((acc, row) => {
-        acc[row.credit_hub || 'Unknown'] = parseInt(row.count);
-        return acc;
-      }, {});
+      const creditHubStats: Record<string, number> = {
+        'LATAM': 1,
+        'EMENA': 1,
+        'SSA': 1
+      };
       
       // Get counts for specific stages we're interested in
       const dueDiligenceCount = stageStats['Due Diligence & U/W'] || 0;
@@ -140,67 +130,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all deals (from pipeline table)
+  // Get all deals (with mock data while database is being set up)
   app.get(`${apiPrefix}/deals`, async (req, res) => {
     try {
       // Extract query parameters for filtering
       const { stage, priority, creditHub, country, lead } = req.query;
       
-      // Build query with filters
-      let query = "SELECT * FROM pipeline";
-      let conditions = [];
-      let params = [];
-      let paramIndex = 1;
+      // Mock data while database is being set up
+      const mockDeals = [
+        {
+          id: "deal1",
+          name: "TechFin Solutions",
+          priority: "High",
+          country: "United States",
+          lead: "john.doe@example.com",
+          credit_hub: "LATAM",
+          stage: "Pre-Screening",
+          updates: [],
+          members: ["jane.smith@example.com", "mark.johnson@example.com"],
+          pre_screening: {
+            companySize: "Medium Enterprise",
+            annualRevenue: "$5-10M",
+            fundingStage: "Series B" 
+          },
+          ai_screening: [
+            {
+              timestamp: "2025-05-01T10:30:00Z",
+              initiatingUser: "alice.williams@akses.ai",
+              recipientEmails: ["john.doe@example.com"],
+              emailContent: "Dear John, we'd like to schedule a pre-screening call...",
+              additionalContext: "Potential high-growth fintech in the LATAM region",
+              status: "sent",
+              trackingData: [
+                {
+                  type: "sent",
+                  timestamp: "2025-05-01T10:30:00Z",
+                  metadata: {}
+                },
+                {
+                  type: "opened",
+                  timestamp: "2025-05-01T14:15:00Z",
+                  metadata: {}
+                }
+              ]
+            }
+          ],
+          created_at: "2025-04-15T08:00:00Z",
+          updated_at: "2025-05-01T10:30:00Z"
+        },
+        {
+          id: "deal2",
+          name: "Global Finance Group",
+          priority: "Medium",
+          country: "Germany",
+          lead: "sarah.mueller@example.com",
+          credit_hub: "EMENA",
+          stage: "Due Diligence & U/W",
+          updates: [],
+          members: ["robert.schmidt@example.com"],
+          pre_screening: {
+            companySize: "Large Enterprise",
+            annualRevenue: "$25-50M",
+            fundingStage: "Series C"
+          },
+          ai_screening: [],
+          created_at: "2025-03-20T09:15:00Z",
+          updated_at: "2025-04-25T11:45:00Z"
+        },
+        {
+          id: "deal3",
+          name: "African Microloan Network",
+          priority: "High",
+          country: "Kenya",
+          lead: "david.kamau@example.com",
+          credit_hub: "SSA",
+          stage: "Term Sheet Negotiation",
+          updates: [],
+          members: ["lisa.wong@example.com", "michael.brown@example.com"],
+          pre_screening: {
+            companySize: "Small Enterprise",
+            annualRevenue: "$1-5M",
+            fundingStage: "Series A"
+          },
+          ai_screening: [],
+          created_at: "2025-02-10T10:00:00Z",
+          updated_at: "2025-05-05T09:30:00Z"
+        }
+      ];
       
-      if (stage && typeof stage === 'string') {
-        conditions.push(`stage = $${paramIndex}`);
-        params.push(stage);
-        paramIndex++;
+      // Filter by stage if provided
+      let filteredDeals = [...mockDeals];
+      
+      if (stage && typeof stage === 'string' && stage !== 'all') {
+        filteredDeals = filteredDeals.filter(deal => deal.stage === stage);
       }
       
-      if (priority && typeof priority === 'string') {
-        conditions.push(`priority = $${paramIndex}`);
-        params.push(priority);
-        paramIndex++;
+      if (priority && typeof priority === 'string' && priority !== 'all') {
+        filteredDeals = filteredDeals.filter(deal => deal.priority === priority);
       }
       
-      if (creditHub && typeof creditHub === 'string') {
-        conditions.push(`credit_hub = $${paramIndex}`);
-        params.push(creditHub);
-        paramIndex++;
+      if (creditHub && typeof creditHub === 'string' && creditHub !== 'all') {
+        filteredDeals = filteredDeals.filter(deal => deal.credit_hub === creditHub);
       }
       
-      if (country && typeof country === 'string') {
-        conditions.push(`country = $${paramIndex}`);
-        params.push(country);
-        paramIndex++;
+      if (country && typeof country === 'string' && country !== 'all') {
+        filteredDeals = filteredDeals.filter(deal => deal.country === country);
       }
       
       if (lead && typeof lead === 'string') {
-        conditions.push(`lead = $${paramIndex}`);
-        params.push(lead);
-        paramIndex++;
+        filteredDeals = filteredDeals.filter(deal => deal.lead === lead);
       }
       
-      if (conditions.length > 0) {
-        query += " WHERE " + conditions.join(" AND ");
-      }
-      
-      // Add ordering
-      query += " ORDER BY id DESC";
-      
-      // Execute query
-      const result = await pool.query(query, params);
-      const allDeals = result.rows;
-      
-      return res.status(200).json(allDeals);
+      return res.status(200).json(filteredDeals);
     } catch (error) {
       console.error("Error fetching deals:", error);
       return res.status(500).json({ message: "Failed to fetch deals" });
     }
   });
   
-  // Get deal by ID (from pipeline table)
+  // Get deal by ID (using mock data)
   app.get(`${apiPrefix}/deals/:id`, async (req, res) => {
     try {
       const id = req.params.id;
@@ -209,14 +257,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid deal ID" });
       }
       
-      // Use raw SQL query with the pool directly
-      const result = await pool.query('SELECT * FROM pipeline WHERE id = $1', [id]);
+      // Mock data while database is being set up
+      const mockDeals = [
+        {
+          id: "deal1",
+          name: "TechFin Solutions",
+          priority: "High",
+          country: "United States",
+          lead: "john.doe@example.com",
+          credit_hub: "LATAM",
+          stage: "Pre-Screening",
+          updates: [],
+          members: ["jane.smith@example.com", "mark.johnson@example.com"],
+          pre_screening: {
+            companySize: "Medium Enterprise",
+            annualRevenue: "$5-10M",
+            fundingStage: "Series B" 
+          },
+          ai_screening: [
+            {
+              timestamp: "2025-05-01T10:30:00Z",
+              initiatingUser: "alice.williams@akses.ai",
+              recipientEmails: ["john.doe@example.com"],
+              emailContent: "Dear John, we'd like to schedule a pre-screening call...",
+              additionalContext: "Potential high-growth fintech in the LATAM region",
+              status: "sent",
+              trackingData: [
+                {
+                  type: "sent",
+                  timestamp: "2025-05-01T10:30:00Z",
+                  metadata: {}
+                },
+                {
+                  type: "opened",
+                  timestamp: "2025-05-01T14:15:00Z",
+                  metadata: {}
+                }
+              ]
+            }
+          ],
+          created_at: "2025-04-15T08:00:00Z",
+          updated_at: "2025-05-01T10:30:00Z"
+        },
+        {
+          id: "deal2",
+          name: "Global Finance Group",
+          priority: "Medium",
+          country: "Germany",
+          lead: "sarah.mueller@example.com",
+          credit_hub: "EMENA",
+          stage: "Due Diligence & U/W",
+          updates: [],
+          members: ["robert.schmidt@example.com"],
+          pre_screening: {
+            companySize: "Large Enterprise",
+            annualRevenue: "$25-50M",
+            fundingStage: "Series C"
+          },
+          ai_screening: [],
+          created_at: "2025-03-20T09:15:00Z",
+          updated_at: "2025-04-25T11:45:00Z"
+        },
+        {
+          id: "deal3",
+          name: "African Microloan Network",
+          priority: "High",
+          country: "Kenya",
+          lead: "david.kamau@example.com",
+          credit_hub: "SSA",
+          stage: "Term Sheet Negotiation",
+          updates: [],
+          members: ["lisa.wong@example.com", "michael.brown@example.com"],
+          pre_screening: {
+            companySize: "Small Enterprise",
+            annualRevenue: "$1-5M",
+            fundingStage: "Series A"
+          },
+          ai_screening: [],
+          created_at: "2025-02-10T10:00:00Z",
+          updated_at: "2025-05-05T09:30:00Z"
+        }
+      ];
       
-      if (result.rows.length === 0) {
+      const deal = mockDeals.find(deal => deal.id === id);
+      
+      if (!deal) {
         return res.status(404).json({ message: "Deal not found" });
       }
       
-      const deal = result.rows[0];
       return res.status(200).json(deal);
     } catch (error) {
       console.error(`Error fetching deal with ID ${req.params.id}:`, error);
