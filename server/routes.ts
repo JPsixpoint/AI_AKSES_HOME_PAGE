@@ -119,30 +119,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get deal statistics from akses_deals - must be before :id route
   app.get(`${apiPrefix}/deals/statistics`, async (req, res) => {
     try {
-      // Using raw SQL to get statistics from akses_deals table
-      const totalResult = await pool.query('SELECT COUNT(*) as count FROM akses_deals');
-      const totalDeals = parseInt(totalResult.rows[0].count);
+      // Import necessary database functions
+      const { executeQuery, sqliteDbOperations } = await import('@db');
+      
+      // Execute the query with SQLite fallback
+      const stats = await executeQuery(
+        // PostgreSQL query
+        `
+        WITH total AS (
+          SELECT COUNT(*) as count FROM akses_deals
+        ),
+        stages AS (
+          SELECT stage, COUNT(*) as count FROM akses_deals GROUP BY stage
+        ),
+        hubs AS (
+          SELECT credit_hub, COUNT(*) as count FROM akses_deals GROUP BY credit_hub
+        )
+        SELECT * FROM total
+        `,
+        [],
+        // SQLite fallback operation
+        () => sqliteDbOperations.getStatistics()
+      );
+      
+      // If using SQLite fallback, the response format is different
+      if (stats.totalDeals !== undefined) {
+        // We have SQLite format response (already formatted)
+        return res.status(200).json(stats);
+      }
+      
+      // Otherwise, we need to process the PostgreSQL response
+      // Get total count
+      const totalDeals = parseInt(stats[0]?.count || '0');
       
       // Get stage counts
-      const stageResult = await pool.query(`
-        SELECT stage, COUNT(*) as count 
-        FROM akses_deals 
-        GROUP BY stage
-      `);
+      const stageResult = await executeQuery(
+        `SELECT stage, COUNT(*) as count FROM akses_deals GROUP BY stage`,
+        [],
+        () => [] // SQLite fallback handled above
+      );
       
-      const stageStats = stageResult.rows.reduce((acc: Record<string, number>, row) => {
+      const stageStats = stageResult.reduce((acc: Record<string, number>, row: any) => {
         acc[row.stage || 'Unknown'] = parseInt(row.count);
         return acc;
       }, {});
       
       // Get credit hub counts
-      const creditHubResult = await pool.query(`
-        SELECT credit_hub, COUNT(*) as count 
-        FROM akses_deals 
-        GROUP BY credit_hub
-      `);
+      const creditHubResult = await executeQuery(
+        `SELECT credit_hub, COUNT(*) as count FROM akses_deals GROUP BY credit_hub`,
+        [],
+        () => [] // SQLite fallback handled above
+      );
       
-      const creditHubStats = creditHubResult.rows.reduce((acc: Record<string, number>, row) => {
+      const creditHubStats = creditHubResult.reduce((acc: Record<string, number>, row: any) => {
         acc[row.credit_hub || 'Unknown'] = parseInt(row.count);
         return acc;
       }, {});
@@ -186,77 +215,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Fetching deals with query params:", req.query);
       
+      // Import necessary database functions
+      const { executeQuery, sqliteDbOperations } = await import('@db');
+      
       // Extract query parameters for filtering
       const { stage, priority, creditHub, country, lead } = req.query;
       
-      // Build query
-      let query = "SELECT * FROM akses_deals";
-      let conditions = [];
-      let params = [];
-      let paramIndex = 1;
-      
-      if (stage && typeof stage === 'string' && stage !== 'all') {
-        conditions.push(`stage = $${paramIndex}`);
-        params.push(stage);
-        paramIndex++;
-      }
-      
-      if (priority && typeof priority === 'string' && priority !== 'all') {
-        conditions.push(`priority = $${paramIndex}`);
-        params.push(priority);
-        paramIndex++;
-      }
-      
-      if (creditHub && typeof creditHub === 'string' && creditHub !== 'all') {
-        conditions.push(`credit_hub = $${paramIndex}`);
-        params.push(creditHub);
-        paramIndex++;
-      }
-      
-      if (country && typeof country === 'string' && country !== 'all') {
-        conditions.push(`country = $${paramIndex}`);
-        params.push(country);
-        paramIndex++;
-      }
-      
-      if (lead && typeof lead === 'string') {
-        conditions.push(`lead = $${paramIndex}`);
-        params.push(lead);
-        paramIndex++;
-      }
-      
-      if (conditions.length > 0) {
-        query += " WHERE " + conditions.join(" AND ");
-      }
-      
-      // Add ordering
-      query += " ORDER BY id DESC";
-      
-      console.log("Executing SQL query:", query, "with params:", params);
-      
-      // First check if we can connect to the database and if the table exists
-      try {
-        const tableCheck = await pool.query("SELECT to_regclass('akses_deals') IS NOT NULL as exists");
-        const tableExists = tableCheck.rows[0]?.exists;
-        
-        if (!tableExists) {
-          console.error("The akses_deals table does not exist in the database");
-          return res.status(500).json({ 
-            error: "Database schema error", 
-            message: "The deals table does not exist. Please contact support." 
+      // For SQLite fallback, we need special handling
+      if (stage || priority || creditHub || country || lead) {
+        // If we have filters, we'll need to apply them to both databases
+        const sqliteFallbackOperation = () => {
+          // Get all deals from SQLite
+          const allDeals = sqliteDbOperations.getAllDeals();
+          
+          // Apply filters manually (simplified for demonstration)
+          return allDeals.filter((deal: any) => {
+            if (stage && stage !== 'all' && deal.stage !== stage) return false;
+            if (priority && priority !== 'all' && deal.priority !== priority) return false;
+            if (creditHub && creditHub !== 'all' && deal.credit_hub !== creditHub) return false;
+            if (country && country !== 'all' && deal.country !== country) return false;
+            if (lead && deal.lead !== lead) return false;
+            return true;
           });
+        };
+        
+        // Build PostgreSQL query
+        let query = "SELECT * FROM akses_deals";
+        let conditions = [];
+        let params = [];
+        let paramIndex = 1;
+        
+        if (stage && typeof stage === 'string' && stage !== 'all') {
+          conditions.push(`stage = $${paramIndex}`);
+          params.push(stage);
+          paramIndex++;
         }
-      } catch (dbError) {
-        console.error("Failed to check if table exists:", dbError);
+        
+        if (priority && typeof priority === 'string' && priority !== 'all') {
+          conditions.push(`priority = $${paramIndex}`);
+          params.push(priority);
+          paramIndex++;
+        }
+        
+        if (creditHub && typeof creditHub === 'string' && creditHub !== 'all') {
+          conditions.push(`credit_hub = $${paramIndex}`);
+          params.push(creditHub);
+          paramIndex++;
+        }
+        
+        if (country && typeof country === 'string' && country !== 'all') {
+          conditions.push(`country = $${paramIndex}`);
+          params.push(country);
+          paramIndex++;
+        }
+        
+        if (lead && typeof lead === 'string') {
+          conditions.push(`lead = $${paramIndex}`);
+          params.push(lead);
+          paramIndex++;
+        }
+        
+        if (conditions.length > 0) {
+          query += " WHERE " + conditions.join(" AND ");
+        }
+        
+        // Add ordering
+        query += " ORDER BY id DESC";
+        
+        console.log("Executing SQL query:", query, "with params:", params);
+        
+        // Execute query with fallback
+        const allDeals = await executeQuery(query, params, sqliteFallbackOperation);
+        
+        console.log(`Retrieved ${allDeals.length} deals from database`);
+        
+        return res.status(200).json(allDeals);
+      } 
+      else {
+        // No filters, execute simple query
+        const allDeals = await executeQuery(
+          "SELECT * FROM akses_deals ORDER BY id DESC", 
+          [], 
+          () => sqliteDbOperations.getAllDeals()
+        );
+        
+        console.log(`Retrieved ${allDeals.length} deals from database`);
+        
+        return res.status(200).json(allDeals);
       }
-      
-      // Execute query
-      const result = await pool.query(query, params);
-      const allDeals = result.rows;
-      
-      console.log(`Retrieved ${allDeals.length} deals from database`);
-      
-      return res.status(200).json(allDeals);
     } catch (error) {
       console.error("Error fetching deals:", error);
       return res.status(500).json({ 
