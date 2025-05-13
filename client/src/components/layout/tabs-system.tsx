@@ -11,7 +11,8 @@ import {
   FileSpreadsheet, 
   Brain, 
   Folder, 
-  Files
+  Files,
+  BookOpen
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,8 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   });
   // Track open tabs
   const [tabs, setTabs] = useState<Tab[]>([
-    { id: "default-pipeline", type: "Pipeline", title: "Pipeline" }
+    { id: "default-pipeline", type: "Pipeline", title: "Pipeline" },
+    { id: "akses-architecture", type: "AKSES Architecture", title: "AKSES Architecture" }
   ]);
   
   // Track active tab
@@ -414,11 +416,11 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                     <h3 className="text-sm font-medium text-muted-foreground mb-3">AI Tools</h3>
                     <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {filteredTabOptions
-                        .filter(option => ["AI PreScreening", "Rag Databases"].includes(option.type))
+                        .filter(option => ["AI PreScreening", "Rag Databases", "AKSES Architecture"].includes(option.type))
                         .map((option) => (
                           <button
                             key={option.type}
-                            className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                            className={`text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border ${option.type === "AKSES Architecture" ? "border-blue-800 bg-blue-950/30" : "border-transparent hover:border-dark"}`}
                             onClick={() => {
                               const existingTab = tabs.find(tab => tab.type === option.type);
                               if (existingTab) {
@@ -429,9 +431,10 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                               addNewTab(option.type, option.title);
                             }}
                           >
-                            <div className="mr-3 text-primary">
+                            <div className={`mr-3 ${option.type === "AKSES Architecture" ? "text-blue-400" : "text-primary"}`}>
                               {option.type === "AI PreScreening" && <Brain className="h-5 w-5" />}
                               {option.type === "Rag Databases" && <Database className="h-5 w-5" />}
+                              {option.type === "AKSES Architecture" && <BookOpen className="h-5 w-5" />}
                             </div>
                             <div>
                               <div className="font-medium text-sm">{option.title}</div>
