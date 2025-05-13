@@ -31,6 +31,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // API Routes
   const apiPrefix = "/api";
+  
+  // Add a health check endpoint for deployment - required for Replit deployment
+  app.get('/', async (req, res) => {
+    try {
+      // Simple health check that responds quickly
+      return res.status(200).json({
+        status: 'healthy',
+        message: 'AKSES API is running',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Health check error:", error);
+      return res.status(200).json({ 
+        status: 'degraded', 
+        message: 'Service running with errors' 
+      });
+    }
+  });
 
   // HeyGen Avatar token endpoint
   app.get(`${apiPrefix}/heygen/token`, heygenController.getToken);

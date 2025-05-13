@@ -41,11 +41,11 @@ export async function getDealsDirectly(): Promise<Deal[]> {
     const sql = neon(process.env.DATABASE_URL!);
     
     // Execute the query through the Neon serverless driver
-    const rows = await sql<NeonDealRecord[]>`
+    const rows = await sql`
       SELECT * FROM akses_deals 
       ORDER BY id DESC 
       LIMIT 100
-    `;
+    ` as unknown as NeonDealRecord[];
     
     console.log(`Retrieved ${rows?.length || 0} deals directly from Neon Serverless`);
     
