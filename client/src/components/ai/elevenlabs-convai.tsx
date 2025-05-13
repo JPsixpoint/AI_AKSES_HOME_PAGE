@@ -2,9 +2,13 @@ import React, { useEffect, useRef } from 'react';
 
 interface ElevenLabsConvaiProps {
   agentId: string;
+  position?: 'right' | 'left';
 }
 
-export const ElevenLabsConvai: React.FC<ElevenLabsConvaiProps> = ({ agentId }) => {
+export const ElevenLabsConvai: React.FC<ElevenLabsConvaiProps> = ({ 
+  agentId, 
+  position = 'right' 
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -46,9 +50,12 @@ export const ElevenLabsConvai: React.FC<ElevenLabsConvaiProps> = ({ agentId }) =
   }, [agentId]);
 
   return (
-    <div className="elevenlabs-convai-container" ref={containerRef}>
+    <div 
+      className={`elevenlabs-convai-container fixed bottom-20 ${position === 'right' ? 'right-10' : 'left-10'} z-50`} 
+      ref={containerRef}
+    >
       {/* The elevenlabs-convai element will be created dynamically */}
-      <div className="p-4 text-center text-sm text-gray-500">
+      <div className="p-4 text-center text-sm text-gray-500 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
         Loading ElevenLabs Convai...
       </div>
     </div>

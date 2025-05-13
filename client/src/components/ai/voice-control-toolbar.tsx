@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "../ui/button";
-import { Mic, MicOff, Volume2, VolumeX, BookOpen, Headphones } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, BookOpen } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import useSpeechRecognition from "@/hooks/use-speech-recognition";
-import { ElevenLabsConvai } from "./elevenlabs-convai";
 
 interface VoiceControlToolbarProps {
   onVoiceInput: (text: string) => void;
@@ -20,8 +19,6 @@ export function VoiceControlToolbar({
   const [speechSynthesisAvailable, setSpeechSynthesisAvailable] = useState(false);
   const [silenceTimer, setSilenceTimer] = useState<NodeJS.Timeout | null>(null);
   const lastTranscriptRef = useRef("");
-  const [showConvaiWidget, setShowConvaiWidget] = useState(false);
-  
   const {
     transcript,
     isListening,
@@ -229,11 +226,6 @@ export function VoiceControlToolbar({
     setIsSpeechEnabled(!isSpeechEnabled);
   }, [isSpeechEnabled, speechSynthesisAvailable]);
 
-  // Toggle ElevenLabs Convai widget
-  const toggleConvaiWidget = useCallback(() => {
-    setShowConvaiWidget(!showConvaiWidget);
-  }, [showConvaiWidget]);
-
   // Open AKSES Architecture tab
   const openArchitectureTab = useCallback(() => {
     if ((window as any).openArchitectureTab) {
@@ -248,77 +240,59 @@ export function VoiceControlToolbar({
   }, []);
 
   return (
-    <>
-      <div className="flex items-center justify-between p-2 border-b border-dark-surface">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`rounded-full ${isListening ? 'bg-primary/20 text-primary-lighter' : ''}`}
-            onClick={toggleListening}
-            disabled={isProcessing}
-            title={isListening ? "Stop listening" : "Start voice input"}
-          >
-            {isListening ? (
-              <Mic className="h-5 w-5 animate-pulse" />
-            ) : (
-              <MicOff className="h-5 w-5" />
-            )}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`rounded-full ${isSpeechEnabled ? 'bg-primary/20 text-primary-lighter' : 'opacity-70'}`}
-            onClick={toggleSpeech}
-            title={isSpeechEnabled ? "Disable voice output" : "Enable voice output"}
-          >
-            {isSpeechEnabled ? (
-              <Volume2 className="h-5 w-5" />
-            ) : (
-              <VolumeX className="h-5 w-5" />
-            )}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`rounded-full ${showConvaiWidget ? 'bg-purple-200 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' : 'text-purple-500 hover:text-purple-400'}`}
-            onClick={toggleConvaiWidget}
-            title={showConvaiWidget ? "Hide ElevenLabs Convai" : "Show ElevenLabs Convai"}
-          >
-            <Headphones className="h-5 w-5" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            className="rounded-full text-blue-400 hover:text-blue-300"
-            onClick={openArchitectureTab}
-            title="Open AKSES Architecture"
-          >
-            <BookOpen className="h-5 w-5" />
-          </Button>
-        </div>
+    <div className="flex items-center justify-between p-2 border-b border-dark-surface">
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`rounded-full ${isListening ? 'bg-primary/20 text-primary-lighter' : ''}`}
+          onClick={toggleListening}
+          disabled={isProcessing}
+          title={isListening ? "Stop listening" : "Start voice input"}
+        >
+          {isListening ? (
+            <Mic className="h-5 w-5 animate-pulse" />
+          ) : (
+            <MicOff className="h-5 w-5" />
+          )}
+        </Button>
         
-        {isListening && (
-          <div className="text-xs text-primary-lighter animate-pulse">
-            Listening...
-          </div>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`rounded-full ${isSpeechEnabled ? 'bg-primary/20 text-primary-lighter' : 'opacity-70'}`}
+          onClick={toggleSpeech}
+          title={isSpeechEnabled ? "Disable voice output" : "Enable voice output"}
+        >
+          {isSpeechEnabled ? (
+            <Volume2 className="h-5 w-5" />
+          ) : (
+            <VolumeX className="h-5 w-5" />
+          )}
+        </Button>
         
-        {transcript && isListening && (
-          <div className="text-xs max-w-[250px] truncate">
-            {transcript}
-          </div>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-full text-blue-400 hover:text-blue-300"
+          onClick={openArchitectureTab}
+          title="Open AKSES Architecture"
+        >
+          <BookOpen className="h-5 w-5" />
+        </Button>
       </div>
       
-      {showConvaiWidget && (
-        <div className="convai-widget-container p-4 bg-white dark:bg-gray-900 rounded shadow-lg">
-          <ElevenLabsConvai agentId="xoSZZ19NnpY9kbI6usjo" />
+      {isListening && (
+        <div className="text-xs text-primary-lighter animate-pulse">
+          Listening...
         </div>
       )}
-    </>
+      
+      {transcript && isListening && (
+        <div className="text-xs max-w-[250px] truncate">
+          {transcript}
+        </div>
+      )}
+    </div>
   );
 }

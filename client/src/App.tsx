@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import OriginatorAvatar from "@/pages/originator-avatar";
+import { ConvaiWidget } from "@/components/ai/convai-widget";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router />
+      <ConvaiWidget />
       <Toaster />
     </QueryClientProvider>
   );
