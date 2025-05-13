@@ -660,7 +660,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
   };
 
   return (
-    <div className="w-full h-full pr-6 flex flex-col relative" style={{ isolation: "isolate" }}>
+    <div className="w-full h-full pr-4 flex flex-col relative" style={{ isolation: "isolate", minWidth: "280px" }}>
       <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
         <ConcentricPattern />
       </div>
@@ -704,7 +704,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         </div>
       </div>
 
-      <div className="gradient-border bg-dark-lighter flex-1 overflow-hidden flex flex-col mb-2 z-10">
+      <div className="gradient-border bg-dark-lighter flex-1 overflow-hidden flex flex-col mb-2 z-10 mt-1">
         <VoiceControlToolbar 
           onVoiceInput={handleVoiceInput}
           aiMessage={lastAIMessage}
@@ -738,8 +738,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-2 border-t border-dark-surface">
-          <div className="relative">
+        <div className="px-3 py-2 border-t border-dark-surface">
+          <div className="relative mb-3">
             <textarea
               placeholder="Type your command or question..."
               value={input}
@@ -750,26 +750,27 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                   handleSendMessage();
                 }
               }}
-              className="w-full bg-dark rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light resize-none h-[40px] text-black"
-              style={{ overflow: "auto" }}
+              className="w-full bg-dark rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light resize-none h-[40px]"
+              style={{ color: "#fff", overflow: "auto" }}
             />
-            <div className="absolute right-3 bottom-3">
+            <div className="absolute right-3 bottom-2">
               <Button
                 variant="ghost"
                 className="text-primary-light hover:text-primary-lighter transition-colors"
                 onClick={handleSendMessage}
                 disabled={aiStatus === "processing"}
+                size="sm"
               >
-                <SendIcon className="h-5 w-5" />
+                <SendIcon className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          <div className="flex mt-1 space-x-1 overflow-x-auto">
+          <div className="flex justify-center mt-1 space-x-3 overflow-x-auto px-2">
             <Button
               variant="outline"
               size="sm"
-              className="px-2 py-0.5 h-6 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="px-3 py-1 h-7 bg-dark-surface rounded-full text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
               onClick={() => handleQuickCommand("Create new deal")}
             >
               Create deal
@@ -777,7 +778,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             <Button
               variant="outline"
               size="sm"
-              className="px-2 py-0.5 h-6 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="px-3 py-1 h-7 bg-dark-surface rounded-full text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
               onClick={() => handleQuickCommand("Update deal status")}
             >
               Update status
@@ -785,7 +786,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
             <Button
               variant="outline"
               size="sm"
-              className="px-2 py-0.5 h-6 bg-dark-surface rounded-full text-xs text-muted-foreground whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
+              className="px-3 py-1 h-7 bg-dark-surface rounded-full text-xs text-white whitespace-nowrap hover:bg-primary hover:bg-opacity-20 hover:text-white transition-colors"
               onClick={() => handleQuickCommand("Generate report")}
             >
               Report
