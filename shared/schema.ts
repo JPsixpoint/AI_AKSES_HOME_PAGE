@@ -18,8 +18,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-// Deals table (using the existing pipeline table)
-export const deals = pgTable("pipeline", {
+// Deals table (using the akses_deals table)
+export const deals = pgTable("akses_deals", {
   id: varchar("id", { length: 24 }).primaryKey(),
   name: text("name"), // Company name
   priority: text("priority"),

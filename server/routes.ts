@@ -78,26 +78,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Deals CRUD routes
   
-  // Get deal statistics (using mock data) - must be before :id route
+  // Get deal statistics from akses_deals - must be before :id route
   app.get(`${apiPrefix}/deals/statistics`, async (req, res) => {
     try {
-      // Use mock data while database is being set up
-      const totalDeals = 3;
+      // Using raw SQL to get statistics from akses_deals table
+      const totalResult = await pool.query('SELECT COUNT(*) as count FROM akses_deals');
+      const totalDeals = parseInt(totalResult.rows[0].count);
       
-      const stageStats: Record<string, number> = {
-        'Pre-Screening': 1,
-        'Due Diligence & U/W': 1,
-        'Term Sheet Negotiation': 1,
-        'Lead': 0,
-        'Closed - Won': 0,
-        'Closed - Lost': 0
-      };
+      // Get stage counts
+      const stageResult = await pool.query(`
+        SELECT stage, COUNT(*) as count 
+        FROM akses_deals 
+        GROUP BY stage
+      `);
       
-      const creditHubStats: Record<string, number> = {
-        'LATAM': 1,
-        'EMENA': 1,
-        'SSA': 1
-      };
+      const stageStats = stageResult.rows.reduce((acc: Record<string, number>, row) => {
+        acc[row.stage || 'Unknown'] = parseInt(row.count);
+        return acc;
+      }, {});
+      
+      // Get credit hub counts
+      const creditHubResult = await pool.query(`
+        SELECT credit_hub, COUNT(*) as count 
+        FROM akses_deals 
+        GROUP BY credit_hub
+      `);
+      
+      const creditHubStats = creditHubResult.rows.reduce((acc: Record<string, number>, row) => {
+        acc[row.credit_hub || 'Unknown'] = parseInt(row.count);
+        return acc;
+      }, {});
       
       // Get counts for specific stages we're interested in
       const dueDiligenceCount = stageStats['Due Diligence & U/W'] || 0;
@@ -105,7 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leadCount = stageStats['Lead'] || 0;
       const closedCount = (stageStats['Closed - Won'] || 0) + (stageStats['Closed - Lost'] || 0);
       
-      // Mock statistic changes for demonstration
+      // Static statistic changes for demonstration
       const valueChangePercent = 12;
       const newDealsThisMonth = 3;
       const dueDiligenceChangeWeekly = 0;
@@ -130,125 +140,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all deals (with mock data while database is being set up)
+  // Get all deals from the akses_deals table
   app.get(`${apiPrefix}/deals`, async (req, res) => {
     try {
       // Extract query parameters for filtering
       const { stage, priority, creditHub, country, lead } = req.query;
       
-      // Mock data while database is being set up
-      const mockDeals = [
-        {
-          id: "deal1",
-          name: "TechFin Solutions",
-          priority: "High",
-          country: "United States",
-          lead: "john.doe@example.com",
-          credit_hub: "LATAM",
-          stage: "Pre-Screening",
-          updates: [],
-          members: ["jane.smith@example.com", "mark.johnson@example.com"],
-          pre_screening: {
-            companySize: "Medium Enterprise",
-            annualRevenue: "$5-10M",
-            fundingStage: "Series B" 
-          },
-          ai_screening: [
-            {
-              timestamp: "2025-05-01T10:30:00Z",
-              initiatingUser: "alice.williams@akses.ai",
-              recipientEmails: ["john.doe@example.com"],
-              emailContent: "Dear John, we'd like to schedule a pre-screening call...",
-              additionalContext: "Potential high-growth fintech in the LATAM region",
-              status: "sent",
-              trackingData: [
-                {
-                  type: "sent",
-                  timestamp: "2025-05-01T10:30:00Z",
-                  metadata: {}
-                },
-                {
-                  type: "opened",
-                  timestamp: "2025-05-01T14:15:00Z",
-                  metadata: {}
-                }
-              ]
-            }
-          ],
-          created_at: "2025-04-15T08:00:00Z",
-          updated_at: "2025-05-01T10:30:00Z"
-        },
-        {
-          id: "deal2",
-          name: "Global Finance Group",
-          priority: "Medium",
-          country: "Germany",
-          lead: "sarah.mueller@example.com",
-          credit_hub: "EMENA",
-          stage: "Due Diligence & U/W",
-          updates: [],
-          members: ["robert.schmidt@example.com"],
-          pre_screening: {
-            companySize: "Large Enterprise",
-            annualRevenue: "$25-50M",
-            fundingStage: "Series C"
-          },
-          ai_screening: [],
-          created_at: "2025-03-20T09:15:00Z",
-          updated_at: "2025-04-25T11:45:00Z"
-        },
-        {
-          id: "deal3",
-          name: "African Microloan Network",
-          priority: "High",
-          country: "Kenya",
-          lead: "david.kamau@example.com",
-          credit_hub: "SSA",
-          stage: "Term Sheet Negotiation",
-          updates: [],
-          members: ["lisa.wong@example.com", "michael.brown@example.com"],
-          pre_screening: {
-            companySize: "Small Enterprise",
-            annualRevenue: "$1-5M",
-            fundingStage: "Series A"
-          },
-          ai_screening: [],
-          created_at: "2025-02-10T10:00:00Z",
-          updated_at: "2025-05-05T09:30:00Z"
-        }
-      ];
-      
-      // Filter by stage if provided
-      let filteredDeals = [...mockDeals];
+      // Build query
+      let query = "SELECT * FROM akses_deals";
+      let conditions = [];
+      let params = [];
+      let paramIndex = 1;
       
       if (stage && typeof stage === 'string' && stage !== 'all') {
-        filteredDeals = filteredDeals.filter(deal => deal.stage === stage);
+        conditions.push(`stage = $${paramIndex}`);
+        params.push(stage);
+        paramIndex++;
       }
       
       if (priority && typeof priority === 'string' && priority !== 'all') {
-        filteredDeals = filteredDeals.filter(deal => deal.priority === priority);
+        conditions.push(`priority = $${paramIndex}`);
+        params.push(priority);
+        paramIndex++;
       }
       
       if (creditHub && typeof creditHub === 'string' && creditHub !== 'all') {
-        filteredDeals = filteredDeals.filter(deal => deal.credit_hub === creditHub);
+        conditions.push(`credit_hub = $${paramIndex}`);
+        params.push(creditHub);
+        paramIndex++;
       }
       
       if (country && typeof country === 'string' && country !== 'all') {
-        filteredDeals = filteredDeals.filter(deal => deal.country === country);
+        conditions.push(`country = $${paramIndex}`);
+        params.push(country);
+        paramIndex++;
       }
       
       if (lead && typeof lead === 'string') {
-        filteredDeals = filteredDeals.filter(deal => deal.lead === lead);
+        conditions.push(`lead = $${paramIndex}`);
+        params.push(lead);
+        paramIndex++;
       }
       
-      return res.status(200).json(filteredDeals);
+      if (conditions.length > 0) {
+        query += " WHERE " + conditions.join(" AND ");
+      }
+      
+      // Add ordering
+      query += " ORDER BY id DESC";
+      
+      // Execute query
+      const result = await pool.query(query, params);
+      const allDeals = result.rows;
+      
+      return res.status(200).json(allDeals);
     } catch (error) {
       console.error("Error fetching deals:", error);
       return res.status(500).json({ message: "Failed to fetch deals" });
     }
   });
   
-  // Get deal by ID (using mock data)
+  // Get deal by ID from akses_deals
   app.get(`${apiPrefix}/deals/:id`, async (req, res) => {
     try {
       const id = req.params.id;
@@ -257,94 +209,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid deal ID" });
       }
       
-      // Mock data while database is being set up
-      const mockDeals = [
-        {
-          id: "deal1",
-          name: "TechFin Solutions",
-          priority: "High",
-          country: "United States",
-          lead: "john.doe@example.com",
-          credit_hub: "LATAM",
-          stage: "Pre-Screening",
-          updates: [],
-          members: ["jane.smith@example.com", "mark.johnson@example.com"],
-          pre_screening: {
-            companySize: "Medium Enterprise",
-            annualRevenue: "$5-10M",
-            fundingStage: "Series B" 
-          },
-          ai_screening: [
-            {
-              timestamp: "2025-05-01T10:30:00Z",
-              initiatingUser: "alice.williams@akses.ai",
-              recipientEmails: ["john.doe@example.com"],
-              emailContent: "Dear John, we'd like to schedule a pre-screening call...",
-              additionalContext: "Potential high-growth fintech in the LATAM region",
-              status: "sent",
-              trackingData: [
-                {
-                  type: "sent",
-                  timestamp: "2025-05-01T10:30:00Z",
-                  metadata: {}
-                },
-                {
-                  type: "opened",
-                  timestamp: "2025-05-01T14:15:00Z",
-                  metadata: {}
-                }
-              ]
-            }
-          ],
-          created_at: "2025-04-15T08:00:00Z",
-          updated_at: "2025-05-01T10:30:00Z"
-        },
-        {
-          id: "deal2",
-          name: "Global Finance Group",
-          priority: "Medium",
-          country: "Germany",
-          lead: "sarah.mueller@example.com",
-          credit_hub: "EMENA",
-          stage: "Due Diligence & U/W",
-          updates: [],
-          members: ["robert.schmidt@example.com"],
-          pre_screening: {
-            companySize: "Large Enterprise",
-            annualRevenue: "$25-50M",
-            fundingStage: "Series C"
-          },
-          ai_screening: [],
-          created_at: "2025-03-20T09:15:00Z",
-          updated_at: "2025-04-25T11:45:00Z"
-        },
-        {
-          id: "deal3",
-          name: "African Microloan Network",
-          priority: "High",
-          country: "Kenya",
-          lead: "david.kamau@example.com",
-          credit_hub: "SSA",
-          stage: "Term Sheet Negotiation",
-          updates: [],
-          members: ["lisa.wong@example.com", "michael.brown@example.com"],
-          pre_screening: {
-            companySize: "Small Enterprise",
-            annualRevenue: "$1-5M",
-            fundingStage: "Series A"
-          },
-          ai_screening: [],
-          created_at: "2025-02-10T10:00:00Z",
-          updated_at: "2025-05-05T09:30:00Z"
-        }
-      ];
+      // Use raw SQL query with the pool directly
+      const result = await pool.query('SELECT * FROM akses_deals WHERE id = $1', [id]);
       
-      const deal = mockDeals.find(deal => deal.id === id);
-      
-      if (!deal) {
+      if (result.rows.length === 0) {
         return res.status(404).json({ message: "Deal not found" });
       }
       
+      const deal = result.rows[0];
       return res.status(200).json(deal);
     } catch (error) {
       console.error(`Error fetching deal with ID ${req.params.id}:`, error);
@@ -352,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create new deal (in pipeline table)
+  // Create new deal (in akses_deals table)
   app.post(`${apiPrefix}/deals`, async (req, res) => {
     try {
       // Get the validated data from request body
@@ -382,7 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const placeholders = Object.keys(dealData).map((_, i) => `$${i + 1}`).join(', ');
       const values = Object.values(dealData);
       
-      const query = `INSERT INTO pipeline (${fields}) VALUES (${placeholders}) RETURNING *`;
+      const query = `INSERT INTO akses_deals (${fields}) VALUES (${placeholders}) RETURNING *`;
       const result = await pool.query(query, values);
       
       if (result.rows.length === 0) {
@@ -397,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Update deal (in pipeline table)
+  // Update deal (in akses_deals table)
   app.patch(`${apiPrefix}/deals/:id`, async (req, res) => {
     try {
       const id = req.params.id;
