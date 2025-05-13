@@ -279,19 +279,20 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
       const trySpeechSynthesis = () => {
         const utterance = new SpeechSynthesisUtterance(text);
         
-        // Set voice properties for better audio
-        utterance.rate = 1.0; // Normal speed
-        utterance.pitch = 1.0; // Normal pitch
+        // Set voice properties for more natural sounding audio
+        utterance.rate = 0.95; // Slightly slower for better clarity
+        utterance.pitch = 1.05; // Slightly higher pitch for more feminine voice
         utterance.volume = 1.0; // Full volume
         
         // Find a good voice
         const voices = window.speechSynthesis.getVoices();
         console.log('Available voices for fallback:', voices.length);
         
-        // List of preferred female voice names in order of preference
+        // List of preferred female voice names in order of preference (more natural voices first)
         const preferredVoiceNames = [
-          'Samantha', 'Google US English Female', 'Microsoft Zira',
-          'Karen', 'Victoria', 'Ellen', 'Tessa', 'Moira', 'Samantha', 'Veena'
+          'Google US English Female', 'Microsoft Zira', 'Google UK English Female',
+          'Ava', 'Victoria', 'Joanna', 'Catherine', 'Amy', 'Siri Female', 'Samantha',
+          'Karen', 'Ellen', 'Tessa', 'Moira', 'Veena'
         ];
         
         // First try: exact match from our priority list
@@ -304,7 +305,16 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
           }
         }
         
-        // Second try: any voice containing "female" or "woman"
+        // Second try: any voice containing "natural" or "premium" for higher quality
+        if (!selectedVoice) {
+          selectedVoice = voices.find(voice => 
+            voice.name.toLowerCase().includes('natural') || 
+            voice.name.toLowerCase().includes('premium') ||
+            voice.name.toLowerCase().includes('enhanced')
+          );
+        }
+        
+        // Third try: any voice containing "female" or "woman"
         if (!selectedVoice) {
           selectedVoice = voices.find(voice => 
             voice.name.toLowerCase().includes('female') || 
@@ -312,7 +322,7 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
           );
         }
         
-        // Third try: any US English voice (likely to be default female on many systems)
+        // Fourth try: any US English voice (likely to be default female on many systems)
         if (!selectedVoice) {
           selectedVoice = voices.find(voice => 
             voice.lang === 'en-US' || voice.lang === 'en_US'
@@ -407,7 +417,37 @@ export function HeyGenAvatarSimplified({ text, isVisible }: HeyGenAvatarSimplifi
             
             const chunkUtterance = new SpeechSynthesisUtterance(chunk);
             
-            // Use default voice settings for simplicity
+            // Match the same voice settings as our main speech
+            chunkUtterance.rate = 0.95;
+            chunkUtterance.pitch = 1.05;
+            chunkUtterance.volume = 1.0;
+            
+            // Apply the same voice selection
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+              // Use the same voice selection logic as above
+              const preferredVoiceNames = [
+                'Google US English Female', 'Microsoft Zira', 'Google UK English Female',
+                'Ava', 'Victoria', 'Joanna', 'Catherine', 'Amy', 'Siri Female', 'Samantha'
+              ];
+              
+              // Try to find a preferred voice
+              let selectedVoice = null;
+              for (const name of preferredVoiceNames) {
+                const match = voices.find(voice => voice.name === name);
+                if (match) {
+                  selectedVoice = match;
+                  break;
+                }
+              }
+              
+              // Apply selected voice if found
+              if (selectedVoice) {
+                chunkUtterance.voice = selectedVoice;
+                chunkUtterance.lang = 'en-US';
+              }
+            }
+            
             chunkUtterance.onstart = () => {
               console.log(`Starting chunk ${currentChunk + 1}/${chunks.length}`);
               
