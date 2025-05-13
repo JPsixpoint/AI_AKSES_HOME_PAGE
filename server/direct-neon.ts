@@ -29,7 +29,10 @@ interface NeonDeal {
   members: any;
 }
 
-// Function to get deals directly from Neon via HTTP
+/**
+ * This is the primary function that should be used in production to ensure
+ * we always get real data from the Neon database.
+ */
 export async function getDealsDirectly(): Promise<Deal[]> {
   try {
     console.log("Attempting to fetch deals directly from Neon via HTTP");
@@ -56,21 +59,26 @@ export async function getDealsDirectly(): Promise<Deal[]> {
     const data = await response.json();
     console.log(`Retrieved ${data.rows?.length || 0} deals directly from Neon via HTTP`);
     
-    // Transform data to our expected format
+    // Transform data to our expected format - normalize field names for consistency
     return (data.rows || []).map((deal: NeonDeal) => ({
       id: deal.id,
       name: deal.name,
       priority: deal.priority,
       country: deal.country,
       lead: deal.lead,
-      credit_hub: deal.credit_hub,
+      credit_hub: deal.credit_hub,   // Original field from database
+      creditHub: deal.credit_hub,    // Normalized field for Drizzle schema
       stage: deal.stage,
       updates: typeof deal.updates === 'string' ? JSON.parse(deal.updates) : deal.updates,
       members: Array.isArray(deal.members) ? deal.members : [],
       pre_screening: typeof deal.pre_screening === 'string' ? JSON.parse(deal.pre_screening) : deal.pre_screening || {},
+      preScreening: typeof deal.pre_screening === 'string' ? JSON.parse(deal.pre_screening) : deal.pre_screening || {},
       ai_screening: [],
+      aiScreening: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }));
   } catch (error) {
     console.error("Error fetching deals directly from Neon:", error);

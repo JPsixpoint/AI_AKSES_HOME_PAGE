@@ -8,6 +8,7 @@ import OpenAI from "openai";
 import { Resend } from "resend";
 import { heygenController } from "./heygen";
 import { elevenLabsController } from "./elevenlabs";
+import { getDealsDirectly, getDealsStatisticsDirectly } from "./direct-neon";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up OpenAI client
@@ -119,68 +120,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get deal statistics from akses_deals - must be before :id route
   app.get(`${apiPrefix}/deals/statistics`, async (req, res) => {
     try {
-      // Import necessary database functions
-      const { pool, sqliteDbOperations, usingSqliteFallback } = await import('@db');
-      
-      // If using SQLite fallback, return SQLite statistics
-      if (usingSqliteFallback) {
-        const sqliteStats = sqliteDbOperations.getStatistics();
-        return res.status(200).json(sqliteStats);
+      // ------------------------------------------------
+      // APPROACH 1: First try direct HTTP connection to Neon
+      // This is most reliable in production environments
+      // ------------------------------------------------
+      try {
+        console.log("Trying direct HTTP connection to Neon database for statistics");
+        const directStats = await getDealsStatisticsDirectly();
+        
+        if (directStats) {
+          console.log("Retrieved statistics directly from Neon via HTTP");
+          return res.status(200).json(directStats);
+        }
+      } catch (directError) {
+        console.error("Direct Neon HTTP connection for statistics failed:", directError);
+        // Continue to next approach
       }
       
-      // Using PostgreSQL - get statistics directly
+      // ------------------------------------------------
+      // APPROACH 2: Try PostgreSQL pool connection
+      // This works well in development environments
+      // ------------------------------------------------
       try {
-        console.log("Connected to PostgreSQL database");
+        // Import necessary database functions
+        const { pool, usingSqliteFallback } = await import('@db');
         
-        // Get total count
-        const totalResult = await pool.query('SELECT COUNT(*) as count FROM akses_deals');
-        const totalDeals = parseInt(totalResult.rows[0]?.count || '0');
-        
-        // Get stage counts
-        const stageResult = await pool.query('SELECT stage, COUNT(*) as count FROM akses_deals GROUP BY stage');
-        const stageStats = stageResult.rows.reduce((acc: Record<string, number>, row: any) => {
-          acc[row.stage || 'Unknown'] = parseInt(row.count);
-          return acc;
-        }, {});
-        
-        // Get credit hub counts
-        const creditHubResult = await pool.query('SELECT credit_hub, COUNT(*) as count FROM akses_deals GROUP BY credit_hub');
-        const creditHubStats = creditHubResult.rows.reduce((acc: Record<string, number>, row: any) => {
-          acc[row.credit_hub || 'Unknown'] = parseInt(row.count);
-          return acc;
-        }, {});
-        
-        // Get counts for specific stages we're interested in
-        const dueDiligenceCount = stageStats['Due Diligence & U/W'] || 0;
-        const prescreeningCount = stageStats['Pre-Screening'] || 0;
-        const leadCount = stageStats['Lead'] || 0;
-        const closedCount = (stageStats['Closed - Won'] || 0) + (stageStats['Closed - Lost'] || 0);
-        
-        // Static statistic changes for demonstration
-        const valueChangePercent = 12;
-        const newDealsThisMonth = 3;
-        const dueDiligenceChangeWeekly = 0;
-        const completedThisQuarter = 2;
-        
-        return res.status(200).json({
-          totalDeals,
-          stageStats,
-          creditHubStats,
-          dueDiligenceCount,
-          prescreeningCount,
-          leadCount,
-          closedCount,
-          valueChangePercent,
-          newDealsThisMonth,
-          dueDiligenceChangeWeekly,
-          completedThisQuarter
-        });
+        if (!usingSqliteFallback) {
+          console.log("Connected to PostgreSQL database");
+          
+          // Get total count
+          const totalResult = await pool.query('SELECT COUNT(*) as count FROM akses_deals');
+          const totalDeals = parseInt(totalResult.rows[0]?.count || '0');
+          
+          // Get stage counts
+          const stageResult = await pool.query('SELECT stage, COUNT(*) as count FROM akses_deals GROUP BY stage');
+          const stageStats = stageResult.rows.reduce((acc: Record<string, number>, row: any) => {
+            acc[row.stage || 'Unknown'] = parseInt(row.count);
+            return acc;
+          }, {});
+          
+          // Get credit hub counts
+          const creditHubResult = await pool.query('SELECT credit_hub, COUNT(*) as count FROM akses_deals GROUP BY credit_hub');
+          const creditHubStats = creditHubResult.rows.reduce((acc: Record<string, number>, row: any) => {
+            acc[row.credit_hub || 'Unknown'] = parseInt(row.count);
+            return acc;
+          }, {});
+          
+          // Get counts for specific stages we're interested in
+          const dueDiligenceCount = stageStats['Due Diligence & U/W'] || 0;
+          const prescreeningCount = stageStats['Pre-Screening'] || 0;
+          const leadCount = stageStats['Lead'] || 0;
+          const closedCount = (stageStats['Closed - Won'] || 0) + (stageStats['Closed - Lost'] || 0);
+          
+          // Static statistic changes for demonstration
+          const valueChangePercent = 12;
+          const newDealsThisMonth = 3;
+          const dueDiligenceChangeWeekly = 0;
+          const completedThisQuarter = 2;
+          
+          return res.status(200).json({
+            totalDeals,
+            stageStats,
+            creditHubStats,
+            dueDiligenceCount,
+            prescreeningCount,
+            leadCount,
+            closedCount,
+            valueChangePercent,
+            newDealsThisMonth,
+            dueDiligenceChangeWeekly,
+            completedThisQuarter
+          });
+        }
       } catch (pgError) {
-        console.error("PostgreSQL error:", pgError);
-        
-        // Fall back to SQLite statistics
+        console.error("PostgreSQL error in statistics:", pgError);
+        // Continue to next approach
+      }
+      
+      // ------------------------------------------------
+      // APPROACH 3: Fall back to SQLite database
+      // This is the last resort fallback
+      // ------------------------------------------------
+      try {
+        console.log("Falling back to SQLite database for statistics");
+        const { sqliteDbOperations } = await import('@db');
         const sqliteStats = sqliteDbOperations.getStatistics();
         return res.status(200).json(sqliteStats);
+      } catch (sqliteError) {
+        console.error("SQLite fallback for statistics failed:", sqliteError);
+        // No more fallbacks, return error
+        throw new Error("All database connection methods failed for statistics");
       }
     } catch (error) {
       console.error("Error fetching deal statistics:", error);
@@ -196,14 +225,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Fetching deals with query params:", req.query);
       
-      // Import necessary database functions
-      const { pool, sqliteDbOperations, usingSqliteFallback } = await import('@db');
-      
       // Extract query parameters for filtering
       const { stage, priority, creditHub, country, lead } = req.query;
       
-      // If we're using SQLite fallback, use the SQLite logic
-      if (usingSqliteFallback) {
+      // ------------------------------------------------
+      // APPROACH 1: First try direct HTTP connection to Neon
+      // This is most reliable in production environments
+      // ------------------------------------------------
+      try {
+        console.log("Trying direct HTTP connection to Neon database (primary production method)");
+        const directDeals = await getDealsDirectly();
+        
+        if (directDeals && directDeals.length > 0) {
+          console.log(`Retrieved ${directDeals.length} deals directly from Neon via HTTP`);
+          
+          // Apply filters if needed
+          const filteredDeals = directDeals.filter(deal => {
+            if (stage && stage !== 'all' && deal.stage !== stage) return false;
+            if (priority && priority !== 'all' && deal.priority !== priority) return false;
+            if (creditHub && creditHub !== 'all' && deal.creditHub !== creditHub) return false;
+            if (country && country !== 'all' && deal.country !== country) return false;
+            if (lead && deal.lead !== lead) return false;
+            return true;
+          });
+          
+          return res.status(200).json(filteredDeals);
+        }
+      } catch (directError) {
+        console.error("Direct Neon HTTP connection failed:", directError);
+        // Continue to next approach
+      }
+      
+      // ------------------------------------------------
+      // APPROACH 2: Try PostgreSQL pool connection
+      // This works well in development environments
+      // ------------------------------------------------
+      try {
+        // Import necessary database functions
+        const { pool, usingSqliteFallback } = await import('@db');
+        
+        if (!usingSqliteFallback) {
+          console.log("Trying PostgreSQL pool connection");
+          
+          // Build PostgreSQL query
+          let query = "SELECT * FROM akses_deals";
+          let conditions = [];
+          let params = [];
+          let paramIndex = 1;
+          
+          if (stage && typeof stage === 'string' && stage !== 'all') {
+            conditions.push(`stage = $${paramIndex}`);
+            params.push(stage);
+            paramIndex++;
+          }
+          
+          if (priority && typeof priority === 'string' && priority !== 'all') {
+            conditions.push(`priority = $${paramIndex}`);
+            params.push(priority);
+            paramIndex++;
+          }
+          
+          if (creditHub && typeof creditHub === 'string' && creditHub !== 'all') {
+            conditions.push(`credit_hub = $${paramIndex}`);
+            params.push(creditHub);
+            paramIndex++;
+          }
+          
+          if (country && typeof country === 'string' && country !== 'all') {
+            conditions.push(`country = $${paramIndex}`);
+            params.push(country);
+            paramIndex++;
+          }
+          
+          if (lead && typeof lead === 'string') {
+            conditions.push(`lead = $${paramIndex}`);
+            params.push(lead);
+            paramIndex++;
+          }
+          
+          if (conditions.length > 0) {
+            query += " WHERE " + conditions.join(" AND ");
+          }
+          
+          // Add ordering
+          query += " ORDER BY id DESC";
+          
+          console.log("Executing SQL query:", query, "with params:", params);
+          
+          // Execute direct PostgreSQL query
+          const result = await pool.query(query, params);
+          
+          // Process the data to match our app's expected format
+          const allDeals = result.rows.map(deal => {
+            return {
+              id: deal.id,
+              name: deal.name,
+              priority: deal.priority,
+              country: deal.country,
+              lead: deal.lead,
+              credit_hub: deal.credit_hub,
+              stage: deal.stage,
+              updates: typeof deal.updates === 'string' ? JSON.parse(deal.updates) : deal.updates,
+              members: Array.isArray(deal.members) ? deal.members : [],
+              pre_screening: typeof deal.pre_screening === 'string' ? JSON.parse(deal.pre_screening) : deal.pre_screening || {},
+              ai_screening: deal.ai_screening || [],
+              // Add these fields to ensure compatibility with our app
+              created_at: deal.created_at || new Date().toISOString(),
+              updated_at: deal.updated_at || new Date().toISOString(),
+            };
+          });
+          
+          console.log(`Retrieved ${allDeals.length} deals from PostgreSQL database`);
+          return res.status(200).json(allDeals);
+        }
+      } catch (pgError) {
+        console.error("PostgreSQL pool connection failed:", pgError);
+        // Continue to next approach
+      }
+      
+      // ------------------------------------------------
+      // APPROACH 3: Fall back to SQLite database
+      // This is the last resort fallback
+      // ------------------------------------------------
+      try {
+        console.log("Falling back to SQLite database");
+        const { sqliteDbOperations } = await import('@db');
         const allDeals = sqliteDbOperations.getAllDeals();
         
         // Apply filters if needed
@@ -218,89 +364,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`Retrieved ${filteredDeals.length} deals from SQLite database`);
         return res.status(200).json(filteredDeals);
-      }
-      
-      // Using PostgreSQL - build query
-      try {
-        console.log("Connected to PostgreSQL database");
-        
-        // Build PostgreSQL query
-        let query = "SELECT * FROM akses_deals";
-        let conditions = [];
-        let params = [];
-        let paramIndex = 1;
-        
-        if (stage && typeof stage === 'string' && stage !== 'all') {
-          conditions.push(`stage = $${paramIndex}`);
-          params.push(stage);
-          paramIndex++;
-        }
-        
-        if (priority && typeof priority === 'string' && priority !== 'all') {
-          conditions.push(`priority = $${paramIndex}`);
-          params.push(priority);
-          paramIndex++;
-        }
-        
-        if (creditHub && typeof creditHub === 'string' && creditHub !== 'all') {
-          conditions.push(`credit_hub = $${paramIndex}`);
-          params.push(creditHub);
-          paramIndex++;
-        }
-        
-        if (country && typeof country === 'string' && country !== 'all') {
-          conditions.push(`country = $${paramIndex}`);
-          params.push(country);
-          paramIndex++;
-        }
-        
-        if (lead && typeof lead === 'string') {
-          conditions.push(`lead = $${paramIndex}`);
-          params.push(lead);
-          paramIndex++;
-        }
-        
-        if (conditions.length > 0) {
-          query += " WHERE " + conditions.join(" AND ");
-        }
-        
-        // Add ordering
-        query += " ORDER BY id DESC";
-        
-        console.log("Executing SQL query:", query, "with params:", params);
-        
-        // Execute direct PostgreSQL query
-        const result = await pool.query(query, params);
-        
-        // Process the data to match our app's expected format
-        const allDeals = result.rows.map(deal => {
-          return {
-            id: deal.id,
-            name: deal.name,
-            priority: deal.priority,
-            country: deal.country,
-            lead: deal.lead,
-            credit_hub: deal.credit_hub,
-            stage: deal.stage,
-            updates: typeof deal.updates === 'string' ? JSON.parse(deal.updates) : deal.updates,
-            members: Array.isArray(deal.members) ? deal.members : [],
-            pre_screening: typeof deal.pre_screening === 'string' ? JSON.parse(deal.pre_screening) : deal.pre_screening || {},
-            ai_screening: deal.ai_screening || [],
-            // Add these fields to ensure compatibility with our app
-            created_at: deal.created_at || new Date().toISOString(),
-            updated_at: deal.updated_at || new Date().toISOString(),
-          };
-        });
-        
-        console.log(`Retrieved ${allDeals.length} deals from PostgreSQL database`);
-        return res.status(200).json(allDeals);
-      } catch (pgError) {
-        console.error("PostgreSQL error:", pgError);
-        
-        // Fall back to SQLite
-        const allDeals = sqliteDbOperations.getAllDeals();
-        console.log(`Falling back to SQLite - retrieved ${allDeals.length} deals`);
-        return res.status(200).json(allDeals);
+      } catch (sqliteError) {
+        console.error("SQLite fallback failed:", sqliteError);
+        // No more fallbacks, return error
+        throw new Error("All database connection methods failed");
       }
     } catch (error) {
       console.error("Error fetching deals:", error);
