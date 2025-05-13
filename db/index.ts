@@ -10,20 +10,29 @@ export let usingSqliteFallback = false;
 // This ensures the database connection works consistently in all environments
 const NEON_DATABASE_URL = "postgresql://scale_owner:uMLhi5Va0Sdx@ep-white-breeze-a5zu57ak-pooler.us-east-2.aws.neon.tech/scale?sslmode=require";
 
-// Configure database connection with the exact Neon URL
+// Configure database connection with the exact Neon URL and extended timeout
 const connectionConfig = { 
   connectionString: NEON_DATABASE_URL,  // Always use this hardcoded URL, not process.env
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  // Add connection timeout settings - give it more time to connect
+  connectionTimeoutMillis: 30000,  // 30 seconds (default is 0 which means no timeout)
+  query_timeout: 30000,            // 30 seconds timeout for queries
+  statement_timeout: 30000,        // 30 seconds timeout for statements
+  // Lower the idle timeout to recycle connections more frequently
+  idle_in_transaction_session_timeout: 30000
 };
 
-// Set pool configuration
+// Set pool configuration optimized for Replit environment
 const poolConfig = {
   ...connectionConfig,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000 // Reduced timeout for faster fallback
+  max: 5,              // Lower max connections - Replit has limited resources
+  min: 0,              // No minimum connections to conserve resources
+  idleTimeoutMillis: 10000, // Shorter idle timeout to recycle connections faster
+  // These settings help with Replit's connection issues
+  keepAlive: true,     // Keep connections alive
+  keepAliveInitialDelayMillis: 10000 // 10 seconds before starting keep-alive
 };
 
 // Create the pool
