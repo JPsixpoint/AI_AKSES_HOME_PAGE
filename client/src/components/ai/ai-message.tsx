@@ -80,8 +80,8 @@ export function AIMessage({ content, data, pendingAction, onSelect, onConfirm, o
           <Orbit className="h-4 w-4" />
         </AvatarFallback>
       </Avatar>
-      <div className="ml-3 bg-dark-surface p-3 rounded-lg rounded-tl-none max-w-[85%]">
-        <div className="text-sm markdown-content">
+      <div className="ml-3 bg-dark-surface p-3 rounded-lg rounded-tl-none max-w-[95%]">
+        <div className="text-sm markdown-content text-white break-words">
           <ReactMarkdown>{content}</ReactMarkdown>
         </div>
         

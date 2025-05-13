@@ -670,7 +670,7 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
         
         <div className="flex flex-col items-center mb-2">
           {/* Avatar integration */}
-          <div className="w-full mb-1 relative" style={{ isolation: "isolate", zIndex: 1 }}>
+          <div className="w-full mb-1 relative z-20" style={{ isolation: "isolate" }}>
             <HeyGenAvatarSimplified 
               text={aiStatus === "speaking" ? lastAIMessage : null}
               isVisible={true}
@@ -750,8 +750,8 @@ export function AICommandCenter({ onDealSelect }: AICommandCenterProps) {
                   handleSendMessage();
                 }
               }}
-              className="w-full bg-dark rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light resize-none h-[40px]"
-              style={{ color: "#fff", overflow: "auto" }}
+              className="w-full bg-gray-100 dark:bg-dark rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-light resize-none h-[40px] text-black"
+              style={{ overflow: "auto" }}
             />
             <div className="absolute right-3 bottom-2">
               <Button
