@@ -16,7 +16,9 @@ import {
   RefreshCwIcon, 
   FileTextIcon,
   SearchIcon,
-  FilterXIcon
+  FilterXIcon,
+  SlidersHorizontal,
+  XIcon
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DealDataView } from "./deal-data-view";
@@ -74,6 +76,7 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
   const [currentPage, setCurrentPage] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAllResults, setShowAllResults] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [detailModal, setDetailModal] = useState<{ isOpen: boolean; dealId: string | null }>({
     isOpen: false,
     dealId: null
@@ -225,86 +228,164 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
   
   return (
     <div className="gradient-border bg-dark-lighter rounded-lg overflow-hidden">
-      {/* Filters row */}
-      <div className="bg-dark-surface p-4 border-b border-dark flex flex-wrap items-center gap-4">
-        <div className="text-sm text-white font-medium mr-2">
-          Found: {filteredDeals.length} deals
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">Country:</span>
-          <select 
-            className="bg-dark-surface text-foreground text-sm border border-dark rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
-            value={filters.country}
-            onChange={(e) => handleFilterChange('country', e.target.value)}
-          >
-            <option value="all">All Countries</option>
-            {uniqueCountries.map(country => (
-              <option key={country as string} value={country as string}>{country}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">Stage:</span>
-          <select 
-            className="bg-dark-surface text-foreground text-sm border border-dark rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
-            value={filters.stage}
-            onChange={(e) => handleFilterChange('stage', e.target.value)}
-          >
-            <option value="all">All Stages</option>
-            {uniqueStages.map(stage => (
-              <option key={stage} value={stage}>{stage}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">Credit Hub:</span>
-          <select 
-            className="bg-dark-surface text-foreground text-sm border border-dark rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
-            value={filters.creditHub}
-            onChange={(e) => handleFilterChange('creditHub', e.target.value)}
-          >
-            <option value="all">All Credit Hubs</option>
-            {uniqueCreditHubs.map(hub => (
-              <option key={hub} value={hub}>{hub}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="flex items-center gap-2 ml-auto">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-xs bg-transparent text-purple-300 hover:bg-purple-900/20 border border-purple-500"
-            onClick={resetFilters}
-          >
-            <FilterXIcon className="h-3 w-3 mr-1" />
-            Reset Filters
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className={`text-xs text-white border border-primary ${showAllResults ? 'bg-primary/30' : 'bg-transparent'} hover:bg-primary/20`}
-            onClick={() => setShowAllResults(!showAllResults)}
-          >
-            {showAllResults ? 'Show Paged View' : 'Show All Results'}
-          </Button>
-          
-          {onRefresh && (
+      {/* Filters section - inspired by Linear.app and Notion */}
+      <div className="bg-dark-surface border-b border-dark">
+        {/* Top row: Stats and Actions */}
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="text-white font-medium flex items-center">
+              <span className="mr-2 px-2 py-1 bg-dark-lighter rounded-md text-sm">
+                {filteredDeals.length} deals
+              </span>
+              {filteredDeals.length !== deals.length && (
+                <span className="text-xs text-muted-foreground hidden sm:inline">
+                  (filtered from {deals.length} total)
+                </span>
+              )}
+            </div>
+            
+            {/* Mobile filter toggle */}
             <Button 
-              variant="outline" 
+              variant="ghost" 
               size="sm" 
-              className={`text-xs text-white border border-primary bg-transparent hover:bg-primary/20 ${isRefreshing ? 'opacity-70' : ''}`}
-              onClick={handleRefresh}
-              disabled={isRefreshing}
+              className="md:hidden text-white hover:bg-dark-lighter"
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
             >
-              <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {showMobileFilters ? 
+                <XIcon className="h-4 w-4" /> : 
+                <SlidersHorizontal className="h-4 w-4" />
+              }
+              <span className="ml-1 text-xs">Filters</span>
             </Button>
-          )}
+          </div>
+          
+          {/* Action buttons - right aligned */}
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs text-purple-300 hover:bg-purple-900/20 hover:text-purple-200"
+              onClick={resetFilters}
+            >
+              <FilterXIcon className="h-3 w-3 sm:mr-1" />
+              <span className="hidden sm:inline">Reset Filters</span>
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={`text-xs text-white ${showAllResults ? 'bg-primary/30' : ''} hover:bg-primary/20`}
+              onClick={() => setShowAllResults(!showAllResults)}
+            >
+              <span className="hidden sm:inline">{showAllResults ? 'Show Paged View' : 'Show All Results'}</span>
+              <span className="inline sm:hidden">{showAllResults ? 'Paged' : 'All'}</span>
+            </Button>
+            
+            {onRefresh && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`text-xs text-white hover:bg-dark-lighter ${isRefreshing ? 'opacity-70' : ''}`}
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
+          </div>
         </div>
+        
+        {/* Desktop Filters - horizontal layout on medium+ screens */}
+        <div className="hidden md:flex p-3 flex-wrap border-t border-dark-lighter/20 gap-2">
+          <div className="flex-1 min-w-[160px] px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm backdrop-blur-sm">
+            <div className="text-xs text-muted-foreground mb-1 font-medium">Country</div>
+            <select 
+              className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+              value={filters.country}
+              onChange={(e) => handleFilterChange('country', e.target.value)}
+            >
+              <option value="all">All Countries</option>
+              {uniqueCountries.map(country => (
+                <option key={country as string} value={country as string}>{country}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex-1 min-w-[160px] px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm backdrop-blur-sm">
+            <div className="text-xs text-muted-foreground mb-1 font-medium">Stage</div>
+            <select 
+              className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+              value={filters.stage}
+              onChange={(e) => handleFilterChange('stage', e.target.value)}
+            >
+              <option value="all">All Stages</option>
+              {uniqueStages.map(stage => (
+                <option key={stage} value={stage}>{stage}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex-1 min-w-[160px] px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm backdrop-blur-sm">
+            <div className="text-xs text-muted-foreground mb-1 font-medium">Credit Hub</div>
+            <select 
+              className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+              value={filters.creditHub}
+              onChange={(e) => handleFilterChange('creditHub', e.target.value)}
+            >
+              <option value="all">All Credit Hubs</option>
+              {uniqueCreditHubs.map(hub => (
+                <option key={hub} value={hub}>{hub}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
+        {/* Mobile Filters - vertical accordion style */}
+        {showMobileFilters && (
+          <div className="md:hidden p-3 flex flex-col border-t border-dark-lighter/20 gap-2 animate-in slide-in-from-top duration-300">
+            <div className="w-full px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm">
+              <div className="text-xs text-muted-foreground mb-1 font-medium">Country</div>
+              <select 
+                className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+                value={filters.country}
+                onChange={(e) => handleFilterChange('country', e.target.value)}
+              >
+                <option value="all">All Countries</option>
+                {uniqueCountries.map(country => (
+                  <option key={country as string} value={country as string}>{country}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="w-full px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm">
+              <div className="text-xs text-muted-foreground mb-1 font-medium">Stage</div>
+              <select 
+                className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+                value={filters.stage}
+                onChange={(e) => handleFilterChange('stage', e.target.value)}
+              >
+                <option value="all">All Stages</option>
+                {uniqueStages.map(stage => (
+                  <option key={stage} value={stage}>{stage}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="w-full px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm">
+              <div className="text-xs text-muted-foreground mb-1 font-medium">Credit Hub</div>
+              <select 
+                className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+                value={filters.creditHub}
+                onChange={(e) => handleFilterChange('creditHub', e.target.value)}
+              >
+                <option value="all">All Credit Hubs</option>
+                {uniqueCreditHubs.map(hub => (
+                  <option key={hub} value={hub}>{hub}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="overflow-x-auto">
