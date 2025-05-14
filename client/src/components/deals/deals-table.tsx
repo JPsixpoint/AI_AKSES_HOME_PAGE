@@ -79,6 +79,7 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
   const [filters, setFilters] = useState({
     country: 'all',
     stage: 'all',
+    creditHub: 'all'
   });
   const dealsPerPage = 6;
   
@@ -112,6 +113,11 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
       
       // Apply stage filter
       if (filters.stage !== 'all' && (deal.stage !== filters.stage || !deal.stage)) {
+        return false;
+      }
+      
+      // Apply credit hub filter
+      if (filters.creditHub !== 'all' && (deal.credit_hub !== filters.creditHub || !deal.credit_hub)) {
         return false;
       }
       
@@ -188,7 +194,18 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
     return stages.sort();
   }, [deals]);
   
-  const handleFilterChange = (type: 'country' | 'stage', value: string) => {
+  const uniqueCreditHubs = useMemo(() => {
+    const creditHubs = Array.from(
+      new Set(
+        deals
+          .map(deal => deal.credit_hub)
+          .filter((hub): hub is string => typeof hub === 'string' && hub !== null)
+      )
+    );
+    return creditHubs.sort();
+  }, [deals]);
+  
+  const handleFilterChange = (type: 'country' | 'stage' | 'creditHub', value: string) => {
     setFilters(prev => ({
       ...prev,
       [type]: value
@@ -223,6 +240,20 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
             <option value="all">All Stages</option>
             {uniqueStages.map(stage => (
               <option key={stage} value={stage}>{stage}</option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">Credit Hub:</span>
+          <select 
+            className="bg-dark-surface text-foreground text-sm border border-dark rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
+            value={filters.creditHub}
+            onChange={(e) => handleFilterChange('creditHub', e.target.value)}
+          >
+            <option value="all">All Credit Hubs</option>
+            {uniqueCreditHubs.map(hub => (
+              <option key={hub} value={hub}>{hub}</option>
             ))}
           </select>
         </div>
