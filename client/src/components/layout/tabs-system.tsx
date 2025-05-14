@@ -62,8 +62,8 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   // Track open tabs
   const [tabs, setTabs] = useState<Tab[]>([
     { id: "default-pipeline", type: "Pipeline", title: "Pipeline" },
-    { id: "voice-commands", type: "Voice Commands", title: "Voice Commands Guide" },
-    { id: "akses-architecture", type: "AKSES Architecture", title: "AKSES Architecture" }
+    { id: "voice-commands", type: "Voice Commands", title: "Commands" },
+    { id: "akses-architecture", type: "AKSES Architecture", title: "Architecture" }
   ]);
   
   // Track active tab
@@ -77,8 +77,8 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   const tabOptions: Array<{type: TabType, title: string, description: string}> = [
     { type: "Pipeline", title: "Pipeline", description: "View and manage the deal pipeline" },
     { type: "AI PreScreening", title: "AI PreScreening", description: "AI-assisted pre-screening of potential deals" },
-    { type: "Voice Commands", title: "Voice Commands Guide", description: "Guide to using voice commands and AI capabilities" },
-    { type: "AKSES Architecture", title: "AKSES Architecture", description: "Three-Tiered AI Orchestration Architecture and system components" },
+    { type: "Voice Commands", title: "Commands", description: "Guide to using voice commands and AI capabilities" },
+    { type: "AKSES Architecture", title: "Architecture", description: "Three-Tiered AI Orchestration Architecture and system components" },
     { type: "Deal Information", title: "Deal Information", description: "View and edit detailed deal information" },
     { type: "Pricer", title: "Pricer", description: "Deal pricing and financial modeling tools" },
     { type: "Due Diligence", title: "Due Diligence", description: "Manage due diligence process and documents" },

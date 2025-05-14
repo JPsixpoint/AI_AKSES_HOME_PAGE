@@ -5,122 +5,139 @@ import { Search, BarChart3, GitCompare, Wrench } from "lucide-react";
 
 export function VoiceCommandsGuide() {
   return (
-    <div className="h-full overflow-auto">
-      <Card className="bg-dark-lighter border-dark">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-semibold text-primary">AKSES Voice Commands Guide</CardTitle>
-          <CardDescription>
-            Your AI assistant understands natural language. Here are some examples of what you can ask.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+    <div className="h-full overflow-auto p-6 bg-dark">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold text-primary mb-2">Voice Command Guide</h1>
+        <p className="text-muted-foreground mb-6">
+          Your AI assistant understands natural language. Simply speak or type these commands.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Find Deals Section */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Search className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-medium">🔍 Find the Deals You Care About</h3>
+          <Card className="bg-dark-lighter border-dark overflow-hidden shadow-lg">
+            <div className="bg-gradient-to-r from-blue-900/30 to-primary/20 p-4 border-b border-dark">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-600/30 p-2 rounded-full">
+                  <Search className="h-5 w-5 text-blue-400" />
+                </div>
+                <h3 className="text-lg font-medium">🔍 Find the Deals You Care About</h3>
+              </div>
             </div>
-            <ul className="space-y-2 ml-7 text-sm">
-              <li className="list-disc">
-                <span className="text-muted-foreground">Ask for deals in a specific stage</span>
-                <div className="mt-1 text-foreground font-mono text-xs bg-dark-surface p-2 rounded-md">
-                  "Show me all deals in Pre-Screening"
-                </div>
-              </li>
-              <li className="list-disc">
-                <span className="text-muted-foreground">Filter by region or country</span>
-                <div className="mt-1 text-foreground font-mono text-xs bg-dark-surface p-2 rounded-md">
-                  "Which deals are in LATAM?"
-                </div>
-              </li>
-              <li className="list-disc">
-                <span className="text-muted-foreground">Combine filters for smart queries</span>
-                <div className="mt-1 text-foreground font-mono text-xs bg-dark-surface p-2 rounded-md">
-                  "Get all deals in Colombia that are in Due Diligence"
-                </div>
-              </li>
-            </ul>
-          </div>
-
-          <Separator className="border-dark" />
+            <CardContent className="p-5">
+              <ul className="space-y-4">
+                <li className="border-b border-dark/50 pb-3">
+                  <p className="text-muted-foreground mb-2">Ask for deals in a specific stage</p>
+                  <div className="bg-dark-surface p-3 rounded-md border border-dark/70 font-mono text-sm text-primary-foreground">
+                    "Show me all deals in Pre-Screening"
+                  </div>
+                </li>
+                <li className="border-b border-dark/50 pb-3">
+                  <p className="text-muted-foreground mb-2">Filter by region or country</p>
+                  <div className="bg-dark-surface p-3 rounded-md border border-dark/70 font-mono text-sm text-primary-foreground">
+                    "Which deals are in LATAM?"
+                  </div>
+                </li>
+                <li>
+                  <p className="text-muted-foreground mb-2">Combine filters for smart queries</p>
+                  <div className="bg-dark-surface p-3 rounded-md border border-dark/70 font-mono text-sm text-primary-foreground">
+                    "Get all deals in Colombia that are in Due Diligence"
+                  </div>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
 
           {/* Summarize Pipeline Section */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-medium">📊 Summarize the Pipeline Instantly</h3>
+          <Card className="bg-dark-lighter border-dark overflow-hidden shadow-lg">
+            <div className="bg-gradient-to-r from-green-900/30 to-green-700/20 p-4 border-b border-dark">
+              <div className="flex items-center gap-3">
+                <div className="bg-green-700/30 p-2 rounded-full">
+                  <BarChart3 className="h-5 w-5 text-green-400" />
+                </div>
+                <h3 className="text-lg font-medium">📊 Summarize the Pipeline</h3>
+              </div>
             </div>
-            <ul className="space-y-2 ml-7 text-sm">
-              <li className="list-disc">
-                <span className="text-muted-foreground">Get a quick snapshot of multiple deals</span>
-                <div className="mt-1 text-foreground font-mono text-xs bg-dark-surface p-2 rounded-md">
-                  "Summarize the top 5 deals in Mexico"
-                </div>
-              </li>
-              <li className="list-disc">
-                <span className="text-muted-foreground">Pull highlights based on priority</span>
-                <div className="mt-1 text-foreground font-mono text-xs bg-dark-surface p-2 rounded-md">
-                  "What are the highest priority deals in APAC?"
-                </div>
-              </li>
-            </ul>
-          </div>
-
-          <Separator className="border-dark" />
+            <CardContent className="p-5">
+              <ul className="space-y-4">
+                <li className="border-b border-dark/50 pb-3">
+                  <p className="text-muted-foreground mb-2">Get a quick snapshot of multiple deals</p>
+                  <div className="bg-dark-surface p-3 rounded-md border border-dark/70 font-mono text-sm text-primary-foreground">
+                    "Summarize the top 5 deals in Mexico"
+                  </div>
+                </li>
+                <li>
+                  <p className="text-muted-foreground mb-2">Pull highlights based on priority</p>
+                  <div className="bg-dark-surface p-3 rounded-md border border-dark/70 font-mono text-sm text-primary-foreground">
+                    "What are the highest priority deals in APAC?"
+                  </div>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
 
           {/* Compare Section */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <GitCompare className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-medium">📈 Compare What Matters</h3>
+          <Card className="bg-dark-lighter border-dark overflow-hidden shadow-lg">
+            <div className="bg-gradient-to-r from-purple-900/30 to-purple-700/20 p-4 border-b border-dark">
+              <div className="flex items-center gap-3">
+                <div className="bg-purple-700/30 p-2 rounded-full">
+                  <GitCompare className="h-5 w-5 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-medium">📈 Compare What Matters</h3>
+              </div>
             </div>
-            <ul className="space-y-2 ml-7 text-sm">
-              <li className="list-disc">
-                <span className="text-muted-foreground">Compare multiple deals side by side</span>
-                <div className="mt-1 text-foreground font-mono text-xs bg-dark-surface p-2 rounded-md">
-                  "Compare Monet, Sary, and Tuily"
-                </div>
-              </li>
-              <li className="list-disc">
-                <span className="text-muted-foreground">Highlight key differences in stage, region, or lead</span>
-                <div className="mt-1 text-foreground font-mono text-xs bg-dark-surface p-2 rounded-md">
-                  "What's the difference between Platacard and Waya deals?"
-                </div>
-              </li>
-            </ul>
-          </div>
-
-          <Separator className="border-dark" />
+            <CardContent className="p-5">
+              <ul className="space-y-4">
+                <li className="border-b border-dark/50 pb-3">
+                  <p className="text-muted-foreground mb-2">Compare multiple deals side by side</p>
+                  <div className="bg-dark-surface p-3 rounded-md border border-dark/70 font-mono text-sm text-primary-foreground">
+                    "Compare Monet, Sary, and Tuily"
+                  </div>
+                </li>
+                <li>
+                  <p className="text-muted-foreground mb-2">Highlight key differences</p>
+                  <div className="bg-dark-surface p-3 rounded-md border border-dark/70 font-mono text-sm text-primary-foreground">
+                    "What's the difference between Platacard and Waya deals?"
+                  </div>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
 
           {/* Make Changes Section */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Wrench className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-medium">🛠 Make Changes with Your Voice</h3>
+          <Card className="bg-dark-lighter border-dark overflow-hidden shadow-lg">
+            <div className="bg-gradient-to-r from-orange-900/30 to-orange-700/20 p-4 border-b border-dark">
+              <div className="flex items-center gap-3">
+                <div className="bg-orange-700/30 p-2 rounded-full">
+                  <Wrench className="h-5 w-5 text-orange-400" />
+                </div>
+                <h3 className="text-lg font-medium">🛠 Make Changes with Your Voice</h3>
+              </div>
             </div>
-            <ul className="space-y-2 ml-7 text-sm">
-              <li className="list-disc">
-                <span className="text-muted-foreground">Advance a deal to the next stage</span>
-                <div className="mt-1 text-foreground font-mono text-xs bg-dark-surface p-2 rounded-md">
-                  "Move Platacard to IC Review"
-                </div>
-              </li>
-              <li className="list-disc">
-                <span className="text-muted-foreground">Reassign leads</span>
-                <div className="mt-1 text-foreground font-mono text-xs bg-dark-surface p-2 rounded-md">
-                  "Assign Tuily to Taimur"
-                </div>
-              </li>
-              <li className="list-disc">
-                <span className="text-muted-foreground">Adjust priority or hub</span>
-                <div className="mt-1 text-foreground font-mono text-xs bg-dark-surface p-2 rounded-md">
-                  "Set priority of Sary to High and credit hub to LATAM"
-                </div>
-              </li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
+            <CardContent className="p-5">
+              <ul className="space-y-4">
+                <li className="border-b border-dark/50 pb-3">
+                  <p className="text-muted-foreground mb-2">Advance a deal to the next stage</p>
+                  <div className="bg-dark-surface p-3 rounded-md border border-dark/70 font-mono text-sm text-primary-foreground">
+                    "Move Platacard to IC Review"
+                  </div>
+                </li>
+                <li className="border-b border-dark/50 pb-3">
+                  <p className="text-muted-foreground mb-2">Reassign leads</p>
+                  <div className="bg-dark-surface p-3 rounded-md border border-dark/70 font-mono text-sm text-primary-foreground">
+                    "Assign Tuily to Taimur"
+                  </div>
+                </li>
+                <li>
+                  <p className="text-muted-foreground mb-2">Adjust priority or hub</p>
+                  <div className="bg-dark-surface p-3 rounded-md border border-dark/70 font-mono text-sm text-primary-foreground">
+                    "Set priority of Sary to High and credit hub to LATAM"
+                  </div>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
