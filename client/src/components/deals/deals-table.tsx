@@ -9,8 +9,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontalIcon, ChevronLeftIcon, ChevronRightIcon, RefreshCwIcon } from "lucide-react";
+import { 
+  MoreHorizontalIcon, 
+  ChevronLeftIcon, 
+  ChevronRightIcon, 
+  RefreshCwIcon, 
+  FileTextIcon,
+  SearchIcon
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { DealDetailsModal } from "./deal-details-modal";
 // Import the PipelineDeal interface from deals-pipeline
 interface PipelineDeal {
   id: string;
@@ -23,12 +31,14 @@ interface PipelineDeal {
   updates: any[] | null;
   members: string[] | null;
   pre_screening: Record<string, any> | null;
+  ai_screening?: any[] | null;
   created_at?: Date | null;
   updated_at?: Date | null;
   created_by?: number | null;
 }
 import { formatTimeAgo } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface DealsTableProps {
   deals: PipelineDeal[];
