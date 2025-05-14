@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { db } from "../db";
+import { sql } from "drizzle-orm";
 
 const app = express();
 // Set larger limits for request body parsing to handle large deal data payloads
@@ -102,5 +104,22 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Run initial keep-alive query
+    runKeepAliveQuery();
+    
+    // Set up periodic keep-alive queries to prevent database idle timeout
+    const KEEP_ALIVE_INTERVAL = 5 * 60 * 1000; // 5 minutes
+    setInterval(runKeepAliveQuery, KEEP_ALIVE_INTERVAL);
   });
 })();
+
+// Function to run a minimal query to keep database connection active
+async function runKeepAliveQuery() {
+  try {
+    await db.execute(sql`SELECT 1 FROM akses_deals LIMIT 1`);
+    log("Database keep-alive query executed successfully");
+  } catch (error) {
+    console.error("Error in database keep-alive query:", error);
+  }
+}
