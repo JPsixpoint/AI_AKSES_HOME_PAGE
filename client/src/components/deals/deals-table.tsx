@@ -227,9 +227,10 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
     <div className="gradient-border bg-dark-lighter rounded-lg overflow-hidden">
       {/* Filters row */}
       <div className="bg-dark-surface p-4 border-b border-dark flex flex-wrap items-center gap-4">
-        <div className="text-sm text-primary-light mr-2">
+        <div className="text-sm text-white font-medium mr-2">
           Found: {filteredDeals.length} deals
         </div>
+        
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground whitespace-nowrap">Country:</span>
           <select 
@@ -272,37 +273,38 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
           </select>
         </div>
         
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="text-xs text-primary"
-          onClick={resetFilters}
-        >
-          <FilterXIcon className="h-3 w-3 mr-1" />
-          Reset Filters
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className={`text-xs ${showAllResults ? 'bg-primary-light/20 text-primary-light' : ''}`}
-          onClick={() => setShowAllResults(!showAllResults)}
-        >
-          {showAllResults ? 'Show Paged View' : 'Show All Results'}
-        </Button>
-        
-        {onRefresh && (
+        <div className="flex items-center gap-2 ml-auto">
           <Button 
             variant="outline" 
             size="sm" 
-            className={`ml-auto text-xs ${isRefreshing ? 'opacity-70' : ''}`}
-            onClick={handleRefresh}
-            disabled={isRefreshing}
+            className="text-xs bg-transparent text-purple-300 hover:bg-purple-900/20 border border-purple-500"
+            onClick={resetFilters}
           >
-            <RefreshCwIcon className={`h-3 w-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh Data
+            <FilterXIcon className="h-3 w-3 mr-1" />
+            Reset Filters
           </Button>
-        )}
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={`text-xs text-white border border-primary ${showAllResults ? 'bg-primary/30' : 'bg-transparent'} hover:bg-primary/20`}
+            onClick={() => setShowAllResults(!showAllResults)}
+          >
+            {showAllResults ? 'Show Paged View' : 'Show All Results'}
+          </Button>
+          
+          {onRefresh && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className={`text-xs text-white border border-primary bg-transparent hover:bg-primary/20 ${isRefreshing ? 'opacity-70' : ''}`}
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          )}
+        </div>
       </div>
       
       <div className="overflow-x-auto">
