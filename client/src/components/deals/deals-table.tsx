@@ -233,12 +233,12 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
         {/* Top row: Stats and Actions */}
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="text-white font-medium flex items-center">
-              <span className="mr-2 px-2 py-1 bg-dark-lighter rounded-md text-sm">
+            <div className="text-white font-semibold flex items-center">
+              <span className="text-md">
                 {filteredDeals.length} deals
               </span>
               {filteredDeals.length !== deals.length && (
-                <span className="text-xs text-muted-foreground hidden sm:inline">
+                <span className="text-xs text-muted-foreground hidden sm:inline ml-2">
                   (filtered from {deals.length} total)
                 </span>
               )}
@@ -264,11 +264,11 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-xs text-purple-300 hover:bg-purple-900/20 hover:text-purple-200"
+              className="text-xs text-purple-300 hover:bg-purple-900/20 hover:text-purple-200 flex items-center"
               onClick={resetFilters}
             >
-              <FilterXIcon className="h-3 w-3 sm:mr-1" />
-              <span className="hidden sm:inline">Reset Filters</span>
+              <FilterXIcon className="h-3 w-3 mr-1.5" />
+              Reset Filters
             </Button>
             
             <Button 
@@ -277,8 +277,7 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
               className={`text-xs text-white ${showAllResults ? 'bg-primary/30' : ''} hover:bg-primary/20`}
               onClick={() => setShowAllResults(!showAllResults)}
             >
-              <span className="hidden sm:inline">{showAllResults ? 'Show Paged View' : 'Show All Results'}</span>
-              <span className="inline sm:hidden">{showAllResults ? 'Paged' : 'All'}</span>
+              <span>Show {showAllResults ? 'Paged' : 'All'} Results</span>
             </Button>
             
             {onRefresh && (
@@ -296,45 +295,48 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
         </div>
         
         {/* Desktop Filters - horizontal layout on medium+ screens */}
-        <div className="hidden md:flex p-3 flex-wrap border-t border-dark-lighter/20 gap-2">
-          <div className="flex-1 min-w-[160px] px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm backdrop-blur-sm">
-            <div className="text-xs text-muted-foreground mb-1 font-medium">Country</div>
+        <div className="hidden md:flex p-3 flex-wrap border-t border-purple-950/40 gap-2">
+          <div className="flex-1 min-w-[160px] px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+            <div className="text-xs text-gray-300 mb-1 font-medium">Country</div>
             <select 
-              className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+              className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
               value={filters.country}
               onChange={(e) => handleFilterChange('country', e.target.value)}
+              style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
             >
-              <option value="all">All Countries</option>
+              <option value="all" className="bg-dark-surface text-white">All Countries</option>
               {uniqueCountries.map(country => (
-                <option key={country as string} value={country as string}>{country}</option>
+                <option key={country as string} value={country as string} className="bg-dark-surface text-white">{country}</option>
               ))}
             </select>
           </div>
           
-          <div className="flex-1 min-w-[160px] px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm backdrop-blur-sm">
-            <div className="text-xs text-muted-foreground mb-1 font-medium">Stage</div>
+          <div className="flex-1 min-w-[160px] px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+            <div className="text-xs text-gray-300 mb-1 font-medium">Stage</div>
             <select 
-              className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+              className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
               value={filters.stage}
               onChange={(e) => handleFilterChange('stage', e.target.value)}
+              style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
             >
-              <option value="all">All Stages</option>
+              <option value="all" className="bg-dark-surface text-white">All Stages</option>
               {uniqueStages.map(stage => (
-                <option key={stage} value={stage}>{stage}</option>
+                <option key={stage} value={stage} className="bg-dark-surface text-white">{stage}</option>
               ))}
             </select>
           </div>
           
-          <div className="flex-1 min-w-[160px] px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm backdrop-blur-sm">
-            <div className="text-xs text-muted-foreground mb-1 font-medium">Credit Hub</div>
+          <div className="flex-1 min-w-[160px] px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+            <div className="text-xs text-gray-300 mb-1 font-medium">Credit Hub</div>
             <select 
-              className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+              className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
               value={filters.creditHub}
               onChange={(e) => handleFilterChange('creditHub', e.target.value)}
+              style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
             >
-              <option value="all">All Credit Hubs</option>
+              <option value="all" className="bg-dark-surface text-white">All Credit Hubs</option>
               {uniqueCreditHubs.map(hub => (
-                <option key={hub} value={hub}>{hub}</option>
+                <option key={hub} value={hub} className="bg-dark-surface text-white">{hub}</option>
               ))}
             </select>
           </div>
@@ -342,45 +344,48 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
         
         {/* Mobile Filters - vertical accordion style */}
         {showMobileFilters && (
-          <div className="md:hidden p-3 flex flex-col border-t border-dark-lighter/20 gap-2 animate-in slide-in-from-top duration-300">
-            <div className="w-full px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm">
-              <div className="text-xs text-muted-foreground mb-1 font-medium">Country</div>
+          <div className="md:hidden p-3 flex flex-col border-t border-purple-950/40 gap-3 animate-in slide-in-from-top duration-300">
+            <div className="w-full px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+              <div className="text-xs text-gray-300 mb-1 font-medium">Country</div>
               <select 
-                className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+                className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
                 value={filters.country}
                 onChange={(e) => handleFilterChange('country', e.target.value)}
+                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
               >
-                <option value="all">All Countries</option>
+                <option value="all" className="bg-dark-surface text-white">All Countries</option>
                 {uniqueCountries.map(country => (
-                  <option key={country as string} value={country as string}>{country}</option>
+                  <option key={country as string} value={country as string} className="bg-dark-surface text-white">{country}</option>
                 ))}
               </select>
             </div>
             
-            <div className="w-full px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm">
-              <div className="text-xs text-muted-foreground mb-1 font-medium">Stage</div>
+            <div className="w-full px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+              <div className="text-xs text-gray-300 mb-1 font-medium">Stage</div>
               <select 
-                className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+                className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
                 value={filters.stage}
                 onChange={(e) => handleFilterChange('stage', e.target.value)}
+                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
               >
-                <option value="all">All Stages</option>
+                <option value="all" className="bg-dark-surface text-white">All Stages</option>
                 {uniqueStages.map(stage => (
-                  <option key={stage} value={stage}>{stage}</option>
+                  <option key={stage} value={stage} className="bg-dark-surface text-white">{stage}</option>
                 ))}
               </select>
             </div>
             
-            <div className="w-full px-3 py-2 rounded-md bg-dark-lighter/40 shadow-sm">
-              <div className="text-xs text-muted-foreground mb-1 font-medium">Credit Hub</div>
+            <div className="w-full px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+              <div className="text-xs text-gray-300 mb-1 font-medium">Credit Hub</div>
               <select 
-                className="w-full bg-transparent text-foreground text-sm border-0 focus:ring-0 focus:outline-none p-0"
+                className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
                 value={filters.creditHub}
                 onChange={(e) => handleFilterChange('creditHub', e.target.value)}
+                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
               >
-                <option value="all">All Credit Hubs</option>
+                <option value="all" className="bg-dark-surface text-white">All Credit Hubs</option>
                 {uniqueCreditHubs.map(hub => (
-                  <option key={hub} value={hub}>{hub}</option>
+                  <option key={hub} value={hub} className="bg-dark-surface text-white">{hub}</option>
                 ))}
               </select>
             </div>
