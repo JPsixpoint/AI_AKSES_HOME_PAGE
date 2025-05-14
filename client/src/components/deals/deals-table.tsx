@@ -310,8 +310,8 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
                   <option key={country as string} value={country as string} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{country}</option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-gray-400">
-                <SlidersHorizontal className="h-3 w-3" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+                <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
               </div>
             </div>
           </div>
@@ -330,8 +330,8 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
                   <option key={stage} value={stage} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{stage}</option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-gray-400">
-                <SlidersHorizontal className="h-3 w-3" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+                <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
               </div>
             </div>
           </div>
@@ -350,8 +350,8 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
                   <option key={hub} value={hub} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{hub}</option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-gray-400">
-                <SlidersHorizontal className="h-3 w-3" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+                <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
               </div>
             </div>
           </div>
@@ -414,8 +414,8 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
                     <option key={hub} value={hub} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{hub}</option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-gray-400">
-                  <SlidersHorizontal className="h-3 w-3" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+                  <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
                 </div>
               </div>
             </div>
