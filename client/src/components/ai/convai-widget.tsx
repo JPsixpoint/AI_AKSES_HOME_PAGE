@@ -5,32 +5,26 @@ import React, { useEffect, useState } from 'react';
  * This ensures it's always visible regardless of the component hierarchy
  */
 export function ConvaiWidget() {
-  const [isLoaded, setIsLoaded] = useState(false);
-  
   useEffect(() => {
-    // Check if script is already loaded
-    if (document.querySelector('script[src="https://elevenlabs.io/convai-widget/index.js"]')) {
-      setIsLoaded(true);
-      return;
-    }
+    // Remove any existing widgets to avoid duplicates
+    const existingWidgets = document.querySelectorAll('elevenlabs-convai');
+    existingWidgets.forEach(widget => {
+      if (widget.parentNode) {
+        widget.parentNode.removeChild(widget);
+      }
+    });
+
+    // Remove any existing scripts to avoid duplicates
+    const existingScripts = document.querySelectorAll('script[src="https://elevenlabs.io/convai-widget/index.js"]');
+    existingScripts.forEach(script => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    });
     
-    // Create the script element
-    const script = document.createElement('script');
-    script.src = 'https://elevenlabs.io/convai-widget/index.js';
-    script.async = true;
-    script.type = 'text/javascript';
-    
-    // Set loaded state when script is loaded
-    script.onload = () => {
-      setIsLoaded(true);
-    };
-    
-    // Add the script to the document
-    document.body.appendChild(script);
-    
-    // Create the widget element
+    // Create the widget element with the exact structure provided
     const widget = document.createElement('elevenlabs-convai');
-    widget.setAttribute('agent-id', 'aydRlzkSkaigNV8cpr6z');
+    widget.setAttribute('agent-id', 'IwxkjUwQIUEukahjdlXH');
     
     // Add some styling to position the widget
     widget.style.position = 'fixed';
@@ -41,19 +35,19 @@ export function ConvaiWidget() {
     // Add the widget to the body
     document.body.appendChild(widget);
     
+    // Create the script element - exact code as provided
+    const script = document.createElement('script');
+    script.src = 'https://elevenlabs.io/convai-widget/index.js';
+    script.async = true;
+    script.type = 'text/javascript';
+    
+    // Add the script to the document
+    document.body.appendChild(script);
+    
     // Clean up on unmount
     return () => {
-      // Remove the script if we added it
-      const scriptElement = document.querySelector('script[src="https://elevenlabs.io/convai-widget/index.js"]');
-      if (scriptElement && scriptElement === script) {
-        document.body.removeChild(script);
-      }
-      
-      // Remove the widget
-      const widgetElement = document.querySelector('elevenlabs-convai');
-      if (widgetElement) {
-        document.body.removeChild(widgetElement);
-      }
+      // We don't remove these on unmount since this is an app-level component
+      // that should persist throughout the app lifecycle
     };
   }, []);
 
