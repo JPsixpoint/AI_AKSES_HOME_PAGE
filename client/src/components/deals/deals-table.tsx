@@ -298,47 +298,62 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
         <div className="hidden md:flex p-3 flex-wrap border-t border-purple-950/40 gap-2">
           <div className="flex-1 min-w-[160px] px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
             <div className="text-xs text-gray-300 mb-1 font-medium">Country</div>
-            <select 
-              className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
-              value={filters.country}
-              onChange={(e) => handleFilterChange('country', e.target.value)}
-              style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
-            >
-              <option value="all" className="bg-dark-surface text-white">All Countries</option>
-              {uniqueCountries.map(country => (
-                <option key={country as string} value={country as string} className="bg-dark-surface text-white">{country}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select 
+                className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                value={filters.country}
+                onChange={(e) => handleFilterChange('country', e.target.value)}
+                style={{ color: 'white', paddingRight: '2.5rem' }}
+              >
+                <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Countries</option>
+                {uniqueCountries.map(country => (
+                  <option key={country as string} value={country as string} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{country}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-gray-400">
+                <SlidersHorizontal className="h-3 w-3" />
+              </div>
+            </div>
           </div>
           
           <div className="flex-1 min-w-[160px] px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
             <div className="text-xs text-gray-300 mb-1 font-medium">Stage</div>
-            <select 
-              className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
-              value={filters.stage}
-              onChange={(e) => handleFilterChange('stage', e.target.value)}
-              style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
-            >
-              <option value="all" className="bg-dark-surface text-white">All Stages</option>
-              {uniqueStages.map(stage => (
-                <option key={stage} value={stage} className="bg-dark-surface text-white">{stage}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select 
+                className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                value={filters.stage}
+                onChange={(e) => handleFilterChange('stage', e.target.value)}
+                style={{ color: 'white', paddingRight: '2.5rem' }}
+              >
+                <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Stages</option>
+                {uniqueStages.map(stage => (
+                  <option key={stage} value={stage} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{stage}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-gray-400">
+                <SlidersHorizontal className="h-3 w-3" />
+              </div>
+            </div>
           </div>
           
           <div className="flex-1 min-w-[160px] px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
             <div className="text-xs text-gray-300 mb-1 font-medium">Credit Hub</div>
-            <select 
-              className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
-              value={filters.creditHub}
-              onChange={(e) => handleFilterChange('creditHub', e.target.value)}
-              style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
-            >
-              <option value="all" className="bg-dark-surface text-white">All Credit Hubs</option>
-              {uniqueCreditHubs.map(hub => (
-                <option key={hub} value={hub} className="bg-dark-surface text-white">{hub}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select 
+                className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                value={filters.creditHub}
+                onChange={(e) => handleFilterChange('creditHub', e.target.value)}
+                style={{ color: 'white', paddingRight: '2.5rem' }}
+              >
+                <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Credit Hubs</option>
+                {uniqueCreditHubs.map(hub => (
+                  <option key={hub} value={hub} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{hub}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-gray-400">
+                <SlidersHorizontal className="h-3 w-3" />
+              </div>
+            </div>
           </div>
         </div>
         
@@ -347,47 +362,62 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
           <div className="md:hidden p-3 flex flex-col border-t border-purple-950/40 gap-3 animate-in slide-in-from-top duration-300">
             <div className="w-full px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
               <div className="text-xs text-gray-300 mb-1 font-medium">Country</div>
-              <select 
-                className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
-                value={filters.country}
-                onChange={(e) => handleFilterChange('country', e.target.value)}
-                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
-              >
-                <option value="all" className="bg-dark-surface text-white">All Countries</option>
-                {uniqueCountries.map(country => (
-                  <option key={country as string} value={country as string} className="bg-dark-surface text-white">{country}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select 
+                  className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                  value={filters.country}
+                  onChange={(e) => handleFilterChange('country', e.target.value)}
+                  style={{ color: 'white', paddingRight: '2.5rem' }}
+                >
+                  <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Countries</option>
+                  {uniqueCountries.map(country => (
+                    <option key={country as string} value={country as string} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{country}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+                  <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
+                </div>
+              </div>
             </div>
             
             <div className="w-full px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
               <div className="text-xs text-gray-300 mb-1 font-medium">Stage</div>
-              <select 
-                className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
-                value={filters.stage}
-                onChange={(e) => handleFilterChange('stage', e.target.value)}
-                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
-              >
-                <option value="all" className="bg-dark-surface text-white">All Stages</option>
-                {uniqueStages.map(stage => (
-                  <option key={stage} value={stage} className="bg-dark-surface text-white">{stage}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select 
+                  className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                  value={filters.stage}
+                  onChange={(e) => handleFilterChange('stage', e.target.value)}
+                  style={{ color: 'white', paddingRight: '2.5rem' }}
+                >
+                  <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Stages</option>
+                  {uniqueStages.map(stage => (
+                    <option key={stage} value={stage} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{stage}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+                  <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
+                </div>
+              </div>
             </div>
             
             <div className="w-full px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
               <div className="text-xs text-gray-300 mb-1 font-medium">Credit Hub</div>
-              <select 
-                className="w-full bg-transparent text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
-                value={filters.creditHub}
-                onChange={(e) => handleFilterChange('creditHub', e.target.value)}
-                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239fa6b2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
-              >
-                <option value="all" className="bg-dark-surface text-white">All Credit Hubs</option>
-                {uniqueCreditHubs.map(hub => (
-                  <option key={hub} value={hub} className="bg-dark-surface text-white">{hub}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select 
+                  className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                  value={filters.creditHub}
+                  onChange={(e) => handleFilterChange('creditHub', e.target.value)}
+                  style={{ color: 'white', paddingRight: '2.5rem' }}
+                >
+                  <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Credit Hubs</option>
+                  {uniqueCreditHubs.map(hub => (
+                    <option key={hub} value={hub} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{hub}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-gray-400">
+                  <SlidersHorizontal className="h-3 w-3" />
+                </div>
+              </div>
             </div>
           </div>
         )}

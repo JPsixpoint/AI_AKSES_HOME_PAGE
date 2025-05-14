@@ -294,4 +294,22 @@
   .command-input {
     color: white !important;
   }
+  
+  /* Override for select dropdowns in dark mode */
+  .bg-dark-surface select {
+    color: white !important;
+  }
+  
+  .bg-dark-surface select option {
+    color: white !important;
+    background-color: #1E1E2F !important;
+  }
+  
+  /* Fix for Firefox which doesn't support styling option elements */
+  @-moz-document url-prefix() {
+    .bg-dark-surface select {
+      background-color: #1E1E2F !important;
+      color: white !important;
+    }
+  }
 }
