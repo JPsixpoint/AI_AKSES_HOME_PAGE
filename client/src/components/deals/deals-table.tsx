@@ -360,7 +360,7 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
               onClick={resetFilters}
               className="px-3 py-2 text-sm rounded bg-purple-600/20 text-white hover:bg-purple-600/30 transition-colors border border-purple-600/30 flex items-center gap-1"
             >
-              <RefreshCcw className="h-3 w-3" />
+              <RefreshCwIcon className="h-3 w-3" />
               Reset Filters
             </button>
             <div className="text-xs text-gray-300">
@@ -435,7 +435,7 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
                 onClick={resetFilters}
                 className="px-3 py-2 text-sm rounded bg-purple-600/20 text-white hover:bg-purple-600/30 transition-colors border border-purple-600/30 flex items-center gap-1"
               >
-                <RefreshCcw className="h-3 w-3" />
+                <RefreshCwIcon className="h-3 w-3" />
                 Reset Filters
               </button>
               
