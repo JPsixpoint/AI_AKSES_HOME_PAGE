@@ -18,7 +18,7 @@ import {
   SearchIcon
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { DealDetailsModal } from "./deal-details-modal";
+import { DealDataView } from "./deal-data-view";
 // Import the PipelineDeal interface from deals-pipeline
 interface PipelineDeal {
   id: string;
@@ -39,6 +39,27 @@ interface PipelineDeal {
 import { formatTimeAgo } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Deal } from "@shared/schema";
+
+// Function to convert PipelineDeal to Deal type for the data view
+const convertToDealType = (deal: PipelineDeal | null): Deal | null => {
+  if (!deal) return null;
+  return {
+    id: deal.id,
+    name: deal.name || '',
+    lead: deal.lead,
+    country: deal.country,
+    creditHub: deal.credit_hub,
+    stage: deal.stage,
+    priority: deal.priority,
+    updates: deal.updates,
+    preScreening: deal.pre_screening,
+    members: deal.members,
+    aiScreening: deal.ai_screening,
+    createdAt: deal.created_at,
+    updatedAt: deal.updated_at
+  } as Deal;
+};
 
 interface DealsTableProps {
   deals: PipelineDeal[];
@@ -296,9 +317,9 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
         </div>
       </div>
       
-      {/* Detail Modal */}
-      <DealDetailsModal
-        deal={detailModal.dealId ? deals.find(d => d.id === detailModal.dealId) || null : null}
+      {/* Full-screen Data View */}
+      <DealDataView
+        deal={detailModal.dealId ? convertToDealType(deals.find(d => d.id === detailModal.dealId) || null) : null}
         isOpen={detailModal.isOpen}
         onClose={closeDetailModal}
       />
