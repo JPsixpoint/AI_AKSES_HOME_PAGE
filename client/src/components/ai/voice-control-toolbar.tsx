@@ -293,6 +293,16 @@ export function VoiceControlToolbar({
         >
           <BookOpen className="h-5 w-5" />
         </Button>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-full text-green-400 hover:text-green-300"
+          onClick={openVoiceCommandsTab}
+          title="View Voice Commands Guide"
+        >
+          <HelpCircle className="h-5 w-5" />
+        </Button>
       </div>
       
       {isListening && (
