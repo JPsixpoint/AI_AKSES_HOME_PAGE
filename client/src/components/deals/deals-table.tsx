@@ -51,6 +51,10 @@ interface DealsTableProps {
 export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRefresh }: DealsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [detailModal, setDetailModal] = useState<{ isOpen: boolean; dealId: string | null }>({
+    isOpen: false,
+    dealId: null
+  });
   const dealsPerPage = 6;
   
   const handleRefresh = async () => {
@@ -62,6 +66,15 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
         setIsRefreshing(false);
       }
     }
+  };
+  
+  const openDetailModal = (dealId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setDetailModal({ isOpen: true, dealId });
+  };
+  
+  const closeDetailModal = () => {
+    setDetailModal({ isOpen: false, dealId: null });
   };
   
   // Calculate pagination
@@ -181,9 +194,21 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
                       </Badge>
                     </TableCell>
                     <TableCell className="px-4 py-3">
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground transition-colors">
-                        <MoreHorizontalIcon className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground transition-colors">
+                            <MoreHorizontalIcon className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={(e) => openDetailModal(deal.id, e)}
+                            className="flex items-center gap-2"
+                          >
+                            <FileTextIcon className="h-4 w-4" /> View All Data
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </motion.tr>
                 ))}
@@ -270,6 +295,13 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
           </Button>
         </div>
       </div>
+      
+      {/* Detail Modal */}
+      <DealDetailsModal
+        deal={detailModal.dealId ? deals.find(d => d.id === detailModal.dealId) || null : null}
+        isOpen={detailModal.isOpen}
+        onClose={closeDetailModal}
+      />
     </div>
   );
 }

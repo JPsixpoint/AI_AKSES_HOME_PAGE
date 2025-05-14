@@ -32,17 +32,17 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
     ? JSON.parse(deal.updates) 
     : deal.updates || [];
     
-  const preScreening = typeof deal.pre_screening === 'string' 
-    ? JSON.parse(deal.pre_screening) 
-    : deal.pre_screening || {};
+  const preScreening = typeof deal.preScreening === 'string' 
+    ? JSON.parse(deal.preScreening) 
+    : deal.preScreening || {};
     
   const members = typeof deal.members === 'string' 
     ? JSON.parse(deal.members) 
     : deal.members || [];
     
-  const aiScreening = typeof deal.ai_screening === 'string' 
-    ? JSON.parse(deal.ai_screening) 
-    : deal.ai_screening || [];
+  const aiScreening = typeof deal.aiScreening === 'string' 
+    ? JSON.parse(deal.aiScreening) 
+    : deal.aiScreening || [];
   
   // Helper to format nested objects for display
   const formatValue = (value: any): string => {
@@ -153,7 +153,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
               <DialogDescription className="flex gap-2 mt-1">
                 <span>{deal.country}</span>
                 <span>•</span>
-                <span>{deal.credit_hub}</span>
+                <span>{deal.creditHub}</span>
                 <span>•</span>
                 <span>{deal.stage}</span>
               </DialogDescription>
@@ -196,7 +196,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs text-muted-foreground">Credit Hub</span>
-                        <span className="font-medium">{deal.credit_hub || '-'}</span>
+                        <span className="font-medium">{deal.creditHub || '-'}</span>
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs text-muted-foreground">Stage</span>
