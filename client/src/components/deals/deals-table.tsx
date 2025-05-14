@@ -296,61 +296,58 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
         
         {/* Desktop Filters - horizontal layout on medium+ screens */}
         <div className="hidden md:flex p-3 flex-wrap border-t border-purple-950/40 gap-2">
-          <div className="flex-1 min-w-[160px] px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+          <div className="flex-1 min-w-[160px]">
             <div className="text-xs text-gray-300 mb-1 font-medium">Country</div>
             <div className="relative">
               <select 
-                className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                className="w-full text-white text-sm appearance-none focus:ring-1 focus:ring-purple-400 p-2 rounded border border-white/30 bg-transparent"
                 value={filters.country}
                 onChange={(e) => handleFilterChange('country', e.target.value)}
-                style={{ color: 'white', paddingRight: '2.5rem' }}
               >
-                <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Countries</option>
+                <option value="all" style={{color: 'white', backgroundColor: 'transparent'}}>All Countries</option>
                 {uniqueCountries.map(country => (
-                  <option key={country as string} value={country as string} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{country}</option>
+                  <option key={country as string} value={country as string} style={{color: 'white', backgroundColor: 'transparent'}}>{country}</option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-white pr-3">
                 <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
               </div>
             </div>
           </div>
           
-          <div className="flex-1 min-w-[160px] px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+          <div className="flex-1 min-w-[160px]">
             <div className="text-xs text-gray-300 mb-1 font-medium">Stage</div>
             <div className="relative">
               <select 
-                className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                className="w-full text-white text-sm appearance-none focus:ring-1 focus:ring-purple-400 p-2 rounded border border-white/30 bg-transparent"
                 value={filters.stage}
                 onChange={(e) => handleFilterChange('stage', e.target.value)}
-                style={{ color: 'white', paddingRight: '2.5rem' }}
               >
-                <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Stages</option>
+                <option value="all" style={{color: 'white', backgroundColor: 'transparent'}}>All Stages</option>
                 {uniqueStages.map(stage => (
-                  <option key={stage} value={stage} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{stage}</option>
+                  <option key={stage} value={stage} style={{color: 'white', backgroundColor: 'transparent'}}>{stage}</option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-white pr-3">
                 <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
               </div>
             </div>
           </div>
           
-          <div className="flex-1 min-w-[160px] px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+          <div className="flex-1 min-w-[160px]">
             <div className="text-xs text-gray-300 mb-1 font-medium">Credit Hub</div>
             <div className="relative">
               <select 
-                className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                className="w-full text-white text-sm appearance-none focus:ring-1 focus:ring-purple-400 p-2 rounded border border-white/30 bg-transparent"
                 value={filters.creditHub}
                 onChange={(e) => handleFilterChange('creditHub', e.target.value)}
-                style={{ color: 'white', paddingRight: '2.5rem' }}
               >
-                <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Credit Hubs</option>
+                <option value="all" style={{color: 'white', backgroundColor: 'transparent'}}>All Credit Hubs</option>
                 {uniqueCreditHubs.map(hub => (
-                  <option key={hub} value={hub} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{hub}</option>
+                  <option key={hub} value={hub} style={{color: 'white', backgroundColor: 'transparent'}}>{hub}</option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-white pr-3">
                 <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
               </div>
             </div>
@@ -369,9 +366,9 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
                   onChange={(e) => handleFilterChange('country', e.target.value)}
                   style={{ color: 'white', paddingRight: '2.5rem' }}
                 >
-                  <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Countries</option>
+                  <option value="all" style={{color: 'white', backgroundColor: 'transparent'}}>All Countries</option>
                   {uniqueCountries.map(country => (
-                    <option key={country as string} value={country as string} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{country}</option>
+                    <option key={country as string} value={country as string} style={{color: 'white', backgroundColor: 'transparent'}}>{country}</option>
                   ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
@@ -389,9 +386,9 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
                   onChange={(e) => handleFilterChange('stage', e.target.value)}
                   style={{ color: 'white', paddingRight: '2.5rem' }}
                 >
-                  <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Stages</option>
+                  <option value="all" style={{color: 'white', backgroundColor: 'transparent'}}>All Stages</option>
                   {uniqueStages.map(stage => (
-                    <option key={stage} value={stage} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{stage}</option>
+                    <option key={stage} value={stage} style={{color: 'white', backgroundColor: 'transparent'}}>{stage}</option>
                   ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
@@ -409,9 +406,9 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
                   onChange={(e) => handleFilterChange('creditHub', e.target.value)}
                   style={{ color: 'white', paddingRight: '2.5rem' }}
                 >
-                  <option value="all" style={{color: 'white', backgroundColor: '#1E1E2F'}}>All Credit Hubs</option>
+                  <option value="all" style={{color: 'white', backgroundColor: 'transparent'}}>All Credit Hubs</option>
                   {uniqueCreditHubs.map(hub => (
-                    <option key={hub} value={hub} style={{color: 'white', backgroundColor: '#1E1E2F'}}>{hub}</option>
+                    <option key={hub} value={hub} style={{color: 'white', backgroundColor: 'transparent'}}>{hub}</option>
                   ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">

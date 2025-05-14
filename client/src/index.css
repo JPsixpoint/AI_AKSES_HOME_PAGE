@@ -298,6 +298,8 @@
   /* Override for select dropdowns in dark mode */
   .bg-dark-surface select {
     color: white !important;
+    border: 1px solid rgba(147, 112, 219, 0.3) !important;
+    background-color: transparent !important;
   }
   
   .bg-dark-surface select option {
@@ -308,7 +310,7 @@
   /* Fix for Firefox which doesn't support styling option elements */
   @-moz-document url-prefix() {
     .bg-dark-surface select {
-      background-color: #1E1E2F !important;
+      background-color: transparent !important;
       color: white !important;
     }
   }
