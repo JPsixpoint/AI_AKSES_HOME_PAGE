@@ -44,6 +44,8 @@ interface AICommandCenterProps {
 declare global {
   interface Window {
     openPrescreeningTab?: (dealId?: string) => void;
+    openVoiceCommandsTab?: () => void;
+    openArchitectureTab?: () => void;
     setPreScreeningEmails?: (emails: string) => void;
     prescreeningDealInfo?: {
       dealId: string;

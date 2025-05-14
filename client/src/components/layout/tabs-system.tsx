@@ -53,9 +53,11 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   const tabsRef = useRef<{
     openPrescreeningTab: (dealId?: string) => void;
     openArchitectureTab: () => void;
+    openVoiceCommandsTab: () => void;
   }>({
     openPrescreeningTab: () => {},
-    openArchitectureTab: () => {}
+    openArchitectureTab: () => {},
+    openVoiceCommandsTab: () => {}
   });
   // Track open tabs
   const [tabs, setTabs] = useState<Tab[]>([
@@ -75,6 +77,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   const tabOptions: Array<{type: TabType, title: string, description: string}> = [
     { type: "Pipeline", title: "Pipeline", description: "View and manage the deal pipeline" },
     { type: "AI PreScreening", title: "AI PreScreening", description: "AI-assisted pre-screening of potential deals" },
+    { type: "Voice Commands", title: "Voice Commands Guide", description: "Guide to using voice commands and AI capabilities" },
     { type: "AKSES Architecture", title: "AKSES Architecture", description: "Three-Tiered AI Orchestration Architecture and system components" },
     { type: "Deal Information", title: "Deal Information", description: "View and edit detailed deal information" },
     { type: "Pricer", title: "Pricer", description: "Deal pricing and financial modeling tools" },
@@ -195,24 +198,43 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
       addNewTab("AKSES Architecture", "AKSES Architecture");
     }
   }, [tabs]);
+  
+  // Method to open Voice Commands Guide tab
+  const openVoiceCommandsTab = useCallback(() => {
+    console.log("Opening Voice Commands Guide tab");
+    
+    // Find existing voice commands tab
+    const existingTab = tabs.find(tab => tab.type === "Voice Commands");
+    if (existingTab) {
+      console.log("Found existing Voice Commands tab:", existingTab.id);
+      setActiveTabId(existingTab.id);
+    } else {
+      console.log("Creating new Voice Commands tab");
+      // Create a new tab
+      addNewTab("Voice Commands", "Voice Commands Guide");
+    }
+  }, [tabs]);
 
   // Update the refs
   useEffect(() => {
     tabsRef.current.openPrescreeningTab = openPrescreeningTab;
     tabsRef.current.openArchitectureTab = openArchitectureTab;
-  }, [openPrescreeningTab, openArchitectureTab]);
+    tabsRef.current.openVoiceCommandsTab = openVoiceCommandsTab;
+  }, [openPrescreeningTab, openArchitectureTab, openVoiceCommandsTab]);
   
   // Expose the methods to the parent component via props
   useEffect(() => {
     // Expose the tab opening methods via window for easy access from anywhere
     (window as any).openPrescreeningTab = openPrescreeningTab;
     (window as any).openArchitectureTab = openArchitectureTab;
+    (window as any).openVoiceCommandsTab = openVoiceCommandsTab;
     
     return () => {
       delete (window as any).openPrescreeningTab;
       delete (window as any).openArchitectureTab;
+      delete (window as any).openVoiceCommandsTab;
     };
-  }, [openPrescreeningTab, openArchitectureTab]);
+  }, [openPrescreeningTab, openArchitectureTab, openVoiceCommandsTab]);
   
   return (
     <div className="flex flex-col h-full relative">
@@ -284,7 +306,10 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
               {tab.type === "AKSES Architecture" && (
                 <AksesArchitecture />
               )}
-              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && tab.type !== "AKSES Architecture" && (
+              {tab.type === "Voice Commands" && (
+                <VoiceCommandsGuide />
+              )}
+              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && tab.type !== "AKSES Architecture" && tab.type !== "Voice Commands" && (
                 <div className="h-full flex items-center justify-center p-6">
                   <div className="text-center max-w-md mx-auto">
                     <h2 className="text-2xl font-semibold mb-3">{tab.title}</h2>

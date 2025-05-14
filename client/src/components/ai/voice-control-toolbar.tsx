@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "../ui/button";
-import { Mic, MicOff, Volume2, VolumeX, BookOpen } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, BookOpen, HelpCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import useSpeechRecognition from "@/hooks/use-speech-recognition";
 
@@ -234,6 +234,19 @@ export function VoiceControlToolbar({
       toast({
         title: "Tab Navigation Failed",
         description: "Unable to open the AKSES Architecture tab.",
+        variant: "destructive"
+      });
+    }
+  }, []);
+  
+  // Open Voice Commands Guide tab
+  const openVoiceCommandsTab = useCallback(() => {
+    if ((window as any).openVoiceCommandsTab) {
+      (window as any).openVoiceCommandsTab();
+    } else {
+      toast({
+        title: "Tab Navigation Failed",
+        description: "Unable to open the Voice Commands Guide tab.",
         variant: "destructive"
       });
     }
