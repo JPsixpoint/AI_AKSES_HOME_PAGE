@@ -18,7 +18,8 @@ import {
   SearchIcon,
   FilterXIcon,
   SlidersHorizontal,
-  XIcon
+  XIcon,
+  RefreshCcw
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DealDataView } from "./deal-data-view";
@@ -352,68 +353,94 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
               </div>
             </div>
           </div>
+          
+          {/* Reset filters button and match counter */}
+          <div className="flex items-center gap-4 self-end">
+            <button
+              onClick={resetFilters}
+              className="px-3 py-2 text-sm rounded bg-purple-600/20 text-white hover:bg-purple-600/30 transition-colors border border-purple-600/30 flex items-center gap-1"
+            >
+              <RefreshCcw className="h-3 w-3" />
+              Reset Filters
+            </button>
+            <div className="text-xs text-gray-300">
+              {filteredDeals.length} matching results
+            </div>
+          </div>
         </div>
         
         {/* Mobile Filters - vertical accordion style */}
         {showMobileFilters && (
           <div className="md:hidden p-3 flex flex-col border-t border-purple-950/40 gap-3 animate-in slide-in-from-top duration-300">
-            <div className="w-full px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+            <div className="w-full">
               <div className="text-xs text-gray-300 mb-1 font-medium">Country</div>
               <div className="relative">
                 <select 
-                  className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                  className="w-full text-white text-sm appearance-none focus:ring-1 focus:ring-purple-400 p-2 rounded border border-white/30 bg-transparent"
                   value={filters.country}
                   onChange={(e) => handleFilterChange('country', e.target.value)}
-                  style={{ color: 'white', paddingRight: '2.5rem' }}
                 >
                   <option value="all" style={{color: 'white', backgroundColor: 'transparent'}}>All Countries</option>
                   {uniqueCountries.map(country => (
                     <option key={country as string} value={country as string} style={{color: 'white', backgroundColor: 'transparent'}}>{country}</option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-white pr-3">
                   <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
                 </div>
               </div>
             </div>
             
-            <div className="w-full px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+            <div className="w-full">
               <div className="text-xs text-gray-300 mb-1 font-medium">Stage</div>
               <div className="relative">
                 <select 
-                  className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                  className="w-full text-white text-sm appearance-none focus:ring-1 focus:ring-purple-400 p-2 rounded border border-white/30 bg-transparent"
                   value={filters.stage}
                   onChange={(e) => handleFilterChange('stage', e.target.value)}
-                  style={{ color: 'white', paddingRight: '2.5rem' }}
                 >
                   <option value="all" style={{color: 'white', backgroundColor: 'transparent'}}>All Stages</option>
                   {uniqueStages.map(stage => (
                     <option key={stage} value={stage} style={{color: 'white', backgroundColor: 'transparent'}}>{stage}</option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-white pr-3">
                   <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
                 </div>
               </div>
             </div>
             
-            <div className="w-full px-3 py-2 rounded border border-purple-800/30 bg-dark-surface shadow-sm">
+            <div className="w-full">
               <div className="text-xs text-gray-300 mb-1 font-medium">Credit Hub</div>
               <div className="relative">
                 <select 
-                  className="w-full bg-dark-surface text-white text-sm appearance-none focus:ring-0 focus:outline-none p-0"
+                  className="w-full text-white text-sm appearance-none focus:ring-1 focus:ring-purple-400 p-2 rounded border border-white/30 bg-transparent"
                   value={filters.creditHub}
                   onChange={(e) => handleFilterChange('creditHub', e.target.value)}
-                  style={{ color: 'white', paddingRight: '2.5rem' }}
                 >
                   <option value="all" style={{color: 'white', backgroundColor: 'transparent'}}>All Credit Hubs</option>
                   {uniqueCreditHubs.map(hub => (
                     <option key={hub} value={hub} style={{color: 'white', backgroundColor: 'transparent'}}>{hub}</option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-purple-300 pr-1">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-white pr-3">
                   <ChevronLeftIcon className="h-4 w-4 -rotate-90" />
                 </div>
+              </div>
+            </div>
+            
+            {/* Reset Filters button (mobile) */}
+            <div className="flex items-center justify-between mt-2">
+              <button
+                onClick={resetFilters}
+                className="px-3 py-2 text-sm rounded bg-purple-600/20 text-white hover:bg-purple-600/30 transition-colors border border-purple-600/30 flex items-center gap-1"
+              >
+                <RefreshCcw className="h-3 w-3" />
+                Reset Filters
+              </button>
+              
+              <div className="text-xs text-gray-300">
+                {filteredDeals.length} matching results
               </div>
             </div>
           </div>
