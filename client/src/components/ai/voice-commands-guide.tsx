@@ -7,7 +7,7 @@ export function VoiceCommandsGuide() {
   return (
     <div className="h-full overflow-auto p-6 bg-dark">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-primary mb-2">Voice Command Guide</h1>
+        <h1 className="text-2xl font-bold text-white mb-2">Voice Command Guide</h1>
         <p className="text-muted-foreground mb-6">
           Your AI assistant understands natural language. Simply speak or type these commands.
         </p>
@@ -20,7 +20,7 @@ export function VoiceCommandsGuide() {
                 <div className="bg-blue-600/30 p-2 rounded-full">
                   <Search className="h-5 w-5 text-blue-400" />
                 </div>
-                <h3 className="text-lg font-medium">🔍 Find the Deals You Care About</h3>
+                <h3 className="text-lg font-medium text-white">🔍 Find the Deals You Care About</h3>
               </div>
             </div>
             <CardContent className="p-5">
@@ -54,7 +54,7 @@ export function VoiceCommandsGuide() {
                 <div className="bg-green-700/30 p-2 rounded-full">
                   <BarChart3 className="h-5 w-5 text-green-400" />
                 </div>
-                <h3 className="text-lg font-medium">📊 Summarize the Pipeline</h3>
+                <h3 className="text-lg font-medium text-white">📊 Summarize the Pipeline</h3>
               </div>
             </div>
             <CardContent className="p-5">
@@ -82,7 +82,7 @@ export function VoiceCommandsGuide() {
                 <div className="bg-purple-700/30 p-2 rounded-full">
                   <GitCompare className="h-5 w-5 text-purple-400" />
                 </div>
-                <h3 className="text-lg font-medium">📈 Compare What Matters</h3>
+                <h3 className="text-lg font-medium text-white">📈 Compare What Matters</h3>
               </div>
             </div>
             <CardContent className="p-5">
@@ -110,7 +110,7 @@ export function VoiceCommandsGuide() {
                 <div className="bg-orange-700/30 p-2 rounded-full">
                   <Wrench className="h-5 w-5 text-orange-400" />
                 </div>
-                <h3 className="text-lg font-medium">🛠 Make Changes with Your Voice</h3>
+                <h3 className="text-lg font-medium text-white">🛠 Make Changes with Your Voice</h3>
               </div>
             </div>
             <CardContent className="p-5">
