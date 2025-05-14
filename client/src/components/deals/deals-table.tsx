@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Table,
@@ -76,6 +76,10 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
     isOpen: false,
     dealId: null
   });
+  const [filters, setFilters] = useState({
+    country: 'all',
+    stage: 'all',
+  });
   const dealsPerPage = 6;
   
   const handleRefresh = async () => {
@@ -98,11 +102,33 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
     setDetailModal({ isOpen: false, dealId: null });
   };
   
+  // Filter deals based on criteria
+  const filteredDeals = useMemo(() => {
+    return deals.filter(deal => {
+      // Apply country filter
+      if (filters.country !== 'all' && (deal.country !== filters.country || !deal.country)) {
+        return false;
+      }
+      
+      // Apply stage filter
+      if (filters.stage !== 'all' && (deal.stage !== filters.stage || !deal.stage)) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [deals, filters]);
+  
   // Calculate pagination
   const indexOfLastDeal = currentPage * dealsPerPage;
   const indexOfFirstDeal = indexOfLastDeal - dealsPerPage;
-  const currentDeals = deals.slice(indexOfFirstDeal, indexOfLastDeal);
-  const totalPages = Math.ceil(deals.length / dealsPerPage);
+  const currentDeals = filteredDeals.slice(indexOfFirstDeal, indexOfLastDeal);
+  const totalPages = Math.ceil(filteredDeals.length / dealsPerPage);
+  
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
   
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -139,31 +165,88 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
     }
   };
   
+  // Extract unique countries and stages for filters
+  const uniqueCountries = useMemo(() => {
+    const countries = Array.from(
+      new Set(
+        deals
+          .map(deal => deal.country)
+          .filter((country): country is string => typeof country === 'string' && country !== null)
+      )
+    );
+    return countries.sort();
+  }, [deals]);
+  
+  const uniqueStages = useMemo(() => {
+    const stages = Array.from(
+      new Set(
+        deals
+          .map(deal => deal.stage)
+          .filter((stage): stage is string => typeof stage === 'string' && stage !== null)
+      )
+    );
+    return stages.sort();
+  }, [deals]);
+  
+  const handleFilterChange = (type: 'country' | 'stage', value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [type]: value
+    }));
+  };
+  
   return (
     <div className="gradient-border bg-dark-lighter rounded-lg overflow-hidden">
+      {/* Filters row */}
+      <div className="bg-dark-surface p-4 border-b border-dark flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">Country:</span>
+          <select 
+            className="bg-dark-surface text-foreground text-sm border border-dark rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
+            value={filters.country}
+            onChange={(e) => handleFilterChange('country', e.target.value)}
+          >
+            <option value="all">All Countries</option>
+            {uniqueCountries.map(country => (
+              <option key={country as string} value={country as string}>{country}</option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">Stage:</span>
+          <select 
+            className="bg-dark-surface text-foreground text-sm border border-dark rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
+            value={filters.stage}
+            onChange={(e) => handleFilterChange('stage', e.target.value)}
+          >
+            <option value="all">All Stages</option>
+            {uniqueStages.map(stage => (
+              <option key={stage} value={stage}>{stage}</option>
+            ))}
+          </select>
+        </div>
+        
+        {onRefresh && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={`ml-auto text-xs ${isRefreshing ? 'opacity-70' : ''}`}
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCwIcon className={`h-3 w-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh Data
+          </Button>
+        )}
+      </div>
+      
       <div className="overflow-x-auto">
         <Table>
           <TableHeader className="bg-dark-surface border-b border-dark text-left">
             <TableRow>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">
-                <div className="flex items-center space-x-2">
-                  <span>Company</span>
-                  {onRefresh && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className={`h-6 w-6 hover:bg-primary/10 hover:text-primary transition-colors ${isRefreshing ? 'animate-spin text-primary' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRefresh();
-                      }}
-                      disabled={isRefreshing}
-                      title="Refresh deals data"
-                    >
-                      <RefreshCwIcon className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+                <span>Company</span>
               </TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Country</TableHead>
               <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground">Credit Hub</TableHead>
@@ -241,7 +324,12 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
       
       <div className="bg-dark-surface px-4 py-3 flex items-center justify-between border-t border-dark">
         <div className="text-xs text-muted-foreground">
-          Showing {deals.length > 0 ? indexOfFirstDeal + 1 : 0} to {Math.min(indexOfLastDeal, deals.length)} of {deals.length} deals
+          Showing {filteredDeals.length > 0 ? indexOfFirstDeal + 1 : 0} to {Math.min(indexOfLastDeal, filteredDeals.length)} of {filteredDeals.length} deals
+          {filteredDeals.length !== deals.length && (
+            <span className="ml-1">
+              (filtered from {deals.length} total)
+            </span>
+          )}
         </div>
         
         <div className="flex space-x-1">
