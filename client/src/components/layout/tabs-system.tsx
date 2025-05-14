@@ -12,7 +12,8 @@ import {
   Brain, 
   Folder, 
   Files,
-  BookOpen
+  BookOpen,
+  Mic
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { cn } from "@/lib/utils";
 import { DealsPipeline } from "@/components/deals/deals-pipeline";
 import { AIPreScreening } from "@/components/ai/ai-pre-screening";
+import { VoiceCommandsGuide } from "@/components/ai/voice-commands-guide";
 import AksesArchitecture from "@/pages/akses-architecture";
 
 // Define the tab types
@@ -31,7 +33,8 @@ type TabType =
   | "Due Diligence"
   | "Org Settings"
   | "Rag Databases"
-  | "AKSES Architecture";
+  | "AKSES Architecture"
+  | "Voice Commands";
 
 interface Tab {
   id: string;
@@ -57,6 +60,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   // Track open tabs
   const [tabs, setTabs] = useState<Tab[]>([
     { id: "default-pipeline", type: "Pipeline", title: "Pipeline" },
+    { id: "voice-commands", type: "Voice Commands", title: "Voice Commands Guide" },
     { id: "akses-architecture", type: "AKSES Architecture", title: "AKSES Architecture" }
   ]);
   
