@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DealsTable } from "./deals-table";
-import { DealFilters } from "./deal-filters";
 import { DealStatistics } from "./deal-statistics";
 
 // Define the pipeline deal type to match the pipeline table structure
@@ -31,7 +30,6 @@ interface DealsPipelineProps {
 
 export function DealsPipeline({ selectedDealId, onSelectedDealChange }: DealsPipelineProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [stageFilter, setStageFilter] = useState<string | null>(null);
   const queryClient = useQueryClient();
   
   const { data: deals = [], isLoading, refetch } = useQuery<PipelineDeal[]>({
@@ -43,25 +41,14 @@ export function DealsPipeline({ selectedDealId, onSelectedDealChange }: DealsPip
     await refetch();
   };
   
-  // Filter deals based on search term and stage
+  // Filter deals based on search term
   const filteredDeals = deals.filter((deal: PipelineDeal) => {
-    const matchesSearch = searchTerm === "" ||
+    return searchTerm === "" ||
       (deal.name && deal.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (deal.country && deal.country.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (deal.credit_hub && deal.credit_hub.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-    const matchesStage = stageFilter === null || deal.stage === stageFilter;
-    
-    return matchesSearch && matchesStage;
+      (deal.credit_hub && deal.credit_hub.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (deal.stage && deal.stage.toLowerCase().includes(searchTerm.toLowerCase()));
   });
-  
-  // Get deal counts by stage
-  const getDealCountByStage = (stage: string | null) => {
-    if (stage === null) {
-      return deals.length;
-    }
-    return deals.filter((deal: PipelineDeal) => deal.stage === stage).length;
-  };
   
   return (
     <div className="w-full">
@@ -85,15 +72,6 @@ export function DealsPipeline({ selectedDealId, onSelectedDealChange }: DealsPip
           </Button>
         </div>
       </div>
-      
-      <DealFilters
-        selectedStatus={stageFilter}
-        onStatusChange={setStageFilter}
-        totalCount={getDealCountByStage(null)}
-        dueDiligenceCount={getDealCountByStage("Due Diligence & U/W")}
-        prescreeningCount={getDealCountByStage("Pre-Screening")}
-        indicativeProposalCount={getDealCountByStage("Term Sheet Negotiation")}
-      />
       
       <DealsTable 
         deals={filteredDeals} 

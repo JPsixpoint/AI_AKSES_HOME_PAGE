@@ -15,7 +15,8 @@ import {
   ChevronRightIcon, 
   RefreshCwIcon, 
   FileTextIcon,
-  SearchIcon
+  SearchIcon,
+  FilterXIcon
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DealDataView } from "./deal-data-view";
@@ -135,6 +136,15 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
+  
+  // Function to reset all filters to default
+  const resetFilters = () => {
+    setFilters({
+      country: 'all',
+      stage: 'all',
+      creditHub: 'all'
+    });
+  };
   
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -257,6 +267,16 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
             ))}
           </select>
         </div>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-xs text-primary"
+          onClick={resetFilters}
+        >
+          <FilterXIcon className="h-3 w-3 mr-1" />
+          Reset Filters
+        </Button>
         
         {onRefresh && (
           <Button 
