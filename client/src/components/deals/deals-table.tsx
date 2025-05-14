@@ -73,6 +73,7 @@ interface DealsTableProps {
 export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRefresh }: DealsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showAllResults, setShowAllResults] = useState(false);
   const [detailModal, setDetailModal] = useState<{ isOpen: boolean; dealId: string | null }>({
     isOpen: false,
     dealId: null
@@ -82,7 +83,7 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
     stage: 'all',
     creditHub: 'all'
   });
-  const dealsPerPage = 6;
+  const dealsPerPage = 10;
   
   const handleRefresh = async () => {
     if (onRefresh && !isRefreshing) {
@@ -129,7 +130,7 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
   // Calculate pagination
   const indexOfLastDeal = currentPage * dealsPerPage;
   const indexOfFirstDeal = indexOfLastDeal - dealsPerPage;
-  const currentDeals = filteredDeals.slice(indexOfFirstDeal, indexOfLastDeal);
+  const currentDeals = showAllResults ? filteredDeals : filteredDeals.slice(indexOfFirstDeal, indexOfLastDeal);
   const totalPages = Math.ceil(filteredDeals.length / dealsPerPage);
   
   // Reset to first page when filters change
@@ -226,6 +227,9 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
     <div className="gradient-border bg-dark-lighter rounded-lg overflow-hidden">
       {/* Filters row */}
       <div className="bg-dark-surface p-4 border-b border-dark flex flex-wrap items-center gap-4">
+        <div className="text-sm text-primary-light mr-2">
+          Found: {filteredDeals.length} deals
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground whitespace-nowrap">Country:</span>
           <select 
@@ -276,6 +280,15 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
         >
           <FilterXIcon className="h-3 w-3 mr-1" />
           Reset Filters
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className={`text-xs ${showAllResults ? 'bg-primary-light/20 text-primary-light' : ''}`}
+          onClick={() => setShowAllResults(!showAllResults)}
+        >
+          {showAllResults ? 'Show Paged View' : 'Show All Results'}
         </Button>
         
         {onRefresh && (
@@ -375,7 +388,11 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
       
       <div className="bg-dark-surface px-4 py-3 flex items-center justify-between border-t border-dark">
         <div className="text-xs text-muted-foreground">
-          Showing {filteredDeals.length > 0 ? indexOfFirstDeal + 1 : 0} to {Math.min(indexOfLastDeal, filteredDeals.length)} of {filteredDeals.length} deals
+          {showAllResults ? (
+            <>Showing all {filteredDeals.length} deals</>
+          ) : (
+            <>Showing {filteredDeals.length > 0 ? indexOfFirstDeal + 1 : 0} to {Math.min(indexOfLastDeal, filteredDeals.length)} of {filteredDeals.length} deals</>
+          )}
           {filteredDeals.length !== deals.length && (
             <span className="ml-1">
               (filtered from {deals.length} total)
@@ -383,12 +400,12 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
           )}
         </div>
         
-        <div className="flex space-x-1">
+        <div className={`flex space-x-1 ${showAllResults ? 'opacity-50' : ''}`}>
           <Button
             variant={currentPage === 1 ? "outline" : "secondary"}
             size="sm"
             className="text-xs"
-            disabled={currentPage === 1}
+            disabled={currentPage === 1 || showAllResults}
             onClick={handlePrevPage}
           >
             <ChevronLeftIcon className="h-3 w-3 mr-1" /> Previous
@@ -435,6 +452,7 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
                   size="sm"
                   className="text-xs px-3"
                   onClick={() => setCurrentPage(pageNum)}
+                  disabled={showAllResults}
                 >
                   {pageNum}
                 </Button>
@@ -448,7 +466,7 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
             variant={currentPage === totalPages ? "outline" : "secondary"}
             size="sm"
             className="text-xs"
-            disabled={currentPage === totalPages || totalPages === 0}
+            disabled={currentPage === totalPages || totalPages === 0 || showAllResults}
             onClick={handleNextPage}
           >
             Next <ChevronRightIcon className="h-3 w-3 ml-1" />
