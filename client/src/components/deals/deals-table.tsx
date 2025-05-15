@@ -149,6 +149,10 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
       stage: 'all',
       creditHub: 'all'
     });
+    // Reset to first page when filters are reset
+    setCurrentPage(1);
+    // Close mobile filters when reset
+    setShowMobileFilters(false);
   };
   
   const handleNextPage = () => {
@@ -227,18 +231,6 @@ export function DealsTable({ deals, isLoading, selectedDealId, onRowClick, onRef
     }));
     // Reset to first page when filter is changed
     setCurrentPage(1);
-  };
-  
-  const resetFilters = () => {
-    setFilters({
-      country: 'all',
-      stage: 'all',
-      creditHub: 'all'
-    });
-    // Reset to first page when filters are reset
-    setCurrentPage(1);
-    // Close mobile filters when reset
-    setShowMobileFilters(false);
   };
   
   return (
