@@ -121,9 +121,104 @@ const mockUsers: User[] = [
 ];
 
 export function UserManagement() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
   const [filter, setFilter] = useState<string>("");
   const [openDialog, setOpenDialog] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Fetch users from API
+  const { 
+    data: users = [], 
+    isLoading,
+    isError,
+    refetch 
+  } = useQuery({
+    queryKey: ['/api/users'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/users');
+      const data = await response.json();
+      return data as User[];
+    },
+  });
+  
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      const response = await apiRequest('POST', '/api/users', userData);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create user');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setOpenDialog(false);
+      toast({
+        title: "User created",
+        description: "The user has been successfully created",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating user",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await apiRequest('DELETE', `/api/users/${userId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete user');
+      }
+      return userId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "User deleted",
+        description: "The user has been successfully deleted",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error deleting user",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update user status mutation
+  const updateUserStatusMutation = useMutation({
+    mutationFn: async ({ userId, isActive }: { userId: number, isActive: boolean }) => {
+      const response = await apiRequest('PATCH', `/api/users/${userId}`, { isActive });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update user status');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "User updated",
+        description: "The user status has been successfully updated",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating user",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
   
   // Filter users based on search input
   const filteredUsers = users.filter(user => 
@@ -141,31 +236,35 @@ export function UserManagement() {
   // Format date to a more readable format
   const formatDate = (date?: Date) => {
     if (!date) return 'Never';
+    // Convert string date to Date object if needed
+    const dateObj = date instanceof Date ? date : new Date(date);
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date);
+    }).format(dateObj);
   };
   
-  // Handle user creation (mock)
+  // Handle user creation
   const handleCreateUser = (userData: any) => {
-    // In a real app, you would send this to your API
-    const newUser: User = {
-      id: users.length + 1,
-      username: userData.username,
-      email: userData.email,
-      fullName: userData.fullName,
-      role: userData.role,
-      department: userData.department,
-      isActive: true,
-      createdAt: new Date()
-    };
-    
-    setUsers([...users, newUser]);
-    setOpenDialog(false);
+    createUserMutation.mutate(userData);
+  };
+  
+  // Handle user deletion with confirmation
+  const handleDeleteUser = (userId: number) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      deleteUserMutation.mutate(userId);
+    }
+  };
+  
+  // Handle toggling user active status
+  const toggleUserStatus = (userId: number, currentStatus: boolean) => {
+    updateUserStatusMutation.mutate({ 
+      userId, 
+      isActive: !currentStatus 
+    });
   };
   
   // Render role badge with appropriate color and icon
@@ -234,17 +333,40 @@ export function UserManagement() {
                   </TableCell>
                   <TableCell>{user.department || 'Not assigned'}</TableCell>
                   <TableCell>
-                    <StatusBadge isActive={user.isActive} />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="p-0 h-auto" 
+                      onClick={() => toggleUserStatus(user.id, user.isActive)}
+                      disabled={updateUserStatusMutation.isPending}
+                    >
+                      <StatusBadge isActive={user.isActive} />
+                    </Button>
                   </TableCell>
                   <TableCell>{formatDate(user.lastLogin)}</TableCell>
                   <TableCell>{formatDate(user.createdAt)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        title="Edit user"
+                      >
                         <PenIcon className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600">
-                        <TrashIcon className="h-4 w-4" />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-red-600 hover:text-red-800 hover:bg-red-100"
+                        onClick={() => handleDeleteUser(user.id)}
+                        disabled={deleteUserMutation.isPending}
+                        title="Delete user"
+                      >
+                        {deleteUserMutation.isPending ? (
+                          <LoaderIcon className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <TrashIcon className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </TableCell>
@@ -261,19 +383,34 @@ export function UserManagement() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">User Management</h2>
-        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-          <DialogTrigger asChild>
-            <Button className="bg-purple-600 hover:bg-purple-700">
-              <PlusIcon className="mr-2 h-4 w-4" /> Add User
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New User</DialogTitle>
-            </DialogHeader>
-            <CreateUserForm onSubmit={handleCreateUser} onCancel={() => setOpenDialog(false)} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            onClick={() => refetch()} 
+            disabled={isLoading}
+            className="flex items-center"
+          >
+            {isLoading ? (
+              <LoaderIcon className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <RefreshCcw className="h-4 w-4 mr-2" />
+            )}
+            Refresh
+          </Button>
+          <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-purple-600 hover:bg-purple-700">
+                <PlusIcon className="mr-2 h-4 w-4" /> Add User
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New User</DialogTitle>
+              </DialogHeader>
+              <CreateUserForm onSubmit={handleCreateUser} onCancel={() => setOpenDialog(false)} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       
       <div className="flex items-center rounded-md border px-3">
@@ -286,11 +423,50 @@ export function UserManagement() {
         />
       </div>
       
-      <div className="mt-6">
-        <UserTable users={adminUsers} title="Administrators" />
-        <UserTable users={editorUsers} title="Editors" />
-        <UserTable users={viewerUsers} title="Viewers" />
-      </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center">
+            <LoaderIcon className="h-8 w-8 animate-spin text-primary mb-2" />
+            <p className="text-muted-foreground">Loading users...</p>
+          </div>
+        </div>
+      ) : isError ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="bg-destructive/10 p-6 rounded-lg text-center max-w-md">
+            <p className="text-destructive font-medium mb-2">Failed to load users</p>
+            <p className="text-muted-foreground mb-4">
+              There was an error loading user data. Please try again or contact support if the problem persists.
+            </p>
+            <Button variant="outline" onClick={() => refetch()}>
+              <RefreshCcw className="h-4 w-4 mr-2" /> Try Again
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-6">
+          {filteredUsers.length === 0 ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center max-w-md">
+                <p className="font-medium mb-2">No users found</p>
+                <p className="text-muted-foreground mb-4">
+                  {filter ? "Try adjusting your search query." : "Add a new user to get started."}
+                </p>
+                {filter && (
+                  <Button variant="outline" onClick={() => setFilter("")}>
+                    Clear Search
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <UserTable users={adminUsers} title="Administrators" />
+              <UserTable users={editorUsers} title="Editors" />
+              <UserTable users={viewerUsers} title="Viewers" />
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
