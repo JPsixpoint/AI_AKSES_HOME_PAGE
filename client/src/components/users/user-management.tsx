@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CreateUserForm } from "./create-user-form";
+import { CreateUserForm } from "@/components/users/create-user-form";
 
 // Define the User interface
 interface User {
