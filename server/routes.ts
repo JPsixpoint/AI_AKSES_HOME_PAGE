@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db, pool } from "@db";
-import { deals, insertDealSchema, sixpointDeals } from "@shared/schema";
+import { deals, insertDealSchema, sixpointDeals, users, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import OpenAI from "openai";
@@ -926,6 +926,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`Error fetching SixPoint deal with ID ${req.params.id}:`, error);
       return res.status(500).json({ message: "Failed to fetch SixPoint deal" });
+    }
+  });
+
+  // User Management API Endpoints
+  // Get all users
+  app.get(`${apiPrefix}/users`, async (req, res) => {
+    try {
+      const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Create a new user
+  app.post(`${apiPrefix}/users`, async (req, res) => {
+    try {
+      // Validate user data against schema
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Insert user into database
+      const [newUser] = await db.insert(users).values(userData).returning();
+      
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      
+      res.status(500).json({ error: "Failed to create user" });
+    }
+  });
+
+  // Update user (partial update)
+  app.patch(`${apiPrefix}/users/:id`, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Get current user to check if exists
+      const existingUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      
+      if (existingUser.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Update only the fields that are provided
+      const updates: Partial<typeof users.$inferInsert> = {};
+      
+      if (req.body.username) updates.username = req.body.username;
+      if (req.body.email) updates.email = req.body.email;
+      if (req.body.fullName) updates.fullName = req.body.fullName;
+      if (req.body.department) updates.department = req.body.department;
+      if (req.body.role && ['admin', 'editor', 'viewer'].includes(req.body.role)) {
+        updates.role = req.body.role;
+      }
+      if (typeof req.body.isActive === 'boolean') updates.isActive = req.body.isActive;
+      if (req.body.password) updates.password = req.body.password;
+      
+      // Only update if there are changes
+      if (Object.keys(updates).length > 0) {
+        const [updatedUser] = await db
+          .update(users)
+          .set(updates)
+          .where(eq(users.id, userId))
+          .returning();
+        
+        res.json(updatedUser);
+      } else {
+        res.json(existingUser[0]);
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  // Delete a user
+  app.delete(`${apiPrefix}/users/:id`, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Check if user exists
+      const existingUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      
+      if (existingUser.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Delete the user
+      await db.delete(users).where(eq(users.id, userId));
+      
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ error: "Failed to delete user" });
     }
   });
 
