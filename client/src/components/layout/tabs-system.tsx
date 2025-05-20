@@ -23,6 +23,7 @@ import { DealsPipeline } from "@/components/deals/deals-pipeline";
 import { AIPreScreening } from "@/components/ai/ai-pre-screening";
 import { VoiceCommandsGuide } from "@/components/ai/voice-commands-guide";
 import AksesArchitecture from "@/pages/akses-architecture";
+import UsersPage from "@/pages/users";
 
 // Define the tab types
 type TabType = 
@@ -34,7 +35,8 @@ type TabType =
   | "Org Settings"
   | "Rag Databases"
   | "AKSES Architecture"
-  | "Voice Commands";
+  | "Voice Commands"
+  | "Users";
 
 interface Tab {
   id: string;
@@ -79,6 +81,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
     { type: "AI PreScreening", title: "AI PreScreening", description: "AI-assisted pre-screening of potential deals" },
     { type: "Voice Commands", title: "Commands", description: "Guide to using voice commands and AI capabilities" },
     { type: "AKSES Architecture", title: "Architecture", description: "Three-Tiered AI Orchestration Architecture and system components" },
+    { type: "Users", title: "User Management", description: "Manage user accounts, roles and permissions" },
     { type: "Deal Information", title: "Deal Information", description: "View and edit detailed deal information" },
     { type: "Pricer", title: "Pricer", description: "Deal pricing and financial modeling tools" },
     { type: "Due Diligence", title: "Due Diligence", description: "Manage due diligence process and documents" },
@@ -309,7 +312,10 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
               {tab.type === "Voice Commands" && (
                 <VoiceCommandsGuide />
               )}
-              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && tab.type !== "AKSES Architecture" && tab.type !== "Voice Commands" && (
+              {tab.type === "Users" && (
+                <UsersPage />
+              )}
+              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && tab.type !== "AKSES Architecture" && tab.type !== "Voice Commands" && tab.type !== "Users" && (
                 <div className="h-full flex items-center justify-center p-6">
                   <div className="text-center max-w-md mx-auto">
                     <h2 className="text-2xl font-semibold mb-3">{tab.title}</h2>
@@ -474,12 +480,45 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                     </div>
                   </div>
                   
+                  {/* Enterprise section */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Enterprise</h3>
+                    <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {filteredTabOptions
+                        .filter(option => ["Users", "Org Settings"].includes(option.type))
+                        .map((option) => (
+                          <button
+                            key={option.type}
+                            className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                            onClick={() => {
+                              const existingTab = tabs.find(tab => tab.type === option.type);
+                              if (existingTab) {
+                                setActiveTabId(existingTab.id);
+                                setIsNewTabDialogOpen(false);
+                                return;
+                              }
+                              addNewTab(option.type, option.title);
+                            }}
+                          >
+                            <div className="mr-3 text-primary">
+                              {option.type === "Users" && <Settings className="h-5 w-5" />}
+                              {option.type === "Org Settings" && <Settings className="h-5 w-5" />}
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{option.title}</div>
+                              <div className="text-xs text-muted-foreground">{option.description}</div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                  
                   {/* Analysis Tools section */}
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-3">Analysis Tools</h3>
                     <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {filteredTabOptions
-                        .filter(option => ["Pricer", "Org Settings"].includes(option.type))
+                        .filter(option => ["Pricer"].includes(option.type))
                         .map((option) => (
                           <button
                             key={option.type}
