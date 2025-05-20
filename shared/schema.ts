@@ -8,11 +8,26 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  email: text("email").notNull(),
+  fullName: text("full_name"),
+  role: text("role").default("viewer").notNull(), // Options: admin, editor, viewer
+  department: text("department"),
+  isActive: boolean("is_active").default(true),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = createInsertSchema(users, {
+  username: (schema) => schema.min(3, "Username must be at least 3 characters"),
+  email: (schema) => schema.email("Must provide a valid email"),
+  role: (schema) => schema.refine(
+    (val) => ['admin', 'editor', 'viewer'].includes(val), 
+    { message: "Role must be admin, editor or viewer" }
+  )
+}).omit({
+  id: true,
+  lastLogin: true,
+  createdAt: true
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
