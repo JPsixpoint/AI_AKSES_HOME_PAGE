@@ -76,13 +76,14 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   });
   // Track open tabs
   const [tabs, setTabs] = useState<Tab[]>([
+    { id: "default-onboarding", type: "Onboarding", title: "Onboarding" },
     { id: "default-pipeline", type: "Pipeline", title: "Pipeline" },
     { id: "voice-commands", type: "Voice Commands", title: "Commands" },
     { id: "akses-architecture", type: "AKSES Architecture", title: "Architecture" }
   ]);
   
   // Track active tab
-  const [activeTabId, setActiveTabId] = useState<string>("default-pipeline");
+  const [activeTabId, setActiveTabId] = useState<string>("default-onboarding");
   
   // State for new tab dialog
   const [isNewTabDialogOpen, setIsNewTabDialogOpen] = useState(false);
