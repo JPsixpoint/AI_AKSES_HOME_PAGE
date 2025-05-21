@@ -100,6 +100,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
     { type: "Due Diligence", title: "Due Diligence", description: "Manage due diligence process and documents" },
     { type: "Rag Databases", title: "Rag Databases", description: "Manage and explore RAG knowledge databases" },
     { type: "AI CRM", title: "AI CRM", description: "Relationship intelligence for contacts, companies, and interactions" },
+    { type: "Onboarding", title: "Onboarding", description: "Explore all AKSES platform capabilities and features" },
   ];
   
   // Handle tab switching
@@ -337,7 +338,10 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
               {tab.type === "AI Agents Orchestration" && (
                 <AIAgentsOrchestrationPage />
               )}
-              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && tab.type !== "AKSES Architecture" && tab.type !== "Voice Commands" && tab.type !== "Users" && tab.type !== "Org Settings" && tab.type !== "AI Agents Orchestration" && (
+              {tab.type === "Onboarding" && (
+                <OnboardingView />
+              )}
+              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && tab.type !== "AKSES Architecture" && tab.type !== "Voice Commands" && tab.type !== "Users" && tab.type !== "Org Settings" && tab.type !== "AI Agents Orchestration" && tab.type !== "AI CRM" && tab.type !== "Onboarding" && (
                 <div className="h-full flex items-center justify-center p-6">
                   <div className="text-center max-w-md mx-auto">
                     <h2 className="text-2xl font-semibold mb-3">{tab.title}</h2>
