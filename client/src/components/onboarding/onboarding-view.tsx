@@ -17,6 +17,8 @@ import {
   ExternalLink,
   MessageSquare,
   Slack,
+  Settings,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -176,6 +178,10 @@ export function OnboardingView() {
   const openSlackAIExplorer = () => {
     openExternalUrl('https://pensieve.replit.app/chat');
   };
+  
+  const openOrganizationSettings = () => {
+    openTab("Organization Settings", "Organization Settings");
+  };
 
   return (
     <div className="w-full h-full overflow-auto">
@@ -294,6 +300,14 @@ export function OnboardingView() {
           buttonText="Open Explorer"
           onClick={openSlackAIExplorer}
           isExternal={true}
+        />
+        <FeatureCard 
+          title="Configure Your Fund" 
+          description="Customize organization settings, manage team access, and configure global preferences." 
+          icon={Building2}
+          color="cyan"
+          buttonText="Open Settings"
+          onClick={openOrganizationSettings}
         />
       </div>
 
