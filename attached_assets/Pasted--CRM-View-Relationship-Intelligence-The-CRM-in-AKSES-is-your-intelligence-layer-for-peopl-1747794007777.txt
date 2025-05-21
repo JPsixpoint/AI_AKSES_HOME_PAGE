@@ -1,0 +1,80 @@
+## 📇 CRM View – Relationship Intelligence  
+> The CRM in AKSES is your intelligence layer for people, companies, and interactions — not just deals.
+
+While your **Pipeline** tracks deal progress and underwriting, the **CRM View** gives you visibility into:
+- All contacts across deals and companies  
+- Your firm's relationship network  
+- Meeting, email, and interaction history  
+- Origination performance and gaps  
+- AI-powered insights into who matters, who’s active, and who’s missing
+
+---
+
+### 🔍 Core Capabilities
+
+#### 👥 **Contact & Company Universe**
+- Unified directory of all people across all deals
+- Contact fields: Name, Title, Role (e.g. CEO, Investment Manager), Email, Phone, LinkedIn
+- Company fields: Sector, Region, Portfolio Status (New, Live, Exited)
+- Relationship Map: See which companies a contact is tied to, and vice versa
+- Tags: `Warm`, `Cold`, `IC`, `Origination Source`, `Repeat Founder`
+
+#### 🗓️ **Interaction History**
+- Meeting recordings (via Grain) with AI summaries
+- Logged emails, DMs, and Slack messages (optional sync)
+- Notes linked to people or companies
+- Last contact date
+- Interaction streaks or gaps (AI: “90 days silent”)
+
+#### 🔁 **Origination Intelligence**
+- Track deal sources: who brought in the most deals this quarter
+- Identify drop-off patterns: who hasn't sent a deal in X months
+- AI summary: “Top 10 high-potential but inactive contacts”
+- Graph view of intro paths (e.g., LP → Analyst → Deal)
+
+---
+
+### 📥 Deal Import & AI Mapping
+> Use AKSES CRM to ingest and normalize your deal and contact universe.
+
+- **Import from:**
+  - HubSpot
+  - DealCloud
+  - CSV / Excel
+
+- **AI-Powered Mapping:**
+  - Match imported deals to existing people + companies
+  - Merge or dedupe records automatically
+  - Tag new entries by stage, source, geography
+  - Suggest missing contacts (e.g., “this deal has no founder contact attached”)
+
+---
+
+### 🧠 AI-Powered Insights
+- “Who are our most active deal introducers in APAC?”  
+- “List founders we've met with but haven’t followed up on in 60+ days”  
+- “Summarize all past touchpoints with John Morales from Monet”  
+- “Generate IC-facing contact snapshot for this company”  
+- “What warm intros can we reactivate in LatAm fintech?”  
+
+---
+
+### 🔐 Access Control
+- Role-based visibility: Analyst, Partner, Ops  
+- Tags for filtering (`Investor`, `Operator`, `IC Member`)  
+- Export control by permission level
+
+---
+
+### 🎯 Use Case Example
+**You're working a new deal from Monet.**  
+You open CRM and see:
+- All Monet contacts across past deals  
+- Analyst notes from 2022 DD  
+- Grain summaries of every call  
+- Slack messages between team and Monet  
+- AI highlights: “CFO mentioned rising default rates in last call”
+
+---
+
+This CRM view gives you a **living, searchable memory of your firm’s network** — connected to your deals, but not limited to them.

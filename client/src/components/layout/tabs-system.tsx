@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { DealsPipeline } from "@/components/deals/deals-pipeline";
 import { AIPreScreening } from "@/components/ai/ai-pre-screening";
 import { VoiceCommandsGuide } from "@/components/ai/voice-commands-guide";
+import { AICRM } from "@/components/crm/ai-crm";
 import AksesArchitecture from "@/pages/akses-architecture";
 import UsersPage from "@/pages/users";
 import OrgSettingsPage from "@/pages/org-settings";
@@ -43,7 +44,8 @@ type TabType =
   | "AKSES Architecture"
   | "Voice Commands"
   | "Users"
-  | "AI Agents Orchestration";
+  | "AI Agents Orchestration"
+  | "AI CRM";
 
 interface Tab {
   id: string;
@@ -95,6 +97,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
     { type: "Pricer", title: "Pricer", description: "Deal pricing and financial modeling tools" },
     { type: "Due Diligence", title: "Due Diligence", description: "Manage due diligence process and documents" },
     { type: "Rag Databases", title: "Rag Databases", description: "Manage and explore RAG knowledge databases" },
+    { type: "AI CRM", title: "AI CRM", description: "Relationship intelligence for contacts, companies, and interactions" },
   ];
   
   // Handle tab switching
