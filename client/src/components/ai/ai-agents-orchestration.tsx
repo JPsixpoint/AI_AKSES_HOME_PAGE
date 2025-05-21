@@ -56,6 +56,18 @@ import {
   UserCog,
   Rocket,
   Workflow,
+  Globe,
+  Leaf,
+  Table,
+  FileText,
+  Mail,
+  Bell,
+  CheckCircle,
+  Play,
+  Wand,
+  X,
+  File,
+  Brain
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -307,129 +319,416 @@ export function AIAgentsOrchestration() {
           </ScrollArea>
         </TabsContent>
 
-        {/* 2. Agent Builder */}
+        {/* 2. Enhanced Agent Builder */}
         <TabsContent value="builder" className="flex-1 overflow-hidden">
-          <Card className="border border-dark-border bg-dark-card">
-            <CardHeader>
-              <CardTitle>Agent Configurator</CardTitle>
-              <CardDescription>Build and configure AI agents with specialized capabilities</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="agent-name">Agent Name</Label>
-                  <Input id="agent-name" placeholder="E.g., Deal Analyzer, Doc Processor..." />
+          <ScrollArea className="h-full pr-4">
+            <Card className="border border-dark-border bg-dark-card mb-6">
+              <CardHeader className="bg-gradient-to-r from-indigo-950/70 to-purple-950/70 border-b border-dark-border">
+                <div className="flex items-center gap-2">
+                  <BrainCircuit className="h-5 w-5 text-purple-400" />
+                  <CardTitle>Advanced Agent Configurator</CardTitle>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="agent-type">Agent Type</Label>
-                  <Select defaultValue="tool-calling">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select agent type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {agentTypes.map(type => (
-                        <SelectItem key={type.id} value={type.id}>
-                          <div className="flex items-center gap-2">
-                            {type.icon}
-                            <span>{type.name}</span>
+                <CardDescription>Build powerful AI agents with specialized capabilities and automated workflows</CardDescription>
+              </CardHeader>
+              
+              {/* Agent Identity Section */}
+              <CardContent className="pt-6">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-medium flex items-center gap-2 mb-4 text-indigo-300">
+                      <Brain className="h-5 w-5" />
+                      1. Agent Identity
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="agent-name">Agent Name</Label>
+                        <Input id="agent-name" placeholder="E.g., Delinquency Watchdog" defaultValue="Delinquency Watchdog" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="agent-role">Agent Role/Persona</Label>
+                        <Select defaultValue="risk-analyst">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select agent role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="risk-analyst">Risk Analyst</SelectItem>
+                            <SelectItem value="compliance">Compliance Copilot</SelectItem>
+                            <SelectItem value="ic-assistant">IC Pack Assistant</SelectItem>
+                            <SelectItem value="credit-monitor">Credit Monitor</SelectItem>
+                            <SelectItem value="custom">Custom Role...</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2 col-span-2">
+                        <Label htmlFor="agent-purpose">Purpose</Label>
+                        <Input 
+                          id="agent-purpose" 
+                          placeholder="Summary of agent's purpose..." 
+                          defaultValue="Monitor delinquency daily and alert when over 6%"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Concise summary of what this agent will do</p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="agent-domain">Domain</Label>
+                        <Select defaultValue="risk">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select domain" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {agentDomains.filter(d => d.id !== "all").map(domain => (
+                              <SelectItem key={domain.id} value={domain.id}>{domain.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="execution-mode">Execution Mode</Label>
+                        <Select defaultValue="scheduled">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select execution mode" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="on-demand">On-Demand</SelectItem>
+                            <SelectItem value="scheduled">Scheduled</SelectItem>
+                            <SelectItem value="triggered">Triggered</SelectItem>
+                            <SelectItem value="auto">Auto</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Tools & Resources Section */}
+                  <div>
+                    <h3 className="text-lg font-medium flex items-center gap-2 mb-4 text-indigo-300">
+                      <Settings className="h-5 w-5" />
+                      2. Tools & Resources
+                    </h3>
+                    
+                    <div className="flex flex-col gap-6">
+                      {/* Tools drag-drop interface */}
+                      <div className="border border-dark-border rounded-md bg-dark-lighter p-4">
+                        <h4 className="text-sm font-medium mb-3">Tools (Drag & Drop)</h4>
+                        
+                        <div className="grid grid-cols-2 gap-x-10 gap-y-2">
+                          <div className="space-y-3">
+                            <p className="text-xs text-muted-foreground">Available Tools</p>
+                            <div className="space-y-2 min-h-24 bg-dark-card rounded-md p-2 border border-dark-border border-dashed">
+                              {[
+                                { id: "portfolio-analyzer", name: "Portfolio Analyzer", icon: <BarChart3 className="h-4 w-4 text-emerald-400" /> },
+                                { id: "deal-finder", name: "Deal Finder", icon: <Search className="h-4 w-4 text-blue-400" /> },
+                                { id: "pdf-parser", name: "PDF Parser", icon: <FileUp className="h-4 w-4 text-amber-400" /> },
+                                { id: "doc-comparator", name: "Document Comparator", icon: <File className="h-4 w-4 text-indigo-400" /> },
+                                { id: "mongo-search", name: "Mongo Search", icon: <Database className="h-4 w-4 text-purple-400" /> },
+                              ].map(tool => (
+                                <div key={tool.id} className="flex items-center gap-2 p-1.5 rounded-md bg-dark-surface cursor-move hover:bg-dark-active transition-colors">
+                                  {tool.icon}
+                                  <span className="text-xs">{tool.name}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="agent-domain">Domain</Label>
-                  <Select defaultValue="risk">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select domain" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {agentDomains.filter(d => d.id !== "all").map(domain => (
-                        <SelectItem key={domain.id} value={domain.id}>{domain.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="agent-owner">Owner</Label>
-                  <Input id="agent-owner" placeholder="Team or individual responsible" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="system-prompt">Base System Prompt</Label>
-                <div className="border border-dark-border rounded-md">
-                  <textarea 
-                    id="system-prompt" 
-                    className="w-full h-32 p-2 bg-dark-lighter text-sm rounded-md resize-none outline-none" 
-                    placeholder="You are an AI agent specialized in [domain]. Your primary purpose is to..."
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Available Tools</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {[
-                    { id: "tape-cracker", name: "Tape Cracker", icon: <Code className="h-4 w-4" /> },
-                    { id: "memo-generator", name: "Memo Generator", icon: <FileJson className="h-4 w-4" /> },
-                    { id: "document-search", name: "Document Search", icon: <BookOpen className="h-4 w-4" /> },
-                    { id: "slack-notify", name: "Slack Notifications", icon: <Slack className="h-4 w-4" /> },
-                    { id: "data-analyzer", name: "Data Analyzer", icon: <BarChart3 className="h-4 w-4" /> },
-                    { id: "doc-uploader", name: "Document Uploader", icon: <FileUp className="h-4 w-4" /> },
-                  ].map(tool => (
-                    <div key={tool.id} className="flex items-center space-x-2">
-                      <Switch id={`tool-${tool.id}`} />
-                      <Label htmlFor={`tool-${tool.id}`} className="flex items-center gap-1">
-                        {tool.icon}
-                        <span>{tool.name}</span>
-                      </Label>
+                          
+                          <div className="space-y-3">
+                            <p className="text-xs text-muted-foreground">Selected Tools</p>
+                            <div className="space-y-2 min-h-24 bg-dark-card rounded-md p-2 border border-blue-900 border-dashed">
+                              {[
+                                { id: "tape-cracker", name: "Tape Cracker", icon: <Code className="h-4 w-4 text-blue-400" /> },
+                                { id: "risk-analyzer", name: "Risk Ratio Analyzer", icon: <BarChart3 className="h-4 w-4 text-red-400" /> },
+                                { id: "pricer", name: "Pricer", icon: <BarChart3 className="h-4 w-4 text-green-400" /> },
+                              ].map(tool => (
+                                <div key={tool.id} className="flex items-center justify-between p-1.5 rounded-md bg-blue-950/30 cursor-move group">
+                                  <div className="flex items-center gap-2">
+                                    {tool.icon}
+                                    <span className="text-xs">{tool.name}</span>
+                                  </div>
+                                  <X className="h-3 w-3 text-muted-foreground hover:text-white cursor-pointer transition-colors opacity-0 group-hover:opacity-100" />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Resources drag-drop interface */}
+                      <div className="border border-dark-border rounded-md bg-dark-lighter p-4">
+                        <h4 className="text-sm font-medium mb-3">Resources (Drag & Drop)</h4>
+                        
+                        <div className="grid grid-cols-2 gap-x-10 gap-y-2">
+                          <div className="space-y-3">
+                            <p className="text-xs text-muted-foreground">Available Resources</p>
+                            <div className="space-y-2 min-h-24 bg-dark-card rounded-md p-2 border border-dark-border border-dashed">
+                              {[
+                                { id: "term-sheets", name: "TermSheets Collection", icon: <BookOpen className="h-4 w-4 text-amber-400" />, type: "vector-db" },
+                                { id: "bloomberg", name: "Bloomberg API", icon: <BarChart3 className="h-4 w-4 text-blue-400" />, type: "feed" },
+                                { id: "world-bank", name: "World Bank API", icon: <Globe className="h-4 w-4 text-green-400" />, type: "feed" },
+                                { id: "esg-criteria", name: "ESG Criteria", icon: <Leaf className="h-4 w-4 text-emerald-400" />, type: "vector-db" },
+                                { id: "ic-outcomes", name: "IC Outcomes", icon: <BarChart3 className="h-4 w-4 text-purple-400" />, type: "org-data" },
+                              ].map(resource => (
+                                <div key={resource.id} className="flex items-center gap-2 p-1.5 rounded-md bg-dark-surface cursor-move hover:bg-dark-active transition-colors">
+                                  {resource.icon}
+                                  <span className="text-xs">{resource.name}</span>
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1 ml-auto">
+                                    {resource.type === "vector-db" ? "RAG" : 
+                                     resource.type === "feed" ? "Feed" : "Org"}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <p className="text-xs text-muted-foreground">Selected Resources</p>
+                            <div className="space-y-2 min-h-24 bg-dark-card rounded-md p-2 border border-teal-900 border-dashed">
+                              {[
+                                { id: "scale-db", name: "S.C.A.L.E. DB", icon: <Database className="h-4 w-4 text-teal-400" />, type: "org-data" },
+                                { id: "portfolio-csv", name: "Portfolio.csv", icon: <FileUp className="h-4 w-4 text-yellow-400" />, type: "file" },
+                                { id: "esg-framework", name: "ESG Framework.pdf", icon: <FileUp className="h-4 w-4 text-amber-400" />, type: "file" },
+                              ].map(resource => (
+                                <div key={resource.id} className="flex items-center justify-between p-1.5 rounded-md bg-teal-950/30 cursor-move group">
+                                  <div className="flex items-center gap-2">
+                                    {resource.icon}
+                                    <span className="text-xs">{resource.name}</span>
+                                  </div>
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1 mr-1">
+                                    {resource.type === "file" ? "File" : 
+                                     resource.type === "feed" ? "Feed" : "Org"}
+                                  </Badge>
+                                  <X className="h-3 w-3 text-muted-foreground hover:text-white cursor-pointer transition-colors opacity-0 group-hover:opacity-100" />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 flex justify-end">
+                          <Button variant="outline" size="sm" className="text-xs flex items-center gap-1">
+                            <Plus className="h-3 w-3" />
+                            Upload New Resource
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Source of Truth (Knowledge Base)</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {[
-                    { id: "deals-database", name: "Deals Database" },
-                    { id: "legal-docs", name: "Legal Documents" },
-                    { id: "company-policies", name: "Company Policies" },
-                    { id: "market-reports", name: "Market Reports" },
-                    { id: "procedural-guides", name: "Procedural Guides" },
-                    { id: "historical-deals", name: "Historical Deals" },
-                  ].map(source => (
-                    <div key={source.id} className="flex items-center space-x-2">
-                      <Switch id={`source-${source.id}`} />
-                      <Label htmlFor={`source-${source.id}`}>{source.name}</Label>
+                  </div>
+                  
+                  {/* Behavior & Scheduling Section */}
+                  <div>
+                    <h3 className="text-lg font-medium flex items-center gap-2 mb-4 text-indigo-300">
+                      <Clock className="h-5 w-5" />
+                      3. Behavior & Scheduling
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="run-type">Run Type</Label>
+                        <Select defaultValue="daily">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select run type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="real-time">Real-Time</SelectItem>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="on-change">On Change</SelectItem>
+                            <SelectItem value="manual">Manual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="schedule-time">Schedule Time</Label>
+                        <div className="flex items-center gap-2">
+                          <Select defaultValue="6">
+                            <SelectTrigger className="w-20">
+                              <SelectValue placeholder="Hour" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Array.from({length: 12}, (_, i) => (
+                                <SelectItem key={i} value={String(i + 1)}>{i + 1}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <span>:</span>
+                          <Select defaultValue="00">
+                            <SelectTrigger className="w-20">
+                              <SelectValue placeholder="Min" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="00">00</SelectItem>
+                              <SelectItem value="15">15</SelectItem>
+                              <SelectItem value="30">30</SelectItem>
+                              <SelectItem value="45">45</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select defaultValue="am">
+                            <SelectTrigger className="w-20">
+                              <SelectValue placeholder="AM/PM" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="am">AM</SelectItem>
+                              <SelectItem value="pm">PM</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select defaultValue="est">
+                            <SelectTrigger className="w-24">
+                              <SelectValue placeholder="Timezone" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="est">EST</SelectItem>
+                              <SelectItem value="cst">CST</SelectItem>
+                              <SelectItem value="mst">MST</SelectItem>
+                              <SelectItem value="pst">PST</SelectItem>
+                              <SelectItem value="utc">UTC</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     </div>
-                  ))}
+                    
+                    <div className="flex items-center gap-2 mt-4">
+                      <Switch id="weekdays-only" defaultChecked />
+                      <Label htmlFor="weekdays-only">Only run on weekdays</Label>
+                    </div>
+                    
+                    <div className="mt-6">
+                      <Label>Auto-actions</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                        <div className="flex items-center space-x-2">
+                          <Switch id="action-email" defaultChecked />
+                          <Label htmlFor="action-email" className="flex items-center gap-1">
+                            <Mail className="h-4 w-4 text-blue-400" />
+                            <span>Send report to my email</span>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="action-slack" defaultChecked />
+                          <Label htmlFor="action-slack" className="flex items-center gap-1">
+                            <Slack className="h-4 w-4 text-teal-400" />
+                            <span>Post summary to Slack #risk-updates</span>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="action-dashboard" />
+                          <Label htmlFor="action-dashboard" className="flex items-center gap-1">
+                            <LineChart className="h-4 w-4 text-purple-400" />
+                            <span>Update Retool dashboard</span>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="action-notification" />
+                          <Label htmlFor="action-notification" className="flex items-center gap-1">
+                            <Bell className="h-4 w-4 text-amber-400" />
+                            <span>Send in-app notification</span>
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Natural Language Goal/Prompt */}
+                  <div>
+                    <h3 className="text-lg font-medium flex items-center gap-2 mb-4 text-indigo-300">
+                      <MessageSquare className="h-5 w-5" />
+                      4. Natural Language Goal / Prompt
+                    </h3>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="system-prompt">Base Prompt</Label>
+                      <div className="border border-dark-border rounded-md bg-dark-lighter">
+                        <textarea 
+                          id="system-prompt" 
+                          className="w-full h-32 p-3 bg-dark-lighter text-sm rounded-md resize-none outline-none" 
+                          placeholder="Instructions for your agent..."
+                          defaultValue="You are a financial analyst. Every morning, check for any loan portfolios with NAR < 24% and default rate > 5%. Run a wind-down simulation if any are found. Then email a 3-paragraph summary to the credit team."
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Define the agent's behavior and goals in natural language</p>
+                    </div>
+                    
+                    <div className="flex justify-end mt-2">
+                      <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1 text-muted-foreground">
+                        <Wand className="h-3 w-3" />
+                        Generate from purpose
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Outputs Section */}
+                  <div>
+                    <h3 className="text-lg font-medium flex items-center gap-2 mb-4 text-indigo-300">
+                      <Share2 className="h-5 w-5" />
+                      5. Outputs
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        { id: "pdf-report", name: "PDF Report (IC Memo style)", icon: <FileText className="h-4 w-4 text-red-400" />, checked: true },
+                        { id: "table", name: "Table (HTML/Markdown/CSV)", icon: <Table className="h-4 w-4 text-blue-400" />, checked: false },
+                        { id: "slack", name: "Slack message", icon: <Slack className="h-4 w-4 text-teal-400" />, checked: true },
+                        { id: "json", name: "JSON block for developer consumption", icon: <Code className="h-4 w-4 text-purple-400" />, checked: false },
+                        { id: "email", name: "Email (HTML + attachment)", icon: <Mail className="h-4 w-4 text-amber-400" />, checked: true },
+                      ].map(output => (
+                        <div key={output.id} className="flex items-center space-x-2">
+                          <Switch id={`output-${output.id}`} defaultChecked={output.checked} />
+                          <Label htmlFor={`output-${output.id}`} className="flex items-center gap-1">
+                            {output.icon}
+                            <span>{output.name}</span>
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Example Config Summary */}
+                  <div className="border border-dark-border rounded-md bg-dark-lighter p-4 mt-6">
+                    <h4 className="text-sm font-medium mb-3 text-teal-400 flex items-center gap-1">
+                      <CheckCircle className="h-4 w-4" />
+                      Agent Configuration Summary
+                    </h4>
+                    
+                    <div className="grid grid-cols-3 gap-y-2 text-xs">
+                      <div className="text-muted-foreground">Name</div>
+                      <div className="col-span-2 font-medium">"Delinquency Watchdog"</div>
+                      
+                      <div className="text-muted-foreground">Role</div>
+                      <div className="col-span-2 font-medium">"Risk Ops Agent"</div>
+                      
+                      <div className="text-muted-foreground">Trigger</div>
+                      <div className="col-span-2 font-medium">Daily @ 6AM EST</div>
+                      
+                      <div className="text-muted-foreground">Tools</div>
+                      <div className="col-span-2 font-medium">Tape Cracker, Risk Ratio Analyzer, Email</div>
+                      
+                      <div className="text-muted-foreground">Resources</div>
+                      <div className="col-span-2 font-medium">S.C.A.L.E. DB, Portfolio.csv, ESG Framework.pdf</div>
+                      
+                      <div className="text-muted-foreground">Actions</div>
+                      <div className="col-span-2 font-medium">Runs analysis → if any trigger breached → generate PDF → email to PM</div>
+                      
+                      <div className="text-muted-foreground">Output</div>
+                      <div className="col-span-2 font-medium">Email with PDF + Slack notification</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="output-format">Output Format</Label>
-                <Select defaultValue="markdown">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select output format" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="markdown">Markdown</SelectItem>
-                    <SelectItem value="json">JSON</SelectItem>
-                    <SelectItem value="table">Table</SelectItem>
-                    <SelectItem value="text">Plain Text</SelectItem>
-                    <SelectItem value="html">HTML</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline">Save as Draft</Button>
-              <Button>Save & Activate Agent</Button>
-            </CardFooter>
-          </Card>
+              </CardContent>
+              
+              <CardFooter className="flex justify-between border-t border-dark-border pt-4">
+                <div className="flex gap-2">
+                  <Button variant="outline">Save as Draft</Button>
+                  <Button variant="outline" className="flex items-center gap-1">
+                    <Play className="h-4 w-4" />
+                    Test Run
+                  </Button>
+                </div>
+                <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
+                  Save & Activate Agent
+                </Button>
+              </CardFooter>
+            </Card>
+          </ScrollArea>
         </TabsContent>
 
         {/* 3. Monitoring & Logs */}
