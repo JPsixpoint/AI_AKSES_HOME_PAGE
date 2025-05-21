@@ -24,6 +24,7 @@ import { AIPreScreening } from "@/components/ai/ai-pre-screening";
 import { VoiceCommandsGuide } from "@/components/ai/voice-commands-guide";
 import AksesArchitecture from "@/pages/akses-architecture";
 import UsersPage from "@/pages/users";
+import OrgSettingsPage from "@/pages/org-settings";
 
 // Define the tab types
 type TabType = 
