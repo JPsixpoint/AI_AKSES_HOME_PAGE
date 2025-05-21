@@ -67,7 +67,10 @@ import {
   Wand,
   X,
   File,
-  Brain
+  Brain,
+  Circle,
+  Wind,
+  Cloud
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -899,7 +902,7 @@ export function AIAgentsOrchestration() {
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-green-500 flex items-center justify-center">
-                                <Circle className="h-5 w-5 text-white" />
+                                <Bot className="h-5 w-5 text-white" />
                               </div>
                               <CardTitle className="text-base">Gemini 1.5 Pro (Google)</CardTitle>
                             </div>
@@ -949,7 +952,7 @@ export function AIAgentsOrchestration() {
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-cyan-500 flex items-center justify-center">
-                                <Wind className="h-5 w-5 text-white" />
+                                <Brain className="h-5 w-5 text-white" />
                               </div>
                               <CardTitle className="text-base">Mistral (On-Prem)</CardTitle>
                             </div>
@@ -999,7 +1002,7 @@ export function AIAgentsOrchestration() {
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                <Cloud className="h-5 w-5 text-white" />
+                                <Database className="h-5 w-5 text-white" />
                               </div>
                               <CardTitle className="text-base">Azure OpenAI</CardTitle>
                             </div>
