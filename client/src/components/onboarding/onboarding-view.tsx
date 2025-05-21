@@ -182,6 +182,10 @@ export function OnboardingView() {
   const openOrganizationSettings = () => {
     openTab("Organization Settings", "Organization Settings");
   };
+  
+  const openOriginatorPortal = () => {
+    openExternalUrl('https://originator-portal-raphael126.replit.app/originator-portal/home');
+  };
 
   return (
     <div className="w-full h-full overflow-auto">
@@ -308,6 +312,15 @@ export function OnboardingView() {
           color="cyan"
           buttonText="Open Settings"
           onClick={openOrganizationSettings}
+        />
+        <FeatureCard 
+          title="Originator Portal Monet" 
+          description="Access the specialized originator portal interface for loan management and originator communication." 
+          icon={ExternalLink}
+          color="emerald"
+          buttonText="Open Portal"
+          onClick={openOriginatorPortal}
+          isExternal={true}
         />
       </div>
 
