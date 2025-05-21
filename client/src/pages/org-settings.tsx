@@ -1,5 +1,5 @@
 import React from "react";
-import { OrgSettings } from "@/components/settings/org-settings";
+import { OrgSettings } from "../components/settings/org-settings-export";
 
 export default function OrgSettingsPage() {
   return (

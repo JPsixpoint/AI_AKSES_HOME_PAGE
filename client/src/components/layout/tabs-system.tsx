@@ -13,7 +13,8 @@ import {
   Folder, 
   Files,
   BookOpen,
-  Mic
+  Mic,
+  Users as UsersIcon
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
