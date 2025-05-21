@@ -620,7 +620,7 @@ export function AIAgentsOrchestration() {
                           <Switch id="action-dashboard" />
                           <Label htmlFor="action-dashboard" className="flex items-center gap-1">
                             <LineChart className="h-4 w-4 text-purple-400" />
-                            <span>Update Retool dashboard</span>
+                            <span>Update dashboards</span>
                           </Label>
                         </div>
                         <div className="flex items-center space-x-2">
