@@ -232,12 +232,29 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
     }
   }, [tabs]);
 
+  // Method to open Onboarding tab
+  const openOnboardingTab = useCallback(() => {
+    console.log("Opening Onboarding tab");
+    
+    // Find existing onboarding tab
+    const existingTab = tabs.find(tab => tab.type === "Onboarding");
+    if (existingTab) {
+      console.log("Found existing Onboarding tab:", existingTab.id);
+      setActiveTabId(existingTab.id);
+    } else {
+      console.log("Creating new Onboarding tab");
+      // Create a new tab
+      addNewTab("Onboarding", "Onboarding");
+    }
+  }, [tabs]);
+  
   // Update the refs
   useEffect(() => {
     tabsRef.current.openPrescreeningTab = openPrescreeningTab;
     tabsRef.current.openArchitectureTab = openArchitectureTab;
     tabsRef.current.openVoiceCommandsTab = openVoiceCommandsTab;
-  }, [openPrescreeningTab, openArchitectureTab, openVoiceCommandsTab]);
+    tabsRef.current.openOnboardingTab = openOnboardingTab;
+  }, [openPrescreeningTab, openArchitectureTab, openVoiceCommandsTab, openOnboardingTab]);
   
   // Expose the methods to the parent component via props
   useEffect(() => {
@@ -245,13 +262,17 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
     (window as any).openPrescreeningTab = openPrescreeningTab;
     (window as any).openArchitectureTab = openArchitectureTab;
     (window as any).openVoiceCommandsTab = openVoiceCommandsTab;
+    (window as any).openOnboardingTab = openOnboardingTab;
+    (window as any).openTab = addNewTab; // Generic function to open any tab type
     
     return () => {
       delete (window as any).openPrescreeningTab;
       delete (window as any).openArchitectureTab;
       delete (window as any).openVoiceCommandsTab;
+      delete (window as any).openOnboardingTab;
+      delete (window as any).openTab;
     };
-  }, [openPrescreeningTab, openArchitectureTab, openVoiceCommandsTab]);
+  }, [openPrescreeningTab, openArchitectureTab, openVoiceCommandsTab, openOnboardingTab, addNewTab]);
   
   return (
     <div className="flex flex-col h-full relative">
