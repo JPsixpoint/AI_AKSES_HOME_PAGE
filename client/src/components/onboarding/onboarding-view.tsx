@@ -134,19 +134,20 @@ export function OnboardingView() {
   };
 
   const openAgentBuilder = () => {
-    const tabsSystem = document.querySelector('[data-tabs-system]');
-    
-    if (window.opener) {
-      window.opener.postMessage({ action: 'openAgentBuilder' }, '*');
-    }
+    // Use the URL parameter approach to navigate to the Agent Builder tab
+    window.history.pushState({}, "", "/ai-agents?tab=builder");
     
     // Create or activate AI Agents tab with Agent Builder selected
     if ((window as any).openTab) {
-      (window as any).openTab("AI Agents Orchestration", "Agent Builder", "builder");
+      (window as any).openTab("AI Agents Orchestration", "Agent Builder");
     }
   };
   
   const openRagVault = () => {
+    // Use the URL parameter approach to navigate to the RAG Vault tab
+    window.history.pushState({}, "", "/ai-agents?tab=rag-vault");
+    
+    // Create or activate AI Agents tab with RAG Vault selected
     openTab("AI Agents Orchestration", "RAG Vault");
   };
 
