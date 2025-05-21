@@ -204,6 +204,10 @@ export function AIAgentsOrchestration() {
             <Workflow className="h-4 w-4" />
             Agent Builder
           </TabsTrigger>
+          <TabsTrigger value="llm-models" className="flex items-center gap-1">
+            <Brain className="h-4 w-4" />
+            LLM Models
+          </TabsTrigger>
           <TabsTrigger value="monitoring" className="flex items-center gap-1">
             <BarChart3 className="h-4 w-4" />
             Monitoring & Logs
@@ -728,6 +732,418 @@ export function AIAgentsOrchestration() {
                 <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
                   Save & Activate Agent
                 </Button>
+              </CardFooter>
+            </Card>
+          </ScrollArea>
+        </TabsContent>
+
+        {/* LLM Models Configuration Tab */}
+        <TabsContent value="llm-models" className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full pr-4">
+            <Card className="border border-dark-border bg-dark-card mb-6">
+              <CardHeader className="bg-gradient-to-r from-indigo-950/70 to-purple-950/70 border-b border-dark-border">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-purple-400" />
+                  <CardTitle>LLM Models Configuration</CardTitle>
+                </div>
+                <CardDescription>Configure AI models, manage API keys, and optimize costs</CardDescription>
+              </CardHeader>
+              
+              <CardContent className="pt-6">
+                <div className="space-y-8">
+                  {/* Model Configuration Section */}
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Available Models</h3>
+                    <div className="space-y-4">
+                      {/* OpenAI */}
+                      <Card className="border border-dark-border">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center">
+                                <Bot className="h-5 w-5 text-white" />
+                              </div>
+                              <CardTitle className="text-base">GPT-4 (OpenAI)</CardTitle>
+                            </div>
+                            <Switch id="enable-openai" defaultChecked />
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="openai-api-key">API Key</Label>
+                              <div className="flex gap-2">
+                                <Input 
+                                  id="openai-api-key" 
+                                  type="password" 
+                                  placeholder="sk-..." 
+                                  className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700 flex-1"
+                                />
+                                <Button variant="outline" size="icon">
+                                  <EyeOff className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <p className="text-xs text-muted-foreground">Your OpenAI API key is stored securely and encrypted</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Preferred Model</Label>
+                                <Select defaultValue="gpt-4o">
+                                  <SelectTrigger className="text-white bg-dark-surface border-gray-700">
+                                    <SelectValue placeholder="Select model" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="gpt-4o">GPT-4o (Recommended)</SelectItem>
+                                    <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                                    <SelectItem value="gpt-4">GPT-4</SelectItem>
+                                    <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Cost Center</Label>
+                                <Select defaultValue="operations">
+                                  <SelectTrigger className="text-white bg-dark-surface border-gray-700">
+                                    <SelectValue placeholder="Select cost center" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="operations">Operations</SelectItem>
+                                    <SelectItem value="research">Research</SelectItem>
+                                    <SelectItem value="it">IT Department</SelectItem>
+                                    <SelectItem value="finance">Finance</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <div className="pt-2">
+                              <div className="text-sm flex justify-between mb-2">
+                                <span>Monthly Usage</span>
+                                <span className="text-primary-light">$342.18 / $1000.00</span>
+                              </div>
+                              <div className="w-full bg-dark-surface rounded-full h-2.5">
+                                <div className="bg-primary-light h-2.5 rounded-full" style={{ width: '34%' }}></div>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">34% of allocated monthly budget used</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Anthropic */}
+                      <Card className="border border-dark-border">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+                                <Sparkles className="h-5 w-5 text-white" />
+                              </div>
+                              <CardTitle className="text-base">Claude 3 (Anthropic)</CardTitle>
+                            </div>
+                            <Switch id="enable-anthropic" />
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="anthropic-api-key">API Key</Label>
+                              <div className="flex gap-2">
+                                <Input 
+                                  id="anthropic-api-key" 
+                                  type="password" 
+                                  placeholder="sk_ant-..." 
+                                  className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700 flex-1"
+                                />
+                                <Button variant="outline" size="icon">
+                                  <EyeOff className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <p className="text-xs text-muted-foreground">Enter your Anthropic API key to enable Claude models</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Preferred Model</Label>
+                                <Select defaultValue="claude-3-7-sonnet-20250219">
+                                  <SelectTrigger className="text-white bg-dark-surface border-gray-700">
+                                    <SelectValue placeholder="Select model" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</SelectItem>
+                                    <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
+                                    <SelectItem value="claude-3-sonnet-20240229">Claude 3 Sonnet</SelectItem>
+                                    <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Cost Center</Label>
+                                <Select defaultValue="research">
+                                  <SelectTrigger className="text-white bg-dark-surface border-gray-700">
+                                    <SelectValue placeholder="Select cost center" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="operations">Operations</SelectItem>
+                                    <SelectItem value="research">Research</SelectItem>
+                                    <SelectItem value="it">IT Department</SelectItem>
+                                    <SelectItem value="finance">Finance</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Google */}
+                      <Card className="border border-dark-border">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-green-500 flex items-center justify-center">
+                                <Circle className="h-5 w-5 text-white" />
+                              </div>
+                              <CardTitle className="text-base">Gemini 1.5 Pro (Google)</CardTitle>
+                            </div>
+                            <Switch id="enable-google" />
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="google-api-key">API Key</Label>
+                              <div className="flex gap-2">
+                                <Input 
+                                  id="google-api-key" 
+                                  type="password" 
+                                  placeholder="AIza..." 
+                                  className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700 flex-1"
+                                />
+                                <Button variant="outline" size="icon">
+                                  <EyeOff className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <p className="text-xs text-muted-foreground">Enter your Google AI API key to enable Gemini models</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Cost Center</Label>
+                                <Select defaultValue="it">
+                                  <SelectTrigger className="text-white bg-dark-surface border-gray-700">
+                                    <SelectValue placeholder="Select cost center" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="operations">Operations</SelectItem>
+                                    <SelectItem value="research">Research</SelectItem>
+                                    <SelectItem value="it">IT Department</SelectItem>
+                                    <SelectItem value="finance">Finance</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Mistral */}
+                      <Card className="border border-dark-border">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-cyan-500 flex items-center justify-center">
+                                <Wind className="h-5 w-5 text-white" />
+                              </div>
+                              <CardTitle className="text-base">Mistral (On-Prem)</CardTitle>
+                            </div>
+                            <Switch id="enable-mistral" />
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="mistral-endpoint">Endpoint URL</Label>
+                                <Input 
+                                  id="mistral-endpoint" 
+                                  placeholder="https://api.mistral.yourcompany.com" 
+                                  className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="mistral-api-key">API Key (if required)</Label>
+                                <Input 
+                                  id="mistral-api-key" 
+                                  type="password" 
+                                  className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Preferred Model</Label>
+                              <Select defaultValue="mistral-large">
+                                <SelectTrigger className="text-white bg-dark-surface border-gray-700">
+                                  <SelectValue placeholder="Select model" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="mistral-large">Mistral Large</SelectItem>
+                                  <SelectItem value="mistral-medium">Mistral Medium</SelectItem>
+                                  <SelectItem value="mistral-small">Mistral Small</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Azure OpenAI */}
+                      <Card className="border border-dark-border">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                <Cloud className="h-5 w-5 text-white" />
+                              </div>
+                              <CardTitle className="text-base">Azure OpenAI</CardTitle>
+                            </div>
+                            <Switch id="enable-azure" />
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="azure-api-key">API Key</Label>
+                                <Input 
+                                  id="azure-api-key" 
+                                  type="password" 
+                                  className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="azure-resource">Resource Name</Label>
+                                <Input 
+                                  id="azure-resource" 
+                                  placeholder="your-resource-name" 
+                                  className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700"
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="azure-deployment">Deployment Name</Label>
+                                <Input 
+                                  id="azure-deployment" 
+                                  placeholder="gpt-4" 
+                                  className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="azure-region">API Region</Label>
+                                <Input 
+                                  id="azure-region" 
+                                  placeholder="eastus" 
+                                  className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="azure-version">API Version</Label>
+                              <Input 
+                                id="azure-version" 
+                                placeholder="2023-05-15" 
+                                className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700"
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+
+                  {/* Cost Management Dashboard */}
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Cost Management</h3>
+                    <Card className="border border-dark-border">
+                      <CardHeader>
+                        <CardTitle className="text-base">Model Usage & Costs</CardTitle>
+                        <CardDescription>Last 30 days consumption by model</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <Card className="border border-dark-border">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-base text-green-400">$482.16</CardTitle>
+                                <CardDescription>Total Spend</CardDescription>
+                              </CardHeader>
+                            </Card>
+                            <Card className="border border-dark-border">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-base text-blue-400">5.2M</CardTitle>
+                                <CardDescription>Input Tokens</CardDescription>
+                              </CardHeader>
+                            </Card>
+                            <Card className="border border-dark-border">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-base text-purple-400">12.7M</CardTitle>
+                                <CardDescription>Output Tokens</CardDescription>
+                              </CardHeader>
+                            </Card>
+                          </div>
+                          
+                          <div className="space-y-3 mt-2">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-teal-400"></div>
+                                <span className="text-sm">GPT-4o</span>
+                              </div>
+                              <div className="text-sm">$314.22</div>
+                            </div>
+                            <div className="w-full bg-dark-surface rounded-full h-2">
+                              <div className="bg-teal-400 h-2 rounded-full" style={{ width: '65%' }}></div>
+                            </div>
+
+                            <div className="flex justify-between items-center mt-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-purple-400"></div>
+                                <span className="text-sm">Claude 3 Sonnet</span>
+                              </div>
+                              <div className="text-sm">$98.45</div>
+                            </div>
+                            <div className="w-full bg-dark-surface rounded-full h-2">
+                              <div className="bg-purple-400 h-2 rounded-full" style={{ width: '20%' }}></div>
+                            </div>
+
+                            <div className="flex justify-between items-center mt-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-blue-400"></div>
+                                <span className="text-sm">Gemini Pro 1.5</span>
+                              </div>
+                              <div className="text-sm">$42.18</div>
+                            </div>
+                            <div className="w-full bg-dark-surface rounded-full h-2">
+                              <div className="bg-blue-400 h-2 rounded-full" style={{ width: '9%' }}></div>
+                            </div>
+
+                            <div className="flex justify-between items-center mt-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-indigo-400"></div>
+                                <span className="text-sm">Mistral (On-Prem)</span>
+                              </div>
+                              <div className="text-sm">$27.31</div>
+                            </div>
+                            <div className="w-full bg-dark-surface rounded-full h-2">
+                              <div className="bg-indigo-400 h-2 rounded-full" style={{ width: '6%' }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </CardContent>
+              
+              <CardFooter className="flex justify-between border-t border-dark-border pt-4">
+                <Button variant="outline">Reset to Defaults</Button>
+                <Button>Save Configuration</Button>
               </CardFooter>
             </Card>
           </ScrollArea>
