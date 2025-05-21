@@ -67,10 +67,12 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
     openPrescreeningTab: (dealId?: string) => void;
     openArchitectureTab: () => void;
     openVoiceCommandsTab: () => void;
+    openOnboardingTab: () => void;
   }>({
     openPrescreeningTab: () => {},
     openArchitectureTab: () => {},
-    openVoiceCommandsTab: () => {}
+    openVoiceCommandsTab: () => {},
+    openOnboardingTab: () => {}
   });
   // Track open tabs
   const [tabs, setTabs] = useState<Tab[]>([
