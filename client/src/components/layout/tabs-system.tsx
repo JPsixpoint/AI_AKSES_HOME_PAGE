@@ -26,6 +26,7 @@ import { VoiceCommandsGuide } from "@/components/ai/voice-commands-guide";
 import AksesArchitecture from "@/pages/akses-architecture";
 import UsersPage from "@/pages/users";
 import OrgSettingsPage from "@/pages/org-settings";
+import AIAgentsOrchestrationPage from "@/pages/ai-agents-orchestration";
 
 // Define the tab types
 type TabType = 
@@ -38,7 +39,8 @@ type TabType =
   | "Rag Databases"
   | "AKSES Architecture"
   | "Voice Commands"
-  | "Users";
+  | "Users"
+  | "AI Agents Orchestration";
 
 interface Tab {
   id: string;
@@ -320,7 +322,10 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
               {tab.type === "Org Settings" && (
                 <OrgSettingsPage />
               )}
-              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && tab.type !== "AKSES Architecture" && tab.type !== "Voice Commands" && tab.type !== "Users" && tab.type !== "Org Settings" && (
+              {tab.type === "AI Agents Orchestration" && (
+                <AIAgentsOrchestrationPage />
+              )}
+              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && tab.type !== "AKSES Architecture" && tab.type !== "Voice Commands" && tab.type !== "Users" && tab.type !== "Org Settings" && tab.type !== "AI Agents Orchestration" && (
                 <div className="h-full flex items-center justify-center p-6">
                   <div className="text-center max-w-md mx-auto">
                     <h2 className="text-2xl font-semibold mb-3">{tab.title}</h2>
