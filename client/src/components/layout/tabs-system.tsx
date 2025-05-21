@@ -448,6 +448,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                               {option.type === "Pipeline" && <PanelLeft className="h-5 w-5" />}
                               {option.type === "Deal Information" && <Files className="h-5 w-5" />}
                               {option.type === "Due Diligence" && <FileSpreadsheet className="h-5 w-5" />}
+                              {option.type === "AI PreScreening" && <Brain className="h-5 w-5" />}
                             </div>
                             <div>
                               <div className="font-medium text-sm">{option.title}</div>
@@ -485,8 +486,9 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                         </div>
                       </button>
                       
-                      {/* RAG Vault as Subcategory */}
-                      <div className="pl-10 mt-2">
+                      {/* Subcategories for AI Agents */}
+                      <div className="pl-10 mt-2 space-y-2">
+                        {/* RAG Vault */}
                         <button
                           className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
                           onClick={() => {
@@ -505,6 +507,54 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                           <div>
                             <div className="font-medium text-sm">RAG Vault</div>
                             <div className="text-xs text-muted-foreground">Deal-specific memory containers for contextual data</div>
+                          </div>
+                        </button>
+                        
+                        {/* LLM Models */}
+                        <button
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                          onClick={() => {
+                            // For LLM Models, open the AI Agents Orchestration tab and switch to LLM Models subtab
+                            const existingTab = tabs.find(tab => tab.type === "AI Agents Orchestration");
+                            if (existingTab) {
+                              setActiveTabId(existingTab.id);
+                              setIsNewTabDialogOpen(false);
+                              // Ideally we would switch to the LLM Models subtab here, but that requires more integration
+                              return;
+                            }
+                            addNewTab("AI Agents Orchestration", "LLM Models");
+                          }}
+                        >
+                          <div className="mr-3 text-primary">
+                            <Brain className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">LLM Models</div>
+                            <div className="text-xs text-muted-foreground">Configure AI models, manage API keys, and optimize costs</div>
+                          </div>
+                        </button>
+                        
+                        {/* Monitoring & Logs */}
+                        <button
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                          onClick={() => {
+                            // For Monitoring, open the AI Agents Orchestration tab and switch to Monitoring subtab
+                            const existingTab = tabs.find(tab => tab.type === "AI Agents Orchestration");
+                            if (existingTab) {
+                              setActiveTabId(existingTab.id);
+                              setIsNewTabDialogOpen(false);
+                              // Ideally we would switch to the Monitoring subtab here, but that requires more integration
+                              return;
+                            }
+                            addNewTab("AI Agents Orchestration", "Monitoring & Logs");
+                          }}
+                        >
+                          <div className="mr-3 text-primary">
+                            <BarChart4 className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">Monitoring & Logs</div>
+                            <div className="text-xs text-muted-foreground">Monitor agent activity and review execution logs</div>
                           </div>
                         </button>
                       </div>
