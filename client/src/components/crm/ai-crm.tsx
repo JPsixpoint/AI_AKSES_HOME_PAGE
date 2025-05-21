@@ -31,10 +31,44 @@ export function AICRM() {
           <p className="text-muted-foreground">Your intelligence layer for people, companies, and interactions</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
-            <Mail className="mr-2 h-4 w-4" />
-            Import Data
-          </Button>
+          <div className="relative">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => document.getElementById('import-dropdown')?.classList.toggle('hidden')}
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Import Data
+            </Button>
+            <div 
+              id="import-dropdown" 
+              className="absolute z-10 mt-1 hidden w-48 rounded-md bg-popover shadow-lg border border-border"
+            >
+              <div className="py-1">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start px-4 py-2 text-sm hover:bg-muted"
+                  onClick={() => console.log('Import from DealCloud')}
+                >
+                  From DealCloud
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start px-4 py-2 text-sm hover:bg-muted"
+                  onClick={() => console.log('Import from Hubspot')}
+                >
+                  From Hubspot
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start px-4 py-2 text-sm hover:bg-muted"
+                  onClick={() => console.log('Import from CSV')}
+                >
+                  From CSV
+                </Button>
+              </div>
+            </div>
+          </div>
           <Button size="sm">
             <Plus className="mr-2 h-4 w-4" />
             Add Contact
