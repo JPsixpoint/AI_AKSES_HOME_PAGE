@@ -15,6 +15,8 @@ import {
   BookOpen,
   ListPlus,
   ExternalLink,
+  MessageSquare,
+  Slack,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -169,6 +171,10 @@ export function OnboardingView() {
 
   const openTapeCracker = () => {
     openExternalUrl('https://sixpointcapital.github.io/tape-cracker-ai-agent/#/');
+  };
+  
+  const openSlackAIExplorer = () => {
+    openExternalUrl('https://pensieve.replit.app/chat');
   };
 
   return (
