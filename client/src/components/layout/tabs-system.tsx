@@ -488,6 +488,50 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                       
                       {/* Subcategories for AI Agents */}
                       <div className="pl-10 mt-2 space-y-2">
+                        {/* Agent Directory */}
+                        <button
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                          onClick={() => {
+                            const existingTab = tabs.find(tab => tab.type === "AI Agents Orchestration");
+                            if (existingTab) {
+                              setActiveTabId(existingTab.id);
+                              setIsNewTabDialogOpen(false);
+                              return;
+                            }
+                            addNewTab("AI Agents Orchestration", "Agent Directory");
+                          }}
+                        >
+                          <div className="mr-3 text-primary">
+                            <Folder className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">Agent Directory</div>
+                            <div className="text-xs text-muted-foreground">View and manage your collection of AI agents</div>
+                          </div>
+                        </button>
+                        
+                        {/* Agent Builder */}
+                        <button
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                          onClick={() => {
+                            const existingTab = tabs.find(tab => tab.type === "AI Agents Orchestration");
+                            if (existingTab) {
+                              setActiveTabId(existingTab.id);
+                              setIsNewTabDialogOpen(false);
+                              return;
+                            }
+                            addNewTab("AI Agents Orchestration", "Agent Builder");
+                          }}
+                        >
+                          <div className="mr-3 text-primary">
+                            <PenTool className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">Agent Builder</div>
+                            <div className="text-xs text-muted-foreground">Create and configure custom AI agents</div>
+                          </div>
+                        </button>
+                        
                         {/* RAG Vault */}
                         <button
                           className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
@@ -514,12 +558,10 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                         <button
                           className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
                           onClick={() => {
-                            // For LLM Models, open the AI Agents Orchestration tab and switch to LLM Models subtab
                             const existingTab = tabs.find(tab => tab.type === "AI Agents Orchestration");
                             if (existingTab) {
                               setActiveTabId(existingTab.id);
                               setIsNewTabDialogOpen(false);
-                              // Ideally we would switch to the LLM Models subtab here, but that requires more integration
                               return;
                             }
                             addNewTab("AI Agents Orchestration", "LLM Models");
@@ -538,12 +580,10 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                         <button
                           className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
                           onClick={() => {
-                            // For Monitoring, open the AI Agents Orchestration tab and switch to Monitoring subtab
                             const existingTab = tabs.find(tab => tab.type === "AI Agents Orchestration");
                             if (existingTab) {
                               setActiveTabId(existingTab.id);
                               setIsNewTabDialogOpen(false);
-                              // Ideally we would switch to the Monitoring subtab here, but that requires more integration
                               return;
                             }
                             addNewTab("AI Agents Orchestration", "Monitoring & Logs");
@@ -555,6 +595,28 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                           <div>
                             <div className="font-medium text-sm">Monitoring & Logs</div>
                             <div className="text-xs text-muted-foreground">Monitor agent activity and review execution logs</div>
+                          </div>
+                        </button>
+                        
+                        {/* Governance */}
+                        <button
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                          onClick={() => {
+                            const existingTab = tabs.find(tab => tab.type === "AI Agents Orchestration");
+                            if (existingTab) {
+                              setActiveTabId(existingTab.id);
+                              setIsNewTabDialogOpen(false);
+                              return;
+                            }
+                            addNewTab("AI Agents Orchestration", "Governance");
+                          }}
+                        >
+                          <div className="mr-3 text-primary">
+                            <Shield className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">Governance</div>
+                            <div className="text-xs text-muted-foreground">Set policies and guardrails for AI systems</div>
                           </div>
                         </button>
                       </div>
