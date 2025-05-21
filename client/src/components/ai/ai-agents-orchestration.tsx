@@ -342,12 +342,17 @@ export function AIAgentsOrchestration() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="agent-name">Agent Name</Label>
-                        <Input id="agent-name" placeholder="E.g., Delinquency Watchdog" defaultValue="Delinquency Watchdog" />
+                        <Input 
+                          id="agent-name" 
+                          placeholder="E.g., Delinquency Watchdog" 
+                          defaultValue="Delinquency Watchdog" 
+                          className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700"
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="agent-role">Agent Role/Persona</Label>
                         <Select defaultValue="risk-analyst">
-                          <SelectTrigger>
+                          <SelectTrigger className="text-white bg-dark-surface border-gray-700">
                             <SelectValue placeholder="Select agent role" />
                           </SelectTrigger>
                           <SelectContent>
@@ -365,7 +370,8 @@ export function AIAgentsOrchestration() {
                         <Input 
                           id="agent-purpose" 
                           placeholder="Summary of agent's purpose..." 
-                          defaultValue="Monitor delinquency daily and alert when over 6%"
+                          defaultValue="Monitor delinquency daily and alert when over 6%" 
+                          className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700"
                         />
                         <p className="text-xs text-muted-foreground mt-1">Concise summary of what this agent will do</p>
                       </div>
@@ -373,7 +379,7 @@ export function AIAgentsOrchestration() {
                       <div className="space-y-2">
                         <Label htmlFor="agent-domain">Domain</Label>
                         <Select defaultValue="risk">
-                          <SelectTrigger>
+                          <SelectTrigger className="text-white bg-dark-surface border-gray-700">
                             <SelectValue placeholder="Select domain" />
                           </SelectTrigger>
                           <SelectContent>
@@ -387,7 +393,7 @@ export function AIAgentsOrchestration() {
                       <div className="space-y-2">
                         <Label htmlFor="execution-mode">Execution Mode</Label>
                         <Select defaultValue="scheduled">
-                          <SelectTrigger>
+                          <SelectTrigger className="text-white bg-dark-surface border-gray-700">
                             <SelectValue placeholder="Select execution mode" />
                           </SelectTrigger>
                           <SelectContent>
