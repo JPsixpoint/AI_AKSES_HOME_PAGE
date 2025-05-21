@@ -207,6 +207,10 @@ export function AIAgentsOrchestration() {
             <Workflow className="h-4 w-4" />
             Agent Builder
           </TabsTrigger>
+          <TabsTrigger value="rag-vault" className="flex items-center gap-1">
+            <Database className="h-4 w-4" />
+            RAG Vault
+          </TabsTrigger>
           <TabsTrigger value="llm-models" className="flex items-center gap-1">
             <Brain className="h-4 w-4" />
             LLM Models
@@ -736,6 +740,575 @@ export function AIAgentsOrchestration() {
                   Save & Activate Agent
                 </Button>
               </CardFooter>
+            </Card>
+          </ScrollArea>
+        </TabsContent>
+
+        {/* RAG Vault Tab */}
+        <TabsContent value="rag-vault" className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full pr-4">
+            <Card className="border border-dark-border bg-dark-card mb-6">
+              <CardHeader className="bg-gradient-to-r from-indigo-950/70 to-purple-950/70 border-b border-dark-border">
+                <div className="flex items-center gap-2">
+                  <Database className="h-5 w-5 text-purple-400" />
+                  <CardTitle>Deal-Specific RAG Vaults</CardTitle>
+                </div>
+                <CardDescription>
+                  Create live, deal-bound memory containers that ingest all contextual data around a single opportunity
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="pt-6">
+                <div className="space-y-8">
+                  {/* Active Vaults Section */}
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-medium">Active Deal Vaults</h3>
+                      <div className="flex gap-2">
+                        <div className="relative w-64">
+                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                          <Input 
+                            type="search" 
+                            placeholder="Search vaults..." 
+                            className="pl-9 text-white placeholder:text-gray-500 bg-dark-surface border-gray-700"
+                          />
+                        </div>
+                        <Button variant="outline" size="sm" className="flex items-center gap-1">
+                          <Plus className="h-4 w-4" />
+                          New Vault
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Vault Card 1 - Monet */}
+                      <Card className="border border-dark-border hover:border-primary-light/50 transition-all cursor-pointer bg-dark-surface">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <CardTitle className="text-base">Monet</CardTitle>
+                              <CardDescription className="line-clamp-1">
+                                Active vault | Last update: 2h ago 
+                              </CardDescription>
+                            </div>
+                            <Badge className="bg-green-900/60 text-green-400 hover:bg-green-900/40">Tier 2</Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pb-2">
+                          <div className="flex items-center text-xs text-muted-foreground space-x-3 mb-3">
+                            <div className="flex items-center">
+                              <FileText className="h-3.5 w-3.5 mr-1" />
+                              <span>43 docs</span>
+                            </div>
+                            <div className="flex items-center">
+                              <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                              <span>186 messages</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Users className="h-3.5 w-3.5 mr-1" />
+                              <span>8 users</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <Slack className="h-4 w-4 text-primary-light" />
+                              <span className="text-sm">#monet-internal Slack Channel</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <FileUp className="h-4 w-4 text-blue-400" />
+                              <span className="text-sm">VDR Integration (23 files)</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <FileText className="h-4 w-4 text-purple-400" />
+                              <span className="text-sm">Term Sheet Drafts & Models</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter className="flex justify-between pt-2 border-t border-dark-border">
+                          <Button variant="ghost" size="sm" className="text-xs">Details</Button>
+                          <Button variant="outline" size="sm" className="text-xs">Query Vault</Button>
+                        </CardFooter>
+                      </Card>
+                      
+                      {/* Vault Card 2 - West Florida */}
+                      <Card className="border border-dark-border hover:border-primary-light/50 transition-all cursor-pointer bg-dark-surface">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <CardTitle className="text-base">West Florida</CardTitle>
+                              <CardDescription className="line-clamp-1">
+                                Active vault | Last update: 1d ago
+                              </CardDescription>
+                            </div>
+                            <Badge className="bg-green-900/60 text-green-400 hover:bg-green-900/40">Tier 2</Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pb-2">
+                          <div className="flex items-center text-xs text-muted-foreground space-x-3 mb-3">
+                            <div className="flex items-center">
+                              <FileText className="h-3.5 w-3.5 mr-1" />
+                              <span>31 docs</span>
+                            </div>
+                            <div className="flex items-center">
+                              <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                              <span>112 messages</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Users className="h-3.5 w-3.5 mr-1" />
+                              <span>6 users</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <Slack className="h-4 w-4 text-primary-light" />
+                              <span className="text-sm">#west-florida Slack Channel</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <FileText className="h-4 w-4 text-blue-400" />
+                              <span className="text-sm">Analyst Notes (8 PDFs)</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <MessageSquare className="h-4 w-4 text-green-400" />
+                              <span className="text-sm">Meeting Transcripts (4)</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter className="flex justify-between pt-2 border-t border-dark-border">
+                          <Button variant="ghost" size="sm" className="text-xs">Details</Button>
+                          <Button variant="outline" size="sm" className="text-xs">Query Vault</Button>
+                        </CardFooter>
+                      </Card>
+                      
+                      {/* Vault Card 3 - Pelican */}
+                      <Card className="border border-dark-border hover:border-primary-light/50 transition-all cursor-pointer bg-dark-surface">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <CardTitle className="text-base">Pelican</CardTitle>
+                              <CardDescription className="line-clamp-1">
+                                Active vault | Last update: 4h ago
+                              </CardDescription>
+                            </div>
+                            <Badge className="bg-green-900/60 text-green-400 hover:bg-green-900/40">Tier 2</Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pb-2">
+                          <div className="flex items-center text-xs text-muted-foreground space-x-3 mb-3">
+                            <div className="flex items-center">
+                              <FileText className="h-3.5 w-3.5 mr-1" />
+                              <span>28 docs</span>
+                            </div>
+                            <div className="flex items-center">
+                              <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                              <span>95 messages</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Users className="h-3.5 w-3.5 mr-1" />
+                              <span>5 users</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <FileUp className="h-4 w-4 text-blue-400" />
+                              <span className="text-sm">VDR Integration (17 files)</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <FileText className="h-4 w-4 text-purple-400" />
+                              <span className="text-sm">IC Memo Drafts</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Slack className="h-4 w-4 text-primary-light" />
+                              <span className="text-sm">#pelican-deal Slack Channel</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter className="flex justify-between pt-2 border-t border-dark-border">
+                          <Button variant="ghost" size="sm" className="text-xs">Details</Button>
+                          <Button variant="outline" size="sm" className="text-xs">Query Vault</Button>
+                        </CardFooter>
+                      </Card>
+                    </div>
+                  </div>
+                  
+                  {/* Detailed Monet Vault Section */}
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Monet Vault Details</h3>
+                    <Card className="border border-dark-border">
+                      <CardHeader className="pb-4 border-b border-dark-border">
+                        <div className="flex flex-wrap md:flex-nowrap justify-between gap-4">
+                          <div>
+                            <CardTitle>Monet RAG Vault</CardTitle>
+                            <CardDescription>Deal-specific knowledge container</CardDescription>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline" className="bg-dark-surface border-gray-600 text-gray-300">
+                              <Users className="h-3.5 w-3.5 mr-1.5" />
+                              Team-wide access
+                            </Badge>
+                            <Badge variant="outline" className="bg-dark-surface border-gray-600 text-gray-300">
+                              <Clock className="h-3.5 w-3.5 mr-1.5" />
+                              Created May 15, 2025
+                            </Badge>
+                            <Badge variant="outline" className="bg-green-900/20 border-green-800 text-green-400">
+                              <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                              Live Sync Active
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="pt-6">
+                        <div className="space-y-6">
+                          {/* Data Sources */}
+                          <div>
+                            <h4 className="text-sm font-medium mb-3 flex items-center">
+                              <FileBox className="h-4 w-4 mr-2 text-primary-light" />
+                              Data Ingested Into Vault
+                            </h4>
+                            <div className="space-y-3 pl-6">
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-800 to-blue-600 flex items-center justify-center flex-shrink-0">
+                                  <Slack className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <h5 className="text-sm font-medium text-blue-400">#monet-internal Slack Channel</h5>
+                                  <p className="text-xs text-gray-400">Live sync every 10 minutes | 186 messages tracked</p>
+                                </div>
+                                <div className="ml-auto">
+                                  <Button variant="ghost" size="sm" className="h-7 px-2">
+                                    <Settings className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-purple-800 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                  <FileUp className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <h5 className="text-sm font-medium text-purple-400">VDR Integration</h5>
+                                  <p className="text-xs text-gray-400">Shared folders, DD docs, IC packages | 23 files</p>
+                                </div>
+                                <div className="ml-auto">
+                                  <Button variant="ghost" size="sm" className="h-7 px-2">
+                                    <Settings className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-green-800 to-green-600 flex items-center justify-center flex-shrink-0">
+                                  <FileText className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <h5 className="text-sm font-medium text-green-400">Term Sheet Drafts & Scenario Models</h5>
+                                  <p className="text-xs text-gray-400">Auto-detected from email attachments | 12 files</p>
+                                </div>
+                                <div className="ml-auto">
+                                  <Button variant="ghost" size="sm" className="h-7 px-2">
+                                    <Settings className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-orange-800 to-orange-600 flex items-center justify-center flex-shrink-0">
+                                  <MessageSquare className="h-4 w-4 text-white" />
+                                </div>
+                                <div>
+                                  <h5 className="text-sm font-medium text-orange-400">Meeting Recordings w/ Transcripts</h5>
+                                  <p className="text-xs text-gray-400">Auto-ingested from Grain | 8 recordings</p>
+                                </div>
+                                <div className="ml-auto">
+                                  <Button variant="ghost" size="sm" className="h-7 px-2">
+                                    <Settings className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <Button variant="outline" size="sm" className="ml-6 mt-2">
+                                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                                Add Data Source
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {/* Agent Connections */}
+                          <div>
+                            <h4 className="text-sm font-medium mb-3 flex items-center">
+                              <Bot className="h-4 w-4 mr-2 text-primary-light" />
+                              Connected Agents
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
+                              <Card className="border border-dark-border bg-dark-surface p-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-md bg-gradient-to-br from-indigo-800 to-indigo-600 flex items-center justify-center">
+                                    <Bot className="h-4 w-4 text-white" />
+                                  </div>
+                                  <div>
+                                    <h5 className="text-sm font-medium">Deal Summary Generator</h5>
+                                    <p className="text-xs text-gray-400">Creates daily updates</p>
+                                  </div>
+                                  <div className="ml-auto">
+                                    <Switch id="agent1-switch" defaultChecked />
+                                  </div>
+                                </div>
+                              </Card>
+                              
+                              <Card className="border border-dark-border bg-dark-surface p-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-800 to-blue-600 flex items-center justify-center">
+                                    <FileText className="h-4 w-4 text-white" />
+                                  </div>
+                                  <div>
+                                    <h5 className="text-sm font-medium">IC Memo Assistant</h5>
+                                    <p className="text-xs text-gray-400">Drafts sections based on data</p>
+                                  </div>
+                                  <div className="ml-auto">
+                                    <Switch id="agent2-switch" defaultChecked />
+                                  </div>
+                                </div>
+                              </Card>
+                              
+                              <Card className="border border-dark-border bg-dark-surface p-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-md bg-gradient-to-br from-red-800 to-red-600 flex items-center justify-center">
+                                    <AlertTriangle className="h-4 w-4 text-white" />
+                                  </div>
+                                  <div>
+                                    <h5 className="text-sm font-medium">Red Flag Highlighter</h5>
+                                    <p className="text-xs text-gray-400">Identifies potential issues</p>
+                                  </div>
+                                  <div className="ml-auto">
+                                    <Switch id="agent3-switch" defaultChecked />
+                                  </div>
+                                </div>
+                              </Card>
+                              
+                              <Card className="border border-dark-border bg-dark-surface p-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-md bg-gradient-to-br from-purple-800 to-purple-600 flex items-center justify-center">
+                                    <LineChart className="h-4 w-4 text-white" />
+                                  </div>
+                                  <div>
+                                    <h5 className="text-sm font-medium">Historical DD Comparator</h5>
+                                    <p className="text-xs text-gray-400">Compares to past deals</p>
+                                  </div>
+                                  <div className="ml-auto">
+                                    <Switch id="agent4-switch" />
+                                  </div>
+                                </div>
+                              </Card>
+                              
+                              <Button variant="outline" size="sm" className="mt-2">
+                                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                                Connect Agent
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {/* Sample Queries */}
+                          <div>
+                            <h4 className="text-sm font-medium mb-3 flex items-center">
+                              <Search className="h-4 w-4 mr-2 text-primary-light" />
+                              Quick Queries
+                            </h4>
+                            <div className="pl-6 space-y-3">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                <Button variant="outline" size="sm" className="justify-start h-auto py-2">
+                                  <MessageSquare className="h-3.5 w-3.5 mr-2" />
+                                  <span className="text-xs text-left">What concerns were raised in the last Monet meeting?</span>
+                                </Button>
+                                
+                                <Button variant="outline" size="sm" className="justify-start h-auto py-2">
+                                  <FileText className="h-3.5 w-3.5 mr-2" />
+                                  <span className="text-xs text-left">Summarize all docs uploaded for Monet since last week</span>
+                                </Button>
+                                
+                                <Button variant="outline" size="sm" className="justify-start h-auto py-2">
+                                  <AlertTriangle className="h-3.5 w-3.5 mr-2" />
+                                  <span className="text-xs text-left">Identify key risks in the latest term sheet</span>
+                                </Button>
+                              </div>
+                              
+                              <div className="pt-2">
+                                <Input 
+                                  placeholder="Ask a question about the Monet deal..." 
+                                  className="text-white placeholder:text-gray-500 bg-dark-surface border-gray-700"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  {/* Features Section */}
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Features of Deal RAG Vaults</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <Card className="border border-dark-border bg-dark-surface">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-md bg-primary-light/20">
+                              <Bot className="h-4 w-4 text-primary-light" />
+                            </div>
+                            <CardTitle className="text-sm">Auto-Creation</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-gray-400">
+                            Automatically created on deal creation and linked to all related apps (Pre-Screening, Memo Builder, Term Sheet)
+                          </p>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border border-dark-border bg-dark-surface">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-md bg-primary-light/20">
+                              <GitBranch className="h-4 w-4 text-primary-light" />
+                            </div>
+                            <CardTitle className="text-sm">Version Control</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-gray-400">
+                            Version-controlled + filterable by stage to track the evolution of deal intelligence over time
+                          </p>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border border-dark-border bg-dark-surface">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-md bg-primary-light/20">
+                              <Lock className="h-4 w-4 text-primary-light" />
+                            </div>
+                            <CardTitle className="text-sm">Access Control</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-gray-400">
+                            Fine-grained access control allowing different levels of access (e.g., external reviewers can't access call transcripts)
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                  
+                  {/* RAG Architecture Diagram */}
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">RAG Vault Architecture</h3>
+                    <Card className="border border-dark-border bg-dark-surface">
+                      <CardContent className="py-6">
+                        <div className="flex flex-col items-center">
+                          <div className="w-full max-w-3xl">
+                            <div className="grid grid-cols-4 gap-4">
+                              {/* Data Sources Row */}
+                              <div className="col-span-4 grid grid-cols-4 gap-4 mb-6">
+                                <div className="p-3 rounded-lg bg-dark-card border border-dark-border flex flex-col items-center text-center">
+                                  <FileText className="h-6 w-6 mb-2 text-blue-400" />
+                                  <p className="text-xs font-medium">Documents & Files</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-dark-card border border-dark-border flex flex-col items-center text-center">
+                                  <MessageSquare className="h-6 w-6 mb-2 text-green-400" />
+                                  <p className="text-xs font-medium">Meeting Transcripts</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-dark-card border border-dark-border flex flex-col items-center text-center">
+                                  <Slack className="h-6 w-6 mb-2 text-purple-400" />
+                                  <p className="text-xs font-medium">Slack Channels</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-dark-card border border-dark-border flex flex-col items-center text-center">
+                                  <Mail className="h-6 w-6 mb-2 text-orange-400" />
+                                  <p className="text-xs font-medium">Email Content</p>
+                                </div>
+                              </div>
+                              
+                              {/* Processing Layer */}
+                              <div className="col-span-4 relative mb-6">
+                                <div className="absolute left-1/2 -top-4 transform -translate-x-1/2">
+                                  <div className="h-10 w-0.5 bg-gradient-to-b from-gray-700 to-transparent"></div>
+                                </div>
+                                <div className="p-4 rounded-lg bg-primary-light/10 border border-primary-light/30 flex flex-col items-center">
+                                  <h4 className="text-sm font-medium mb-2">Processing Pipeline</h4>
+                                  <div className="w-full grid grid-cols-3 gap-4">
+                                    <div className="p-2 rounded bg-dark-card border border-dark-border flex flex-col items-center text-center">
+                                      <FileUp className="h-4 w-4 mb-1 text-gray-400" />
+                                      <p className="text-xs">Ingestion</p>
+                                    </div>
+                                    <div className="p-2 rounded bg-dark-card border border-dark-border flex flex-col items-center text-center">
+                                      <FileText className="h-4 w-4 mb-1 text-gray-400" />
+                                      <p className="text-xs">Chunking</p>
+                                    </div>
+                                    <div className="p-2 rounded bg-dark-card border border-dark-border flex flex-col items-center text-center">
+                                      <Database className="h-4 w-4 mb-1 text-gray-400" />
+                                      <p className="text-xs">Indexing</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Deal RAG Vault */}
+                              <div className="col-span-4 relative mb-6">
+                                <div className="absolute left-1/2 -top-4 transform -translate-x-1/2">
+                                  <div className="h-10 w-0.5 bg-gradient-to-b from-gray-700 to-transparent"></div>
+                                </div>
+                                <div className="p-4 rounded-lg bg-primary-light/20 border border-primary-light/40 flex flex-col items-center">
+                                  <h4 className="text-sm font-medium mb-3 flex items-center">
+                                    <Database className="h-4 w-4 mr-2" />
+                                    Deal-Specific RAG Vault
+                                  </h4>
+                                  <div className="w-full grid grid-cols-3 gap-4">
+                                    <div className="p-2 rounded bg-dark-card border border-dark-border text-center">
+                                      <p className="text-xs font-medium mb-1">Vector Store</p>
+                                      <p className="text-xs text-gray-500">Semantic search</p>
+                                    </div>
+                                    <div className="p-2 rounded bg-dark-card border border-dark-border text-center">
+                                      <p className="text-xs font-medium mb-1">Metadata Store</p>
+                                      <p className="text-xs text-gray-500">Structured data</p>
+                                    </div>
+                                    <div className="p-2 rounded bg-dark-card border border-dark-border text-center">
+                                      <p className="text-xs font-medium mb-1">Retrieval Logic</p>
+                                      <p className="text-xs text-gray-500">Query optimization</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Agent Consumption */}
+                              <div className="col-span-4 relative">
+                                <div className="absolute left-1/2 -top-4 transform -translate-x-1/2">
+                                  <div className="h-10 w-0.5 bg-gradient-to-b from-gray-700 to-transparent"></div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-4">
+                                  <div className="p-3 rounded-lg bg-dark-card border border-primary-light/30 flex flex-col items-center text-center">
+                                    <Bot className="h-6 w-6 mb-2 text-blue-400" />
+                                    <p className="text-xs font-medium">Deal Summary Generator</p>
+                                  </div>
+                                  <div className="p-3 rounded-lg bg-dark-card border border-primary-light/30 flex flex-col items-center text-center">
+                                    <FileText className="h-6 w-6 mb-2 text-green-400" />
+                                    <p className="text-xs font-medium">IC Memo Assistant</p>
+                                  </div>
+                                  <div className="p-3 rounded-lg bg-dark-card border border-primary-light/30 flex flex-col items-center text-center">
+                                    <AlertTriangle className="h-6 w-6 mb-2 text-red-400" />
+                                    <p className="text-xs font-medium">Red Flag Highlighter</p>
+                                  </div>
+                                  <div className="p-3 rounded-lg bg-dark-card border border-primary-light/30 flex flex-col items-center text-center">
+                                    <LineChart className="h-6 w-6 mb-2 text-purple-400" />
+                                    <p className="text-xs font-medium">Historical Comparator</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           </ScrollArea>
         </TabsContent>
