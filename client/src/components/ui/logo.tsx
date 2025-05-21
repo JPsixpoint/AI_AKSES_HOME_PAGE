@@ -15,7 +15,7 @@ export function Logo({ className, withText = true }: LogoProps) {
       </div>
       {withText && (
         <h1 className="text-2xl font-semibold bg-gradient-to-r from-white to-muted-foreground bg-clip-text text-transparent">
-          AKSES
+          AKSES AI - Victory Park Capital
         </h1>
       )}
     </div>
