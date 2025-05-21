@@ -329,6 +329,9 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
               {tab.type === "Org Settings" && (
                 <OrgSettingsPage />
               )}
+              {tab.type === "AI CRM" && (
+                <AICRM />
+              )}
               {tab.type === "AI Agents Orchestration" && (
                 <AIAgentsOrchestrationPage />
               )}
@@ -682,7 +685,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                     <h3 className="text-sm font-medium text-muted-foreground mb-3">Enterprise</h3>
                     <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {filteredTabOptions
-                        .filter(option => ["Users", "Org Settings"].includes(option.type))
+                        .filter(option => ["Users", "Org Settings", "AI CRM"].includes(option.type))
                         .map((option) => (
                           <button
                             key={option.type}
