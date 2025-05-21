@@ -14,6 +14,7 @@ import {
   ChevronRight,
   BookOpen,
   ListPlus,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,13 +26,17 @@ const FeatureCard = ({
   description, 
   icon: Icon, 
   color = "blue", 
-  buttonText = "View Details" 
+  buttonText = "View Details",
+  onClick,
+  isExternal = false
 }: { 
   title: string; 
   description: string; 
   icon: React.ElementType; 
   color?: string;
   buttonText?: string;
+  onClick: () => void;
+  isExternal?: boolean;
 }) => (
   <div className="h-full">
     <Card className="h-full backdrop-blur-md bg-black/30 border border-gray-800 hover:border-gray-700 transition-all overflow-hidden group hover:shadow-md hover:shadow-blue-900/20">
@@ -49,8 +54,13 @@ const FeatureCard = ({
         </div>
       </CardContent>
       <CardFooter className="pt-0">
-        <Button variant="ghost" size="sm" className="w-full justify-between group-hover:bg-blue-900/20">
-          {buttonText} <ChevronRight className="h-4 w-4 ml-2 opacity-50" />
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="w-full justify-between group-hover:bg-blue-900/20"
+          onClick={onClick}
+        >
+          {buttonText} {isExternal ? <ExternalLink className="h-4 w-4 ml-2 opacity-50" /> : <ChevronRight className="h-4 w-4 ml-2 opacity-50" />}
         </Button>
       </CardFooter>
     </Card>
@@ -72,9 +82,22 @@ const EnterpriseCard = ({ icon: Icon, title, color = "blue" }: { icon: React.Ele
 );
 
 // Demo item component
-const DemoItem = ({ title, description, index }: { title: string; description: string; index: number }) => (
+const DemoItem = ({ 
+  title, 
+  description, 
+  index, 
+  onClick
+}: { 
+  title: string; 
+  description: string; 
+  index: number;
+  onClick?: () => void;
+}) => (
   <div className="mb-4 last:mb-0">
-    <div className="border border-gray-800 hover:border-gray-700 rounded-lg p-4 backdrop-blur-md bg-black/20 transition-all cursor-pointer hover:shadow-md hover:shadow-blue-900/20">
+    <div 
+      className="border border-gray-800 hover:border-gray-700 rounded-lg p-4 backdrop-blur-md bg-black/20 transition-all cursor-pointer hover:shadow-md hover:shadow-blue-900/20"
+      onClick={onClick}
+    >
       <div className="flex items-center mb-2">
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mr-3 text-white font-bold">
           {index + 1}
@@ -87,6 +110,53 @@ const DemoItem = ({ title, description, index }: { title: string; description: s
 );
 
 export function OnboardingView() {
+  // Navigation functions
+  const openTab = (tabType: string, tabTitle: string) => {
+    if ((window as any).openTab) {
+      (window as any).openTab(tabType, tabTitle);
+    }
+  };
+
+  const openPrescreening = () => {
+    if ((window as any).openPrescreeningTab) {
+      (window as any).openPrescreeningTab();
+    } else {
+      openTab("AI PreScreening", "AI PreScreening");
+    }
+  };
+
+  const openArchitecture = () => {
+    if ((window as any).openArchitectureTab) {
+      (window as any).openArchitectureTab();
+    } else {
+      openTab("AKSES Architecture", "AKSES Architecture");
+    }
+  };
+
+  const openAgentsOrchestration = () => {
+    openTab("AI Agents Orchestration", "AI Agents");
+  };
+
+  const openPipeline = () => {
+    openTab("Pipeline", "Pipeline");
+  };
+
+  const openCRM = () => {
+    openTab("AI CRM", "AI CRM");
+  };
+
+  const openExternalUrl = (url: string) => {
+    window.open(url, '_blank');
+  };
+
+  const openDueDiligence = () => {
+    openExternalUrl('https://deal-diligence-manager.replit.app/auth');
+  };
+
+  const openTapeCracker = () => {
+    openExternalUrl('https://sixpointcapital.github.io/tape-cracker-ai-agent/#/');
+  };
+
   return (
     <div className="w-full h-full overflow-auto">
       {/* Hero Section */}
@@ -102,10 +172,19 @@ export function OnboardingView() {
             Every tool. Every insight. One platform.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Button size="lg" className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 border-0">
+            <Button 
+              size="lg" 
+              className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 border-0"
+              onClick={openAgentsOrchestration}
+            >
               Start with Agent Builder
             </Button>
-            <Button size="lg" variant="outline" className="rounded-full">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="rounded-full"
+              onClick={openPipeline}
+            >
               Upload a Deal
             </Button>
           </div>
@@ -120,6 +199,7 @@ export function OnboardingView() {
           icon={Brain}
           color="indigo"
           buttonText="View Agents"
+          onClick={openAgentsOrchestration}
         />
         <FeatureCard 
           title="RAG Vaults" 
@@ -127,6 +207,7 @@ export function OnboardingView() {
           icon={Database}
           color="purple"
           buttonText="Explore Vaults"
+          onClick={() => openTab("Rag Databases", "RAG Vault")}
         />
         <FeatureCard 
           title="Tape Cracker" 
@@ -134,6 +215,8 @@ export function OnboardingView() {
           icon={FileText}
           color="green"
           buttonText="Analyze Tapes"
+          onClick={openTapeCracker}
+          isExternal={true}
         />
         <FeatureCard 
           title="AI PreScreening" 
@@ -141,6 +224,7 @@ export function OnboardingView() {
           icon={ListPlus}
           color="red"
           buttonText="Start Screening"
+          onClick={openPrescreening}
         />
         <FeatureCard 
           title="Agent Builder" 
@@ -148,6 +232,7 @@ export function OnboardingView() {
           icon={Cpu}
           color="yellow"
           buttonText="Build Agent"
+          onClick={openAgentsOrchestration}
         />
         <FeatureCard 
           title="Pipeline" 
@@ -155,6 +240,7 @@ export function OnboardingView() {
           icon={BarChart2}
           color="blue"
           buttonText="View Pipeline"
+          onClick={openPipeline}
         />
         <FeatureCard 
           title="AI CRM" 
@@ -162,6 +248,7 @@ export function OnboardingView() {
           icon={Users}
           color="teal"
           buttonText="Open CRM"
+          onClick={openCRM}
         />
         <FeatureCard 
           title="Pool Analytics" 
@@ -169,6 +256,7 @@ export function OnboardingView() {
           icon={BarChart2}
           color="orange"
           buttonText="View Analytics"
+          onClick={() => openTab("Deal Information", "Pool Analytics")}
         />
         <FeatureCard 
           title="Pricer" 
@@ -176,6 +264,7 @@ export function OnboardingView() {
           icon={Calculator}
           color="pink"
           buttonText="Open Pricer"
+          onClick={() => openTab("Pricer", "Pricer")}
         />
       </div>
 
@@ -213,7 +302,11 @@ export function OnboardingView() {
           </div>
           
           <div className="mt-4 text-right">
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={openArchitecture}
+            >
               View Complete Architecture <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
@@ -239,16 +332,19 @@ export function OnboardingView() {
               title="Submit a Deal with PreScreening" 
               description="See how AI analyzes pitch decks and performs rapid due diligence."
               index={0}
+              onClick={openPrescreening}
             />
             <DemoItem 
               title="Build an Agent from Scratch" 
               description="Create a customized AI agent with specific tools and knowledge vaults."
               index={1}
+              onClick={openAgentsOrchestration}
             />
             <DemoItem 
               title="View All Monet Interactions in CRM" 
               description="Explore relationship intelligence across your organization."
               index={2}
+              onClick={openCRM}
             />
           </div>
         </div>
@@ -262,10 +358,10 @@ export function OnboardingView() {
             AKSES brings together every tool and insight you need in one comprehensive platform.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Button>Start with Agent Builder</Button>
-            <Button variant="outline">Upload a Deal</Button>
-            <Button variant="outline">Explore Your Vaults</Button>
-            <Button variant="outline">Launch CRM</Button>
+            <Button onClick={openAgentsOrchestration}>Start with Agent Builder</Button>
+            <Button variant="outline" onClick={openPipeline}>Upload a Deal</Button>
+            <Button variant="outline" onClick={() => openTab("Rag Databases", "RAG Vault")}>Explore Your Vaults</Button>
+            <Button variant="outline" onClick={openCRM}>Launch CRM</Button>
           </div>
         </div>
       </div>
