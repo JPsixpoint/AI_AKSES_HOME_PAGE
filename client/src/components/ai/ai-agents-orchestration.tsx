@@ -188,7 +188,7 @@ export function AIAgentsOrchestration() {
           <BrainCircuit className="h-6 w-6 text-primary-light" />
           <h2 className="text-xl font-semibold">AI Agents Orchestration</h2>
         </div>
-        <Button onClick={() => setSelectedTab("create-new")}>
+        <Button onClick={() => setSelectedTab("builder")}>
           <Plus className="h-4 w-4 mr-2" />
           Create New Agent
         </Button>
@@ -211,10 +211,6 @@ export function AIAgentsOrchestration() {
           <TabsTrigger value="governance" className="flex items-center gap-1">
             <Lock className="h-4 w-4" />
             Governance
-          </TabsTrigger>
-          <TabsTrigger value="create-new" className="flex items-center gap-1">
-            <PlusCircle className="h-4 w-4" />
-            Create New
           </TabsTrigger>
         </TabsList>
 
@@ -1006,126 +1002,7 @@ export function AIAgentsOrchestration() {
           </ScrollArea>
         </TabsContent>
 
-        {/* 5. Create New Agent */}
-        <TabsContent value="create-new" className="flex-1 overflow-hidden">
-          <Card className="border border-dark-border bg-dark-card">
-            <CardHeader>
-              <CardTitle>Create New Agent</CardTitle>
-              <CardDescription>Let's set up a new AI agent for your workflow</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="new-agent-name">Agent Name</Label>
-                  <Input id="new-agent-name" placeholder="Name your new agent" />
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="new-agent-purpose">Purpose</Label>
-                  <textarea 
-                    id="new-agent-purpose" 
-                    className="w-full h-24 p-2 border border-dark-border bg-dark-lighter text-sm rounded-md resize-none outline-none" 
-                    placeholder="Describe what this agent will do..."
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Choose Agent Archetype</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[
-                      { 
-                        id: "deal-support", 
-                        name: "Deal Support Agent", 
-                        description: "Assists with pre-flight and memo generation",
-                        icon: <FileJson className="h-5 w-5 text-emerald-400" />
-                      },
-                      { 
-                        id: "doc-analysis", 
-                        name: "Document Analysis Agent", 
-                        description: "Extracts insights from documents",
-                        icon: <FileBox className="h-5 w-5 text-indigo-400" />
-                      },
-                      { 
-                        id: "covenant", 
-                        name: "Covenant Risk Monitor", 
-                        description: "Tracks compliance with covenants",
-                        icon: <AlertTriangle className="h-5 w-5 text-amber-400" />
-                      },
-                      { 
-                        id: "underwriting", 
-                        name: "Underwriting Auditor", 
-                        description: "Reviews and validates underwriting",
-                        icon: <Bookmark className="h-5 w-5 text-blue-400" />
-                      },
-                    ].map(archetype => (
-                      <div key={archetype.id} className="rounded-md border border-dark-border hover:border-primary-light transition-colors p-3 flex items-start gap-3 cursor-pointer">
-                        <div className="mt-0.5">{archetype.icon}</div>
-                        <div>
-                          <div className="text-sm font-medium">{archetype.name}</div>
-                          <div className="text-xs text-muted-foreground">{archetype.description}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Agent Behavior</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {[
-                      { 
-                        id: "chat", 
-                        name: "Chat Interface", 
-                        description: "Interactive conversations",
-                        icon: <MessageSquare className="h-5 w-5 text-blue-400" />
-                      },
-                      { 
-                        id: "embedded", 
-                        name: "Embedded Assistant", 
-                        description: "Built into applications",
-                        icon: <Layers className="h-5 w-5 text-purple-400" />
-                      },
-                      { 
-                        id: "scheduled", 
-                        name: "Scheduled Automation", 
-                        description: "Runs on defined schedule",
-                        icon: <Clock className="h-5 w-5 text-green-400" />
-                      },
-                    ].map(behavior => (
-                      <div key={behavior.id} className="rounded-md border border-dark-border hover:border-primary-light transition-colors p-3 flex items-start gap-3 cursor-pointer">
-                        <div className="mt-0.5">{behavior.icon}</div>
-                        <div>
-                          <div className="text-sm font-medium">{behavior.name}</div>
-                          <div className="text-xs text-muted-foreground">{behavior.description}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>RAG Knowledge Source</Label>
-                  <Select defaultValue="all-sources">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select knowledge source" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all-sources">All Available Sources</SelectItem>
-                      <SelectItem value="deals-db">Deals Database</SelectItem>
-                      <SelectItem value="legal-docs">Legal Documents</SelectItem>
-                      <SelectItem value="market-data">Market Data</SelectItem>
-                      <SelectItem value="custom-docs">Custom Documents</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline">Cancel</Button>
-              <Button>Continue to Configuration</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
