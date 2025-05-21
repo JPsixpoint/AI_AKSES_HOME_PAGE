@@ -10,6 +10,7 @@ import {
   BarChart4, 
   FileSpreadsheet, 
   Brain, 
+  BrainCircuit,
   Folder, 
   Files,
   BookOpen,
@@ -83,6 +84,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
   const tabOptions: Array<{type: TabType, title: string, description: string}> = [
     { type: "Pipeline", title: "Pipeline", description: "View and manage the deal pipeline" },
     { type: "AI PreScreening", title: "AI PreScreening", description: "AI-assisted pre-screening of potential deals" },
+    { type: "AI Agents Orchestration", title: "AI Agents", description: "Create and manage intelligent AI agents for specific tasks" },
     { type: "Voice Commands", title: "Commands", description: "Guide to using voice commands and AI capabilities" },
     { type: "AKSES Architecture", title: "Architecture", description: "Three-Tiered AI Orchestration Architecture and system components" },
     { type: "Users", title: "User Management", description: "Manage user accounts, roles and permissions" },
@@ -461,7 +463,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                     <h3 className="text-sm font-medium text-muted-foreground mb-3">AI Tools</h3>
                     <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {filteredTabOptions
-                        .filter(option => ["AI PreScreening", "Rag Databases", "AKSES Architecture"].includes(option.type))
+                        .filter(option => ["AI PreScreening", "AI Agents Orchestration", "Rag Databases", "AKSES Architecture"].includes(option.type))
                         .map((option) => (
                           <button
                             key={option.type}
@@ -478,6 +480,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                           >
                             <div className={`mr-3 ${option.type === "AKSES Architecture" ? "text-blue-400" : "text-primary"}`}>
                               {option.type === "AI PreScreening" && <Brain className="h-5 w-5" />}
+                              {option.type === "AI Agents Orchestration" && <BrainCircuit className="h-5 w-5 text-purple-400" />}
                               {option.type === "Rag Databases" && <Database className="h-5 w-5" />}
                               {option.type === "AKSES Architecture" && <BookOpen className="h-5 w-5" />}
                             </div>
