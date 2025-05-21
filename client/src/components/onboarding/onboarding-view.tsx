@@ -197,9 +197,9 @@ export function OnboardingView() {
               size="lg" 
               variant="outline" 
               className="rounded-full"
-              onClick={openPipeline}
+              onClick={openCRM}
             >
-              Upload a Deal
+              Import from Deal Cloud
             </Button>
           </div>
         </div>
