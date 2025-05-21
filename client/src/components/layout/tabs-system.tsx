@@ -27,6 +27,7 @@ import { DealsPipeline } from "@/components/deals/deals-pipeline";
 import { AIPreScreening } from "@/components/ai/ai-pre-screening";
 import { VoiceCommandsGuide } from "@/components/ai/voice-commands-guide";
 import { AICRM } from "@/components/crm/ai-crm";
+import { OnboardingView } from "@/components/onboarding/onboarding-view";
 import AksesArchitecture from "@/pages/akses-architecture";
 import UsersPage from "@/pages/users";
 import OrgSettingsPage from "@/pages/org-settings";
@@ -45,7 +46,8 @@ type TabType =
   | "Voice Commands"
   | "Users"
   | "AI Agents Orchestration"
-  | "AI CRM";
+  | "AI CRM"
+  | "Onboarding";
 
 interface Tab {
   id: string;

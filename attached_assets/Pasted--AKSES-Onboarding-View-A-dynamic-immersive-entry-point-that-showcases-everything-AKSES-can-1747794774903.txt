@@ -1,0 +1,121 @@
+## 🚀 AKSES Onboarding View  
+> A dynamic, immersive entry point that showcases everything AKSES can do — one place to explore all capabilities, tools, and intelligence layers.
+
+---
+
+### 🧭 Navigation
+Navbar button: **Onboarding**  
+Subtext: _“Explore the Platform”_
+
+---
+
+### 🌠 Hero Section (Glassmorphic Container)
+**Headline:**  
+“The End-to-End AI OS for Asset Managers”
+
+**Subheadline:**  
+Every tool. Every insight. One platform.
+
+Smooth fade-in with motion: tagline → grid animates into focus (Lenis-inspired scroll effect)
+
+---
+
+### 🔥 Highlight Modules (Glass Cards Flow into Grid)
+
+#### 🧠 AI Agent Army  
+> Specialized agents trained to execute underwriting, analysis, and decision support  
+- Risk Agent, Memo Agent, Covenant Agent, Market Trends Agent  
+- Hover or click: show tools + RAG Vaults connected  
+- Button: “View Agents”
+
+#### 🗃️ RAG Vaults  
+> Reusable, structured knowledge — by company, deal, or conversation  
+- Company RAG (Tier 2)  
+- Deal-Specific Vaults (Monet, Sary, Trukkr...)  
+- Custom Slack, Email, Notion RAGs (Tier 1)  
+- Connected to all agents + searchable
+
+#### 🧾 Tape Cracker  
+> Upload tapes, analyze portfolio stats, flag anomalies  
+- CSV, XLSX support  
+- Powered by custom parsing logic + scoring agents  
+- Linked to Pool Analytics + Memo Builder
+
+#### 📁 AI PreScreening  
+> Submit a deal. Get insights.  
+- Auto-summarizes pitch decks  
+- Highlights missing data, auto-tags credit flags  
+- Sends to IC memo pipeline
+
+#### 🧠 Agent Builder  
+> Build your own AI copilots  
+- Choose tools (Pricer, Slack, VDR)  
+- Assign Vaults  
+- Set behavior (manual, scheduled, triggered)
+
+#### 📈 Pipeline  
+> Manage the entire underwriting flow  
+- Track all deals across lifecycle stages  
+- Launch agents directly from stage cards  
+- Smart filters by region, sector, priority
+
+#### 💬 AI CRM  
+> Centralize all people, companies, and interactions  
+- HubSpot / DealCloud import  
+- Meeting summaries, contact intelligence, origination analytics  
+- Fully synced to Pipeline + Vaults
+
+#### 📊 Pool Analytics  
+> Advanced performance breakdowns  
+- Analyze cohorts, risk decay, defaults  
+- Integrates with IC memos and PreFlight
+
+#### 📃 Pricer  
+> Model terms, simulate returns, generate deal docs  
+- Structured input + output  
+- Connects to Term Sheet builder and Agent Summarizer
+
+#### 🧬 AI Architecture  
+> Three-Tiered Intelligence Framework  
+- Tier 1: User-Level Vaults  
+- Tier 2: Org-Level Collaboration  
+- Tier 3: Anonymized Pattern Learning  
+- Meta-Orchestrator overview included
+
+---
+
+### 🛡️ Enterprise Highlights (Glass Row Cards)
+- ✅ **Enterprise Ready** — Branding, Roles, Org Settings  
+- 🔐 **Secure by Design** — Immutable logs, scoped permissions  
+- 🔁 **Import Your Workflow** — HubSpot, DealCloud, CSV, VDR  
+- 🔌 **Flexible Backend** — Pinecone, Weaviate, Azure support  
+- 🧠 **Model Agnostic** — Use GPT-4, Claude, or custom APIs
+
+---
+
+### 🎬 Demo Panel (Carousel)
+- Launch interactive walkthroughs
+  - “Submit a Deal with PreScreening”  
+  - “Build an Agent from Scratch”  
+  - “View All Monet Interactions in CRM”  
+- Hover: see transcript + feature list
+
+---
+
+### 🌌 Closing Call-to-Action
+**Title:**  
+“Ready to Run Your Fund with AI?”
+
+**Buttons:**  
+- `Start with Agent Builder`  
+- `Upload a Deal`  
+- `Explore Your Vaults`  
+- `Launch CRM`
+
+---
+
+### 🧪 Design System Notes
+- Glassmorphism: `backdrop-filter: blur(12px)`, semi-transparent cards  
+- Entry Motion: `framer-motion` fade-in from edges, staggered  
+- Scroll: `Lenis`-style smooth scroll activation  
+- Background: Soft radial glow backdrop (subtle grid or orbit effect optional)
