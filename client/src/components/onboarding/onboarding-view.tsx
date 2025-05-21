@@ -286,6 +286,15 @@ export function OnboardingView() {
           buttonText="Open Pricer"
           onClick={() => openTab("Pricer", "Pricer")}
         />
+        <FeatureCard 
+          title="Slack AI Explorer" 
+          description="Analyze your Slack workspace and explore conversations with AI assistance." 
+          icon={Slack}
+          color="violet"
+          buttonText="Open Explorer"
+          onClick={openSlackAIExplorer}
+          isExternal={true}
+        />
       </div>
 
       {/* Architecture Section */}
