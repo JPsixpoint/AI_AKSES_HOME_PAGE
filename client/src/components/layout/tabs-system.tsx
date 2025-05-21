@@ -426,6 +426,23 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-3">Deal Management</h3>
                     <div className="space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {/* AI Tape Cracker Button */}
+                      <button
+                        className="text-left px-3 py-3 rounded-md hover:bg-dark-surface flex items-center border border-transparent hover:border-dark"
+                        onClick={() => {
+                          window.open("https://sixpointcapital.github.io/tape-cracker-ai-agent/#/", "_blank");
+                          setIsNewTabDialogOpen(false);
+                        }}
+                      >
+                        <div className="mr-3 text-primary">
+                          <Brain className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">AI Tape Cracker</div>
+                          <div className="text-xs text-muted-foreground">Advanced tape analysis tool</div>
+                        </div>
+                      </button>
+                      
                       {filteredTabOptions
                         .filter(option => ["Pipeline", "Deal Information", "Due Diligence", "AI PreScreening"].includes(option.type))
                         .map((option) => (
@@ -442,6 +459,14 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                                   return;
                                 }
                               }
+                              
+                              // Special handling for Due Diligence - open external link
+                              if (option.type === "Due Diligence") {
+                                window.open("https://deal-diligence-manager.replit.app/auth", "_blank");
+                                setIsNewTabDialogOpen(false);
+                                return;
+                              }
+                              
                               // Otherwise create a new tab
                               addNewTab(option.type, option.title);
                             }}
