@@ -426,7 +426,7 @@ export function AIAgentsOrchestration() {
                               ].map(tool => (
                                 <div key={tool.id} className="flex items-center gap-2 p-1.5 rounded-md bg-dark-surface cursor-move hover:bg-dark-active transition-colors">
                                   {tool.icon}
-                                  <span className="text-xs">{tool.name}</span>
+                                  <span className="text-xs text-white">{tool.name}</span>
                                 </div>
                               ))}
                             </div>
@@ -443,7 +443,7 @@ export function AIAgentsOrchestration() {
                                 <div key={tool.id} className="flex items-center justify-between p-1.5 rounded-md bg-blue-950/30 cursor-move group">
                                   <div className="flex items-center gap-2">
                                     {tool.icon}
-                                    <span className="text-xs">{tool.name}</span>
+                                    <span className="text-xs text-white">{tool.name}</span>
                                   </div>
                                   <X className="h-3 w-3 text-muted-foreground hover:text-white cursor-pointer transition-colors opacity-0 group-hover:opacity-100" />
                                 </div>
@@ -470,8 +470,8 @@ export function AIAgentsOrchestration() {
                               ].map(resource => (
                                 <div key={resource.id} className="flex items-center gap-2 p-1.5 rounded-md bg-dark-surface cursor-move hover:bg-dark-active transition-colors">
                                   {resource.icon}
-                                  <span className="text-xs">{resource.name}</span>
-                                  <Badge variant="outline" className="text-[10px] h-4 px-1 ml-auto">
+                                  <span className="text-xs text-white">{resource.name}</span>
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1 ml-auto text-gray-200">
                                     {resource.type === "vector-db" ? "RAG" : 
                                      resource.type === "feed" ? "Feed" : "Org"}
                                   </Badge>
@@ -491,9 +491,9 @@ export function AIAgentsOrchestration() {
                                 <div key={resource.id} className="flex items-center justify-between p-1.5 rounded-md bg-teal-950/30 cursor-move group">
                                   <div className="flex items-center gap-2">
                                     {resource.icon}
-                                    <span className="text-xs">{resource.name}</span>
+                                    <span className="text-xs text-white">{resource.name}</span>
                                   </div>
-                                  <Badge variant="outline" className="text-[10px] h-4 px-1 mr-1">
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1 mr-1 text-gray-200">
                                     {resource.type === "file" ? "File" : 
                                      resource.type === "feed" ? "Feed" : "Org"}
                                   </Badge>
