@@ -12,6 +12,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/originator-avatar" component={OriginatorAvatar} />
+      <Route path="/ai-agents" component={Home} />
       <Route component={NotFound} />
     </Switch>
   );
