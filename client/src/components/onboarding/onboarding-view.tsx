@@ -136,6 +136,10 @@ export function OnboardingView() {
   const openAgentsOrchestration = () => {
     openTab("AI Agents Orchestration", "AI Agents");
   };
+  
+  const openRagVault = () => {
+    openTab("AI Agents Orchestration", "RAG Vault");
+  };
 
   const openPipeline = () => {
     openTab("Pipeline", "Pipeline");
@@ -207,7 +211,7 @@ export function OnboardingView() {
           icon={Database}
           color="purple"
           buttonText="Explore Vaults"
-          onClick={() => openTab("Rag Databases", "RAG Databases")}
+          onClick={openRagVault}
         />
         <FeatureCard 
           title="Tape Cracker" 
