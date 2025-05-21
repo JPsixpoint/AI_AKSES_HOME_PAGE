@@ -133,8 +133,17 @@ export function OnboardingView() {
     }
   };
 
-  const openAgentsOrchestration = () => {
-    openTab("AI Agents Orchestration", "Agent Builder");
+  const openAgentBuilder = () => {
+    const tabsSystem = document.querySelector('[data-tabs-system]');
+    
+    if (window.opener) {
+      window.opener.postMessage({ action: 'openAgentBuilder' }, '*');
+    }
+    
+    // Create or activate AI Agents tab with Agent Builder selected
+    if ((window as any).openTab) {
+      (window as any).openTab("AI Agents Orchestration", "Agent Builder", "builder");
+    }
   };
   
   const openRagVault = () => {
@@ -179,7 +188,7 @@ export function OnboardingView() {
             <Button 
               size="lg" 
               className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 border-0"
-              onClick={openAgentsOrchestration}
+              onClick={openAgentBuilder}
             >
               Start with Agent Builder
             </Button>
@@ -203,7 +212,7 @@ export function OnboardingView() {
           icon={Brain}
           color="indigo"
           buttonText="View Agents"
-          onClick={openAgentsOrchestration}
+          onClick={openAgentBuilder}
         />
         <FeatureCard 
           title="RAG Vaults" 
@@ -236,7 +245,7 @@ export function OnboardingView() {
           icon={Cpu}
           color="yellow"
           buttonText="Build Agent"
-          onClick={openAgentsOrchestration}
+          onClick={openAgentBuilder}
         />
         <FeatureCard 
           title="Pipeline" 
@@ -342,7 +351,7 @@ export function OnboardingView() {
               title="Build an Agent from Scratch" 
               description="Create a customized AI agent with specific tools and knowledge vaults."
               index={1}
-              onClick={openAgentsOrchestration}
+              onClick={openAgentBuilder}
             />
             <DemoItem 
               title="View All Monet Interactions in CRM" 
@@ -362,7 +371,7 @@ export function OnboardingView() {
             AKSES brings together every tool and insight you need in one comprehensive platform.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Button onClick={openAgentsOrchestration}>Start with Agent Builder</Button>
+            <Button onClick={openAgentBuilder}>Start with Agent Builder</Button>
             <Button variant="outline" onClick={openPipeline}>Upload a Deal</Button>
             <Button variant="outline" onClick={openRagVault}>Explore Your Vaults</Button>
             <Button variant="outline" onClick={openCRM}>Launch CRM</Button>

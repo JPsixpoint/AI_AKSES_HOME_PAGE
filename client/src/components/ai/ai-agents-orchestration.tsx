@@ -169,8 +169,12 @@ const agents = [
   },
 ];
 
-export function AIAgentsOrchestration() {
-  const [selectedTab, setSelectedTab] = useState("directory");
+interface AIAgentsOrchestrationProps {
+  initialTab?: string;
+}
+
+export function AIAgentsOrchestration({ initialTab = "directory" }: AIAgentsOrchestrationProps) {
+  const [selectedTab, setSelectedTab] = useState(initialTab);
   const [domainFilter, setDomainFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
