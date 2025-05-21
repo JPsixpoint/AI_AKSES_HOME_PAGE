@@ -134,7 +134,7 @@ export function OnboardingView() {
   };
 
   const openAgentsOrchestration = () => {
-    openTab("AI Agents Orchestration", "AI Agents");
+    openTab("AI Agents Orchestration", "Agent Builder");
   };
   
   const openRagVault = () => {
