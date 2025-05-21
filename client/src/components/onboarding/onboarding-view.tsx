@@ -373,7 +373,7 @@ export function OnboardingView() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Button onClick={openAgentBuilder}>Start with Agent Builder</Button>
-            <Button variant="outline" onClick={openPipeline}>Upload a Deal</Button>
+            <Button variant="outline" onClick={openCRM}>Import from Deal Cloud</Button>
             <Button variant="outline" onClick={openRagVault}>Explore Your Vaults</Button>
             <Button variant="outline" onClick={openCRM}>Launch CRM</Button>
           </div>
