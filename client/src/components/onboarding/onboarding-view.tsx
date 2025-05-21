@@ -173,7 +173,7 @@ export function OnboardingView() {
             The End-to-End AI OS for Asset Managers
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8">
-            Every tool. Every insight. One platform.
+            Underwriting redefined. AI Agents in command.
           </p>
           <div className="flex flex-wrap gap-4">
             <Button 
