@@ -83,10 +83,10 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
     { type: "Voice Commands", title: "Commands", description: "Guide to using voice commands and AI capabilities" },
     { type: "AKSES Architecture", title: "Architecture", description: "Three-Tiered AI Orchestration Architecture and system components" },
     { type: "Users", title: "User Management", description: "Manage user accounts, roles and permissions" },
+    { type: "Org Settings", title: "Organization Settings", description: "Configure organization branding, info, and preferences" },
     { type: "Deal Information", title: "Deal Information", description: "View and edit detailed deal information" },
     { type: "Pricer", title: "Pricer", description: "Deal pricing and financial modeling tools" },
     { type: "Due Diligence", title: "Due Diligence", description: "Manage due diligence process and documents" },
-    { type: "Org Settings", title: "Org Settings", description: "Organization settings and configuration" },
     { type: "Rag Databases", title: "Rag Databases", description: "Manage and explore RAG knowledge databases" },
   ];
   
@@ -316,7 +316,10 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
               {tab.type === "Users" && (
                 <UsersPage />
               )}
-              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && tab.type !== "AKSES Architecture" && tab.type !== "Voice Commands" && tab.type !== "Users" && (
+              {tab.type === "Org Settings" && (
+                <OrgSettingsPage />
+              )}
+              {tab.type !== "Pipeline" && tab.type !== "AI PreScreening" && tab.type !== "AKSES Architecture" && tab.type !== "Voice Commands" && tab.type !== "Users" && tab.type !== "Org Settings" && (
                 <div className="h-full flex items-center justify-center p-6">
                   <div className="text-center max-w-md mx-auto">
                     <h2 className="text-2xl font-semibold mb-3">{tab.title}</h2>
@@ -502,7 +505,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                             }}
                           >
                             <div className="mr-3 text-primary">
-                              {option.type === "Users" && <Settings className="h-5 w-5" />}
+                              {option.type === "Users" && <UsersIcon className="h-5 w-5" />}
                               {option.type === "Org Settings" && <Settings className="h-5 w-5" />}
                             </div>
                             <div>
