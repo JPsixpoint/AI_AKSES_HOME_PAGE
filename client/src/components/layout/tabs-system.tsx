@@ -15,7 +15,9 @@ import {
   Files,
   BookOpen,
   Mic,
-  Users as UsersIcon
+  Users as UsersIcon,
+  PenTool,
+  Shield
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -524,7 +526,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                           }}
                         >
                           <div className="mr-3 text-primary">
-                            <PenTool className="h-4 w-4" />
+                            <Settings className="h-4 w-4" />
                           </div>
                           <div>
                             <div className="font-medium text-sm">Agent Builder</div>
@@ -612,7 +614,7 @@ export function TabsSystem({ selectedDealId, onSelectedDealChange }: TabsSystemP
                           }}
                         >
                           <div className="mr-3 text-primary">
-                            <Shield className="h-4 w-4" />
+                            <FileSpreadsheet className="h-4 w-4" />
                           </div>
                           <div>
                             <div className="font-medium text-sm">Governance</div>
